@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  --color-colegio-red: #701C32;
+  --color-colegio-blue: #093E7A;
+  --font-lato: "Lato", sans-serif;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-lato); /* Aplicamos Lato a todo el sitio */
+}
