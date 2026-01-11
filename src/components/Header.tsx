@@ -13,7 +13,7 @@ export default function Header() {
         <div className="flex-shrink-0">
           <Link href="/">
             <img 
-              src="/logo.png" // Asegúrate de que el nombre sea exacto en /public
+              src="/logo.png"
               alt="Logo Amancio Varona" 
               className="h-16 md:h-20 object-contain cursor-pointer" 
             />
