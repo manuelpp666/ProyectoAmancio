@@ -3,51 +3,34 @@ import Link from "next/link";
 
 export default function Header() {
   return (
-    <header className="w-full">
-      {/* Franja superior guinda */}
-      <div className="h-8 w-full bg-colegio-red"></div>
-
-      {/* Navegación Principal */}
-      <nav className="flex items-center justify-between px-6 py-4 md:px-12 bg-white shadow-sm">
-        {/* Logo */}
-        <div className="flex-shrink-0">
-          <Link href="/">
-            <img 
-              src="/logo.png"
-              alt="Logo Amancio Varona" 
-              className="h-16 md:h-20 object-contain cursor-pointer" 
-            />
-          </Link>
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20">
+            <div className="flex-shrink-0 flex items-center space-x-3">
+              <div className="w-12 h-12  rounded-lg flex items-center justify-center text-white">
+                <Link href="/">
+                  <img
+                    src="/logo.png"
+                    alt="Logo Amancio Varona"
+                    className="h-30 md:h-30 object-contain cursor-pointer"
+                  />
+                </Link>
+              </div>
+              <span className="font-black text-xl tracking-tight text-[#701C32] uppercase">Amancio Verona</span>
+            </div>
+            <div className="hidden md:flex space-x-8 items-center">
+              <a className="font-bold text-sm uppercase tracking-wider text-slate-700 hover:text-[#701C32] transition-colors" href="/">Inicio</a>
+              <a className="font-bold text-sm uppercase tracking-wider text-slate-700 hover:text-[#701C32] transition-colors" href="/noticias">Noticias</a>
+              <a className="font-bold text-sm uppercase tracking-wider text-slate-700 hover:text-[#701C32] transition-colors" href="/acerca-de">Acerca de</a>
+              <a className="font-bold text-sm uppercase tracking-wider text-slate-700 hover:text-[#701C32] transition-colors" href="/docentes">Docentes</a>
+              <a className="font-bold text-sm uppercase tracking-wider text-slate-700 hover:text-[#701C32] transition-colors" href="/calendario">Calendario</a>
+              <a className="bg-[#093E7A] text-white px-6 py-2.5 rounded-full font-bold text-sm uppercase tracking-wider hover:bg-[#073365] transition-all shadow-lg shadow-[#093E7A]/20" href="#">Campus Estudiantil</a>
+            </div>
+            <div className="md:hidden">
+              <span className="material-icons-round text-3xl cursor-pointer text-[#701C32]">menu</span>
+            </div>
+          </div>
         </div>
-
-        {/* Menú de Enlaces */}
-        <div className="hidden lg:flex items-center gap-8">
-          <Link href="/" className="text-sm font-bold text-gray-800 hover:text-colegio-blue transition-colors">
-            INICIO
-          </Link>
-          <Link href="/noticias" className="text-sm font-bold text-gray-800 hover:text-colegio-blue transition-colors">
-            NOTICIAS
-          </Link>
-          <Link href="/acerca-de" className="text-sm font-bold text-gray-800 hover:text-colegio-blue transition-colors">
-            ACERCA DE
-          </Link>
-          <Link href="/docentes" className="text-sm font-bold text-gray-800 hover:text-colegio-blue transition-colors">
-            DOCENTES
-          </Link>
-          <Link href="/calendario" className="text-sm font-bold text-gray-800 hover:text-colegio-blue transition-colors">
-            CALENDARIO ANUAL
-          </Link>
-        </div>
-
-        {/* Botón Campus */}
-        <Link 
-          href="/campus" 
-          className="bg-colegio-blue text-white px-5 py-2.5 rounded flex items-center gap-2 text-sm font-semibold hover:bg-opacity-90 transition-all shadow-md"
-        >
-          Campus Estudiante 
-          <span className="text-lg">→</span>
-        </Link>
-      </nav>
-    </header>
+      </nav> 
   );
 }

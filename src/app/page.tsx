@@ -1,141 +1,239 @@
 "use client";
-
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import BotonPrimario from "../components/BotonFront";
-import { Degradado } from "../components/LineaDegradada";
-
-const VIRTUDES = [
-  {
-    titulo: "Científico",
-    descripcion: "Fomentamos el pensamiento crítico y la investigación experimental en nuestros laboratorios.",
-    color: "border-blue-500",
-    bg: "bg-blue-50"
-  },
-  {
-    titulo: "Humanístico",
-    descripcion: "Desarrollamos la empatía, la ética y la comprensión profunda de nuestra sociedad.",
-    color: "border-red-500",
-    bg: "bg-red-50"
-  },
-  {
-    titulo: "Artístico",
-    descripcion: "Potenciamos la creatividad a través de la música, el teatro y las artes visuales.",
-    color: "border-yellow-500",
-    bg: "bg-yellow-50"
-  },
-  {
-    titulo: "Deportivo",
-    descripcion: "Promovemos la disciplina, el trabajo en equipo y la salud física constante.",
-    color: "border-green-500",
-    bg: "bg-green-50"
-  }
-];
-
+import Footer from "../components/Footer";
+import Header from "../components/Header";
 export default function Home() {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Lógica de Auto-play
+  const propuestas = [
+    {
+      titulo: "Enfoque Científico",
+      descripcion: "Nuestra metodología fomenta la curiosidad natural y el pensamiento crítico a través de laboratorios modernos y proyectos de investigación aplicada desde temprana edad. Preparamos a nuestros estudiantes para los desafíos tecnológicos del mañana.",
+      icon: "biotech",
+      badge: "lightbulb",
+      color: "#701C32"
+    },
+    {
+      titulo: "Enfoque Humanístico",
+      descripcion: "Priorizamos la formación en valores, ética y responsabilidad social. A través de la literatura, la historia y el debate, desarrollamos ciudadanos conscientes de su entorno y capaces de liderar con empatía.",
+      icon: "history_edu",
+      badge: "auto_stories",
+      color: "#701C32"
+    },
+    {
+      titulo: "Enfoque Artístico",
+      descripcion: "Potenciamos la expresión creativa mediante talleres de música, artes plásticas y teatro. Creemos que el arte es fundamental para el desarrollo de la sensibilidad y la resolución creativa de problemas.",
+      icon: "palette",
+      badge: "music_note",
+      color: "#701C32"
+    },
+    {
+      titulo: "Enfoque Deportivo",
+      descripcion: "Promovemos un estilo de vida saludable y el trabajo en equipo a través de diversas disciplinas deportivas. Nuestras infraestructuras están diseñadas para forjar la disciplina, la resiliencia y la salud física.",
+      icon: "sports_soccer",
+      badge: "emoji_events",
+      color: "#701C32"
+    }
+  ];
+
+  // Opcional: Auto-reproducción cada 5 segundos
   useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev === VIRTUDES.length - 1 ? 0 : prev + 1));
-    }, 5000); // Cambia cada 5 segundos
-
-    return () => clearInterval(interval); // Limpieza al desmontar
-  }, [activeIndex]); // Se reinicia el contador si el usuario hace clic manualmente
-
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % propuestas.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
   return (
-    <main className="min-h-screen">
-      {/* HERO SECTION */}
-      <section className="relative h-[400px] flex flex-col items-center justify-center text-center border-b border-dashed">
-        <h1 className="text-5xl font-black text-gray-800">Frase de colegio</h1>
-        <p className="text-xl text-gray-600 mt-2">Sub frase de colegio</p>
-        <BotonPrimario href="/matricula">
-          Acceder a Matrícula
-        </BotonPrimario>
-        <div className="absolute inset-0 -z-10 flex items-center justify-center overflow-hidden opacity-10">
-          <div className="absolute w-full h-[1px] bg-black rotate-12"></div>
-          <div className="absolute w-full h-[1px] bg-black -rotate-12"></div>
-        </div>
-      </section>
+    <div className="bg-white text-slate-800 transition-colors duration-300">
 
-      {/* PROPUESTA EDUCATIVA (CARRUSEL AUTOMÁTICO) */}
-      <section className="py-16 px-10 text-center">
-        <h2 className="text-3xl font-bold mb-8 italic">Propuesta Educativa</h2>
-        
-        <div className="max-w-4xl mx-auto border-2 border-gray-200 p-10 relative overflow-hidden bg-white shadow-sm">
-          {/* Contenido con transición suave de opacidad */}
-          <div 
-            key={activeIndex} 
-            className="animate-in fade-in duration-700 slide-in-from-bottom-2"
-          >
-            <h3 className="text-3xl font-black uppercase tracking-tighter mb-4 text-gray-800">
-              {VIRTUDES[activeIndex].titulo}
-            </h3>
-            
-            <div className={`h-48 flex flex-col items-center justify-center my-4 border-2 border-dashed ${VIRTUDES[activeIndex].color} ${VIRTUDES[activeIndex].bg} transition-colors duration-500 p-8`}>
-               <p className="text-gray-700 text-lg leading-relaxed max-w-xl">
-                {VIRTUDES[activeIndex].descripcion}
-               </p>
+
+      {/* Navigation */}
+      <Header />
+      <main>
+        {/* Hero Section */}
+        <section className="relative h-[600px] flex items-center justify-center overflow-hidden bg-[#FFF1E3]">
+          <div className="absolute inset-0 z-0">
+            <img alt="Students in campus" className="w-full h-full object-cover opacity-30" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDu0vQ65OwZKHBD3Lt0hTzEN4cGhR2GGdbuNhX3l3DABC94yLNQuOa5AzUcL9rAvNzwjJeH2vtEj5KU0C4oAjRHnhbg5-AmTkbCTCJ4EGTDSwpxDXK4gvYVPKjryglfDmgTFO6L_nXUzTt03t2fhPlBCFKkWegqTkOFr5yriouUTzWajvOHE4Jo4_wt-ggQI32d6AHJKF3z0zySO8yNJjRhVSN4_svLn0cN6kN36tSVPIOTCHduURF-sq4q1Ovt-FGzPUi7iIHxO1CN" />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white"></div>
+          </div>
+          <div className="relative z-10 text-center px-4 max-w-4xl">
+            <h1 className="text-5xl md:text-7xl font-black text-[#701C32] mb-6 leading-tight">Formando líderes para el futuro</h1>
+            <p className="text-xl md:text-2xl text-slate-700 mb-10 font-light">Excelencia académica y valores que trascienden generaciones.</p>
+            <button className="bg-[#093E7A] text-white px-10 py-4 rounded-full font-bold text-lg hover:scale-105 transition-transform shadow-xl shadow-[#093E7A]/30 flex items-center space-x-2 mx-auto">
+              <span>Admisión 2024</span>
+              <span className="material-icons-round">arrow_forward</span>
+            </button>
+          </div>
+        </section>
+
+        {/* Educational Proposal Section */}
+        <section className="py-24 px-4 bg-white">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-black text-[#701C32] mb-4">Propuesta Educativa</h2>
+              <div className="w-24 h-1.5 bg-[#701C32] mx-auto rounded-full"></div>
             </div>
-          </div>
 
-          {/* Indicadores (Dots) */}
-          <div className="flex justify-center gap-3 mt-6">
-            {VIRTUDES.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setActiveIndex(index)}
-                className={`h-2 transition-all duration-300 rounded-full ${
-                  activeIndex === index ? "w-8 bg-gray-800" : "w-2 bg-gray-300"
-                }`}
-                aria-label={`Ver ${VIRTUDES[index].titulo}`}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
+            <div className="relative group">
+              {/* Contenedor con transición suave */}
+              <div className="bg-[#FFF1E3] rounded-3xl p-8 md:p-16 flex flex-col md:flex-row items-center gap-12 shadow-inner border border-white min-h-[450px] transition-all duration-500 ease-in-out">
 
-      {/* METODOLOGÍA POR NIVELES*/}
-      <section className="py-16 bg-gray-50 text-center">
-        <h2 className="text-2xl font-bold mb-10 tracking-tight">Conoce nuestra metodología por niveles</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-10 max-w-6xl mx-auto">
-          {["Nivel Primaria", "Nivel secundario", "Academia Pre"].map((nivel) => (
-            <div key={nivel} className="group cursor-pointer">
-              <div className="w-full aspect-square border-2 border-gray-300 mb-4 relative flex items-center justify-center group-hover:border-blue-500 transition-colors">
-                 <div className="absolute inset-0 opacity-10 flex items-center justify-center group-hover:opacity-30">
-                    <div className="w-full h-[1px] bg-black rotate-45 absolute"></div>
-                    <div className="w-full h-[1px] bg-black -rotate-45 absolute"></div>
-                 </div>
-                 <span className="text-gray-400 group-hover:text-blue-500 font-bold uppercase text-xs tracking-widest">Imagen {nivel}</span>
+                {/* Lado de la Imagen/Icono */}
+                <div className="w-full md:w-1/2 flex justify-center">
+                  <div className="relative w-64 h-64 bg-white rounded-full flex items-center justify-center shadow-xl animate-fadeIn">
+                    <span className="material-icons-round text-[120px] text-[#701C32] transition-all duration-500">
+                      {propuestas[currentSlide].icon}
+                    </span>
+                    <div className="absolute -top-4 -right-4 w-16 h-16 bg-[#093E7A] rounded-2xl flex items-center justify-center text-white rotate-12 shadow-lg">
+                      <span className="material-icons-round text-3xl">
+                        {propuestas[currentSlide].badge}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lado del Texto */}
+                <div className="w-full md:w-1/2 text-center md:text-left">
+                  <h3 className="text-3xl font-black text-[#701C32] mb-6 transition-all">
+                    {propuestas[currentSlide].titulo}
+                  </h3>
+                  <p className="text-lg text-slate-700 leading-relaxed mb-8 min-h-[120px]">
+                    {propuestas[currentSlide].descripcion}
+                  </p>
+
+                  {/* Dots / Navegación del Carrusel */}
+                  <div className="flex justify-center md:justify-start space-x-3">
+                    {propuestas.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentSlide(index)}
+                        className={`h-3 rounded-full transition-all duration-300 ${currentSlide === index ? "w-10 bg-[#701C32]" : "w-3 bg-slate-300 hover:bg-slate-400"
+                          }`}
+                        aria-label={`Ir al slide ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
-              <p className="font-bold text-gray-800">{nivel}</p>
             </div>
-          ))}
-        </div>
-      </section>
-      <Degradado />
-      {/* NOTICIAS AMANCISTAS */}
-      <section className="py-16 ">
-        <h2 className="text-center text-2xl font-black mb-10 uppercase italic">Noticias Amancistas</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-10 max-w-6xl mx-auto">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="aspect-video border-2 border-gray-300 relative bg-gray-100 overflow-hidden">
-               <div className="absolute inset-0 opacity-10 flex items-center justify-center">
-                  <div className="w-full h-[1px] bg-black rotate-12 absolute"></div>
-                  <div className="w-full h-[1px] bg-black -rotate-12 absolute"></div>
-               </div>
+          </div>
+        </section>
+
+        {/* Levels Section */}
+        <section className="py-24 px-4 bg-slate-50">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-black text-[#701C32] mb-4">Conoce nuestra metodología por niveles</h2>
+              <p className="text-slate-500 font-medium">Adaptamos el aprendizaje a cada etapa del desarrollo</p>
             </div>
-          ))}
-        </div>
-        <div className="flex justify-center mt-10">
-          <BotonPrimario href="/noticias">
-            Más noticias
-          </BotonPrimario>
-          
-        </div>
-      </section>
-    </main>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-white p-8 rounded-[2rem] shadow-xl hover:-translate-y-2 transition-transform border border-slate-100">
+                <div className="w-20 h-20 bg-[#FFF1E3] rounded-2xl flex items-center justify-center mb-6">
+                  <span className="material-icons-round text-4xl text-[#701C32]">child_care</span>
+                </div>
+                <h3 className="text-2xl font-black text-[#093E7A] mb-4">Nivel Primaria</h3>
+                <p className="text-slate-600 mb-6">Fomentamos la creatividad y las habilidades sociales a través del juego y el descubrimiento guiado.</p>
+                <a className="text-[#701C32] font-bold flex items-center group" href="#">
+                  Saber más
+                  <span className="material-icons-round ml-2 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </a>
+              </div>
+              <div className="bg-white p-8 rounded-[2rem] shadow-xl hover:-translate-y-2 transition-transform border border-slate-100">
+                <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center mb-6">
+                  <span className="material-icons-round text-4xl text-[#093E7A]">menu_book</span>
+                </div>
+                <h3 className="text-2xl font-black text-[#093E7A] mb-4">Nivel Secundaria</h3>
+                <p className="text-slate-600 mb-6">Fortalecemos la autonomía académica y el pensamiento crítico con un enfoque pre-universitario integral.</p>
+                <a className="text-[#701C32] font-bold flex items-center group" href="#">
+                  Saber más
+                  <span className="material-icons-round ml-2 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </a>
+              </div>
+              <div className="bg-white p-8 rounded-[2rem] shadow-xl hover:-translate-y-2 transition-transform border border-slate-100">
+                <div className="w-20 h-20 bg-[#FFF1E3] rounded-2xl flex items-center justify-center mb-6">
+                  <span className="material-icons-round text-4xl text-[#701C32]">workspace_premium</span>
+                </div>
+                <h3 className="text-2xl font-black text-[#093E7A] mb-4">Academia Pre</h3>
+                <p className="text-slate-600 mb-6">Especialización intensiva diseñada para el ingreso exitoso a las mejores universidades del país.</p>
+                <a className="text-[#701C32] font-bold flex items-center group" href="#">
+                  Saber más
+                  <span className="material-icons-round ml-2 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* News Section */}
+        <section className="py-24 px-4 bg-white">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-black text-[#701C32] mb-4">Noticias Amancistas</h2>
+              <div className="w-24 h-1.5 bg-[#093E7A] mx-auto rounded-full"></div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <article className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow border border-slate-100 flex flex-col">
+                <div className="relative h-56 overflow-hidden">
+                  <img alt="Feria de Ciencias" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8ulXudOIR7WBzlFcCSCtTLL9O5jZ-dY0t3YOZNBiZy7lYFudE8mw6TMf-SuP2XTC3T0sKxP2DrLZP_I0rGwtvigsDkVRJeEQ12iTTx4fJ0yNF6v_lcDqGJh3H3myAusDT6HbqL9qK_eRbS7XJ84U5igQ33UIBgHI6rvxbPMwgX3jA_5cHBywO1Cu5SxRTt0FmIJalTqN8O8jxvDarKK33OIseaQggxf_VQoRWCD7tccXv5ekTiqfZKisSiUgLjmbskiMx5_MHjCAz" />
+                </div>
+                <div className="p-8 flex flex-col flex-grow">
+                  <span className="inline-block bg-[#FFF1E3] text-[#701C32] font-bold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full w-fit mb-4">Académico</span>
+                  <h4 className="text-xl font-black text-slate-900 mb-4 leading-tight">Éxito total en nuestra Feria de Ciencias 2023</h4>
+                  <p className="text-slate-600 text-sm leading-relaxed mb-6 flex-grow">
+                    Nuestros alumnos demostraron proyectos innovadores en robótica y biotecnología, destacando el compromiso con la investigación científica.
+                  </p>
+                  <a className="text-[#093E7A] font-bold text-sm flex items-center group hover:text-[#701C32] transition-colors" href="#">
+                    Leer más
+                    <span className="material-symbols-outlined text-lg ml-1 group-hover:translate-x-1 transition-transform">chevron_right</span>
+                  </a>
+                </div>
+              </article>
+              <article className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow border border-slate-100 flex flex-col">
+                <div className="relative h-56 overflow-hidden">
+                  <img alt="Concurso de Matemática" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1Mn40Wqx6aXSMlKISuvypeXRtzgZPRZc3LMb9zLD7pGs4T2kjTZ1e7AoTxa6a_wyqO4g5S5EnIAUN35tcljfYinx_3m-Omd0lYihdWYQxGk6Wf6uiqiyAH4TAb1cT4K2apmwy8jKAVSgDsnrpNWQbLEty9KQZwvBsgOfhRMLTUzGp203C3AMhIdRCMKopj3PNNTm5NXroQ_W9zvJlZk4cUQYVW46oSGgepGGEC81ED6MEYR1dIRzl1_NfwCH_caGTbzUEO1hNoaV7" />
+                </div>
+                <div className="p-8 flex flex-col flex-grow">
+                  <span className="inline-block bg-[#FFF1E3] text-[#701C32] font-bold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full w-fit mb-4">Académico</span>
+                  <h4 className="text-xl font-black text-slate-900 mb-4 leading-tight">Primeros puestos en el Regional de Matemática</h4>
+                  <p className="text-slate-600 text-sm leading-relaxed mb-6 flex-grow">
+                    Celebramos el esfuerzo de nuestra delegación de secundaria que obtuvo 5 medallas de oro en el certamen regional más importante.
+                  </p>
+                  <a className="text-[#093E7A] font-bold text-sm flex items-center group hover:text-[#701C32] transition-colors" href="#">
+                    Leer más
+                    <span className="material-symbols-outlined text-lg ml-1 group-hover:translate-x-1 transition-transform">chevron_right</span>
+                  </a>
+                </div>
+              </article>
+              <article className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow border border-slate-100 flex flex-col">
+                <div className="relative h-56 overflow-hidden">
+                  <img alt="Taller de Oratoria" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYdfHitF3cGUaOx3bVE3yg-UpNX2qWuG0uQkT4jpppXq8_YCbCWWcIr9kySXAjujflh-otNaY48DjXbCoOp3SIcjYyJon2bRilDO4X3-0Is2lZLZK1uOc-yXkNkJvRSTMl6KrMmUL52ySmU0s8_6tcl1OvVJJaNJBg_e_gLVmDw57qoF_Rjio0hvCk4YGC2PXzMtPg8hUCRT0q_640BrDUAIR4QFzyJN7M02ULvD6Xcd8RNvxWLBr7lHc39_h7buek2aqmMS8I6NoH" />
+                </div>
+                <div className="p-8 flex flex-col flex-grow">
+                  <span className="inline-block bg-slate-100 text-slate-700 font-bold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full w-fit mb-4">Cultura</span>
+                  <h4 className="text-xl font-black text-slate-900 mb-4 leading-tight">Taller de Oratoria: Liderazgo desde el aula</h4>
+                  <p className="text-slate-600 text-sm leading-relaxed mb-6 flex-grow">
+                    Iniciamos un nuevo ciclo de formación en habilidades blandas, potenciando la voz y la confianza de nuestros futuros líderes.
+                  </p>
+                  <a className="text-[#093E7A] font-bold text-sm flex items-center group hover:text-[#701C32] transition-colors" href="#">
+                    Leer más
+                    <span className="material-symbols-outlined text-lg ml-1 group-hover:translate-x-1 transition-transform">chevron_right</span>
+                  </a>
+                </div>
+              </article>
+            </div>
+            <div className="mt-16 text-center">
+              <button className="bg-[#093E7A] text-white px-10 py-4 rounded-full font-bold hover:bg-[#073365] transition-all shadow-xl shadow-[#093E7A]/30 inline-flex items-center space-x-2">
+                <span>Cargar más</span>
+                <span className="material-symbols-outlined">expand_more</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* Footer */}
+      <Footer />
+    </div>
   );
 }
