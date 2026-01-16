@@ -17,6 +17,8 @@ export default function Page() {
                     <a className="flex items-center gap-4 p-3 rounded-xl bg-white/10 text-white" href="#"><span className="material-symbols-outlined">home</span><span className="hidden lg:block font-medium">Inicio</span></a>
                     <a className="flex items-center gap-4 p-3 rounded-xl text-white/70 hover:bg-white/5 hover:text-white transition-all" href="#"><span className="material-symbols-outlined">book</span><span className="hidden lg:block font-medium">Cursos</span></a>
                     <a className="flex items-center gap-4 p-3 rounded-xl text-white/70 hover:bg-white/5 hover:text-white transition-all" href="#"><span className="material-symbols-outlined">forum</span><span className="hidden lg:block font-medium">Mensajería</span></a>
+                    <a className="flex items-center gap-4 p-3 rounded-xl text-white/70 hover:bg-white/5 hover:text-white transition-all" href="#"><span className="material-symbols-outlined">person</span><span className="hidden lg:block font-medium">Alumno</span></a>
+                    <a className="flex items-center gap-4 p-3 rounded-xl text-white/70 hover:bg-white/5 hover:text-white transition-all" href="#"><span className="material-symbols-outlined">swap_horiz</span><span className="hidden lg:block font-medium">Trámites</span></a>
                 </nav>
             </aside>
 
