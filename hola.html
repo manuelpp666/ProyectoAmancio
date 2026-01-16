@@ -1,274 +1,264 @@
 <!DOCTYPE html>
-<html lang="es"><head>
+<html class="light" lang="es"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>School Landing Page - Amancistas</title>
+<title>Student Campus - Versión Permanente</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
 <script>
         tailwind.config = {
+            darkMode: "class",
             theme: {
                 extend: {
                     colors: {
                         primary: "#701C32", // Maroon
                         secondary: "#093E7A", // Blue
-                        accent: "#FFF1E3", // Cream
-                        "background-light": "#FFFFFF",
+                        accent: "#FFF1E3", // Cream/Beige
+                        "background-light": "#f8fafc",
                     },
                     fontFamily: {
                         display: ["Lato", "sans-serif"],
                         body: ["Lato", "sans-serif"],
                     },
                     borderRadius: {
-                        DEFAULT: "1rem",
-                        'lg': '1.5rem',
-                        'xl': '2rem',
+                        DEFAULT: "12px",
                     },
                 },
             },
         };
     </script>
 <style type="text/tailwindcss">
-        body {
-            font-family: 'Lato', sans-serif;
+        body { font-family: 'Lato', sans-serif; }
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
     </style>
 </head>
-<body class="bg-background-light text-slate-800 transition-colors duration-300">
-<nav class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100">
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-<div class="flex justify-between items-center h-20">
-<div class="flex-shrink-0 flex items-center space-x-3">
-<div class="w-12 h-12 bg-primary rounded-lg flex items-center justify-center text-white">
-<span class="material-icons-round text-3xl">school</span>
+<body class="bg-background-light text-slate-800 min-h-screen flex">
+<aside class="w-20 lg:w-64 bg-secondary flex flex-col h-screen sticky top-0 transition-all duration-300">
+<div class="p-6 flex items-center gap-3">
+<div class="w-10 h-10 bg-white rounded-full flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary text-2xl">school</span>
 </div>
-<span class="font-black text-xl tracking-tight text-primary uppercase">Amancistas</span>
+<span class="text-white font-bold text-xl hidden lg:block tracking-tight">Campus Virtual</span>
 </div>
-<div class="hidden md:flex space-x-8 items-center">
-<a class="font-bold text-sm uppercase tracking-wider text-slate-700 hover:text-primary transition-colors" href="#">Inicio</a>
-<a class="font-bold text-sm uppercase tracking-wider text-slate-700 hover:text-primary transition-colors" href="#">Noticias</a>
-<a class="font-bold text-sm uppercase tracking-wider text-slate-700 hover:text-primary transition-colors" href="#">Acerca de</a>
-<a class="font-bold text-sm uppercase tracking-wider text-slate-700 hover:text-primary transition-colors" href="#">Docentes</a>
-<a class="font-bold text-sm uppercase tracking-wider text-slate-700 hover:text-primary transition-colors" href="#">Calendario</a>
-<a class="bg-secondary text-white px-6 py-2.5 rounded-full font-bold text-sm uppercase tracking-wider hover:bg-[#073365] transition-all shadow-lg shadow-secondary/20" href="#">Campus Estudiantil</a>
-</div>
-<div class="md:hidden">
-<span class="material-icons-round text-3xl cursor-pointer text-primary">menu</span>
-</div>
-</div>
-</div>
+<nav class="flex-1 px-4 mt-4 space-y-2">
+<a class="flex items-center gap-4 p-3 rounded-xl bg-white/10 text-white group" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="hidden lg:block font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-xl text-white/70 hover:bg-white/5 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined">book</span>
+<span class="hidden lg:block font-medium">Mis Cursos</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-xl text-white/70 hover:bg-white/5 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined">event_available</span>
+<span class="hidden lg:block font-medium">Asistencia</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-xl text-white/70 hover:bg-white/5 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="hidden lg:block font-medium">Calificaciones</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-xl text-white/70 hover:bg-white/5 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined">mail</span>
+<span class="hidden lg:block font-medium">Mensajes</span>
+</a>
 </nav>
-<section class="relative h-[600px] flex items-center justify-center overflow-hidden bg-accent">
-<div class="absolute inset-0 z-0">
-<img alt="Students in campus" class="w-full h-full object-cover opacity-30" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDu0vQ65OwZKHBD3Lt0hTzEN4cGhR2GGdbuNhX3l3DABC94yLNQuOa5AzUcL9rAvNzwjJeH2vtEj5KU0C4oAjRHnhbg5-AmTkbCTCJ4EGTDSwpxDXK4gvYVPKjryglfDmgTFO6L_nXUzTt03t2fhPlBCFKkWegqTkOFr5yriouUTzWajvOHE4Jo4_wt-ggQI32d6AHJKF3z0zySO8yNJjRhVSN4_svLn0cN6kN36tSVPIOTCHduURF-sq4q1Ovt-FGzPUi7iIHxO1CN"/>
-<div class="absolute inset-0 bg-gradient-to-b from-transparent to-white"></div>
-</div>
-<div class="relative z-10 text-center px-4 max-w-4xl">
-<h1 class="text-5xl md:text-7xl font-black text-primary mb-6 leading-tight">Formando líderes para el futuro</h1>
-<p class="text-xl md:text-2xl text-slate-700 mb-10 font-light">Excelencia académica y valores que trascienden generaciones.</p>
-<button class="bg-secondary text-white px-10 py-4 rounded-full font-bold text-lg hover:scale-105 transition-transform shadow-xl shadow-secondary/30 flex items-center space-x-2 mx-auto">
-<span>Admisión 2024</span>
-<span class="material-icons-round">arrow_forward</span>
-</button>
-</div>
-</section>
-<section class="py-24 px-4 bg-white">
-<div class="max-w-7xl mx-auto">
-<div class="text-center mb-16">
-<h2 class="text-4xl font-black text-primary mb-4">Propuesta Educativa</h2>
-<div class="w-24 h-1.5 bg-primary mx-auto rounded-full"></div>
-</div>
-<div class="relative group">
-<div class="bg-accent rounded-3xl p-8 md:p-16 flex flex-col md:flex-row items-center gap-12 shadow-inner border border-white">
-<div class="w-full md:w-1/2 flex justify-center">
-<div class="relative w-64 h-64 bg-white rounded-full flex items-center justify-center shadow-xl">
-<span class="material-icons-round text-[120px] text-primary">biotech</span>
-<div class="absolute -top-4 -right-4 w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center text-white rotate-12 shadow-lg">
-<span class="material-icons-round text-3xl">lightbulb</span>
+<div class="p-4 border-t border-white/10">
+<div class="p-3 flex items-center gap-3">
+<img alt="Avatar Usuario" class="w-10 h-10 rounded-full border-2 border-primary" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7b5QfDXJv-TIDshrAmqIXyfNO4BVhmsTxQkziWxh_YHjC_IHPAtaUgmm-cLFNcbKWrvs4ZcmBgDSml9cDUynT9ayJkkOrjD5UfOd-4fnITEP_h4ipxL7i7JDvTL2gw_IUoUmcVY1pv3shvzTwCgl2kg4dcfl8_oPY2-roIHXAD5FX1XXhRxpwzd0yBuO0qOs407w_QgIH2Ickj5ue73RnhdMfRG-SPAC3f54KVtoAW3ZRL3PmLtjImNAx_RAt0g-QDJGl5YY30BRR"/>
+<div class="hidden lg:block overflow-hidden">
+<p class="text-white text-sm font-bold truncate">Vela Barandiaran</p>
+<p class="text-white/50 text-xs truncate">Estudiante 4° Año</p>
 </div>
 </div>
 </div>
-<div class="w-full md:w-1/2 text-center md:text-left">
-<h3 class="text-3xl font-black text-primary mb-6">Enfoque Científico</h3>
-<p class="text-lg text-slate-700 leading-relaxed mb-8">
-                            Nuestra metodología fomenta la curiosidad natural y el pensamiento crítico a través de laboratorios modernos y proyectos de investigación aplicada desde temprana edad. Preparamos a nuestros estudiantes para los desafíos del mañana.
-                        </p>
-<div class="flex justify-center md:justify-start space-x-3">
-<span class="w-3 h-3 rounded-full bg-primary"></span>
-<span class="w-3 h-3 rounded-full bg-slate-300"></span>
-<span class="w-3 h-3 rounded-full bg-slate-300"></span>
-<span class="w-3 h-3 rounded-full bg-slate-300"></span>
+</aside>
+<main class="flex-1 flex flex-col lg:flex-row h-screen overflow-hidden">
+<div class="flex-1 overflow-y-auto p-6 lg:p-8 space-y-8">
+<header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h1 class="text-3xl font-black text-secondary">¡Hola, Kassandra!</h1>
+<p class="text-slate-500 font-medium">Bienvenido de nuevo a tu Course Hub.</p>
+</div>
+<div class="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
+<span class="material-symbols-outlined text-slate-400 px-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-48 lg:w-64" placeholder="Buscar cursos o tareas..." type="text"/>
+</div>
+</header>
+<section class="relative overflow-hidden rounded-3xl bg-primary p-8 text-accent shadow-xl">
+<div class="relative z-10 max-w-xl">
+<span class="inline-block bg-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4">Próxima Clase en 15 min</span>
+<h2 class="text-4xl font-black mb-4 leading-tight">Metodología de la Investigación</h2>
+<p class="opacity-90 mb-6 text-lg">Continúa donde te quedaste: "Capítulo 4: Diseño de Muestreo". La sesión en vivo comenzará pronto.</p>
+<div class="flex gap-4">
+<button class="bg-accent text-primary px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition-transform active:scale-95">
+<span class="material-symbols-outlined">play_circle</span> Entrar a Clase
+                    </button>
+<button class="bg-white/10 hover:bg-white/20 border border-white/20 px-6 py-3 rounded-xl font-bold transition-all">
+                        Ver Material
+                    </button>
 </div>
 </div>
-</div>
-</div>
+<div class="absolute top-0 right-0 w-1/2 h-full opacity-10 pointer-events-none">
+<svg class="scale-150 origin-top-right" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<path d="M44.7,-76.4C58.1,-69.2,69.2,-58.1,76.4,-44.7C83.7,-31.3,87.1,-15.7,85.6,-0.9C84,13.9,77.5,27.8,68.9,39.4C60.3,51,49.5,60.2,37.3,67.6C25,75,12.5,80.5,-0.6,81.5C-13.7,82.5,-27.4,79,-39.8,71.7C-52.2,64.4,-63.3,53.2,-71,40.4C-78.6,27.6,-82.8,13.8,-82.1,0.4C-81.4,-13,-75.8,-26,-67.4,-37.2C-59,-48.4,-47.8,-57.8,-35.6,-65.8C-23.4,-73.8,-11.7,-80.4,1.8,-83.5C15.3,-86.6,31.3,-83.6,44.7,-76.4Z" fill="#FFF" transform="translate(100 100)"></path>
+</svg>
 </div>
 </section>
-<section class="py-24 px-4 bg-slate-50">
-<div class="max-w-7xl mx-auto">
-<div class="text-center mb-16">
-<h2 class="text-4xl font-black text-primary mb-4">Conoce nuestra metodología por niveles</h2>
-<p class="text-slate-500 font-medium">Adaptamos el aprendizaje a cada etapa del desarrollo</p>
+<section>
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-xl font-black text-secondary uppercase tracking-wide">Mis Cursos (4° Año)</h3>
+<a class="text-primary font-bold flex items-center gap-1 hover:underline" href="#">Ver todos <span class="material-symbols-outlined">chevron_right</span></a>
 </div>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-<div class="bg-white p-8 rounded-[2rem] shadow-xl hover:-translate-y-2 transition-transform border border-slate-100">
-<div class="w-20 h-20 bg-accent rounded-2xl flex items-center justify-center mb-6">
-<span class="material-icons-round text-4xl text-primary">child_care</span>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+<div class="glass group rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-200 flex flex-col items-center text-center">
+<div class="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mb-4 ring-8 ring-secondary/10 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-white text-4xl">lightbulb</span>
 </div>
-<h3 class="text-2xl font-black text-secondary mb-4">Nivel Primaria</h3>
-<p class="text-slate-600 mb-6">Fomentamos la creatividad y las habilidades sociales a través del juego y el descubrimiento guiado.</p>
-<a class="text-primary font-bold flex items-center group" href="#">
-                        Saber más 
-                        <span class="material-icons-round ml-2 group-hover:translate-x-1 transition-transform">arrow_forward</span>
-</a>
-</div>
-<div class="bg-white p-8 rounded-[2rem] shadow-xl hover:-translate-y-2 transition-transform border border-slate-100">
-<div class="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center mb-6">
-<span class="material-icons-round text-4xl text-secondary">menu_book</span>
-</div>
-<h3 class="text-2xl font-black text-secondary mb-4">Nivel Secundaria</h3>
-<p class="text-slate-600 mb-6">Fortalecemos la autonomía académica y el pensamiento crítico con un enfoque pre-universitario integral.</p>
-<a class="text-primary font-bold flex items-center group" href="#">
-                        Saber más 
-                        <span class="material-icons-round ml-2 group-hover:translate-x-1 transition-transform">arrow_forward</span>
-</a>
-</div>
-<div class="bg-white p-8 rounded-[2rem] shadow-xl hover:-translate-y-2 transition-transform border border-slate-100">
-<div class="w-20 h-20 bg-accent rounded-2xl flex items-center justify-center mb-6">
-<span class="material-icons-round text-4xl text-primary">workspace_premium</span>
-</div>
-<h3 class="text-2xl font-black text-secondary mb-4">Academia Pre</h3>
-<p class="text-slate-600 mb-6">Especialización intensiva diseñada para el ingreso exitoso a las mejores universidades del país.</p>
-<a class="text-primary font-bold flex items-center group" href="#">
-                        Saber más 
-                        <span class="material-icons-round ml-2 group-hover:translate-x-1 transition-transform">arrow_forward</span>
-</a>
+<h4 class="font-black text-secondary text-lg mb-1">Metodología</h4>
+<p class="text-slate-500 text-sm mb-6">Dacna Ramos Saavedra</p>
+<div class="w-full space-y-2">
+<button class="w-full bg-secondary text-white py-2.5 rounded-xl font-bold text-sm hover:bg-opacity-90 transition-all">Ver Material</button>
+<button class="w-full border border-secondary/20 text-secondary py-2.5 rounded-xl font-bold text-sm hover:bg-secondary/5 transition-all">Entrar a Clase</button>
 </div>
 </div>
+<div class="glass group rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-200 flex flex-col items-center text-center">
+<div class="w-20 h-20 rounded-full bg-primary flex items-center justify-center mb-4 ring-8 ring-primary/10 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-white text-4xl">functions</span>
 </div>
-</section>
-<section class="py-24 px-4 bg-white">
-<div class="max-w-7xl mx-auto">
-<div class="text-center mb-16">
-<h2 class="text-4xl font-black text-primary mb-4">Noticias Amancistas</h2>
-<div class="w-24 h-1.5 bg-secondary mx-auto rounded-full"></div>
+<h4 class="font-black text-secondary text-lg mb-1">Matemática</h4>
+<p class="text-slate-500 text-sm mb-6">Profesor de Prueba</p>
+<div class="w-full space-y-2">
+<button class="w-full bg-secondary text-white py-2.5 rounded-xl font-bold text-sm hover:bg-opacity-90 transition-all">Ver Material</button>
+<button class="w-full border border-secondary/20 text-secondary py-2.5 rounded-xl font-bold text-sm hover:bg-secondary/5 transition-all">Entrar a Clase</button>
 </div>
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-<article class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow border border-slate-100 flex flex-col">
-<div class="relative h-56 overflow-hidden">
-<img alt="Feria de Ciencias" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8ulXudOIR7WBzlFcCSCtTLL9O5jZ-dY0t3YOZNBiZy7lYFudE8mw6TMf-SuP2XTC3T0sKxP2DrLZP_I0rGwtvigsDkVRJeEQ12iTTx4fJ0yNF6v_lcDqGJh3H3myAusDT6HbqL9qK_eRbS7XJ84U5igQ33UIBgHI6rvxbPMwgX3jA_5cHBywO1Cu5SxRTt0FmIJalTqN8O8jxvDarKK33OIseaQggxf_VQoRWCD7tccXv5ekTiqfZKisSiUgLjmbskiMx5_MHjCAz"/>
 </div>
-<div class="p-8 flex flex-col flex-grow">
-<span class="inline-block bg-accent text-primary font-bold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full w-fit mb-4">Académico</span>
-<h4 class="text-xl font-black text-slate-900 mb-4 font-display leading-tight">Éxito total en nuestra Feria de Ciencias 2023</h4>
-<p class="text-slate-600 text-sm leading-relaxed mb-6 flex-grow">
-                            Nuestros alumnos demostraron proyectos innovadores en robótica y biotecnología, destacando el compromiso con la investigación científica.
-                        </p>
-<a class="text-secondary font-bold text-sm flex items-center group hover:text-primary transition-colors" href="#">
-                            Leer más
-                            <span class="material-symbols-outlined text-lg ml-1 group-hover:translate-x-1 transition-transform">chevron_right</span>
-</a>
+<div class="glass group rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-200 flex flex-col items-center text-center">
+<div class="w-20 h-20 rounded-full bg-amber-500 flex items-center justify-center mb-4 ring-8 ring-amber-500/10 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-white text-4xl">church</span>
 </div>
-</article>
-<article class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow border border-slate-100 flex flex-col">
-<div class="relative h-56 overflow-hidden">
-<img alt="Concurso de Matemática" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1Mn40Wqx6aXSMlKISuvypeXRtzgZPRZc3LMb9zLD7pGs4T2kjTZ1e7AoTxa6a_wyqO4g5S5EnIAUN35tcljfYinx_3m-Omd0lYihdWYQxGk6Wf6uiqiyAH4TAb1cT4K2apmwy8jKAVSgDsnrpNWQbLEty9KQZwvBsgOfhRMLTUzGp203C3AMhIdRCMKopj3PNNTm5NXroQ_W9zvJlZk4cUQYVW46oSGgepGGEC81ED6MEYR1dIRzl1_NfwCH_caGTbzUEO1hNoaV7"/>
+<h4 class="font-black text-secondary text-lg mb-1">Religión</h4>
+<p class="text-slate-500 text-sm mb-6">Cesar Delgado Coronel</p>
+<div class="w-full space-y-2">
+<button class="w-full bg-secondary text-white py-2.5 rounded-xl font-bold text-sm hover:bg-opacity-90 transition-all">Ver Material</button>
+<button class="w-full border border-secondary/20 text-secondary py-2.5 rounded-xl font-bold text-sm hover:bg-secondary/5 transition-all">Entrar a Clase</button>
 </div>
-<div class="p-8 flex flex-col flex-grow">
-<span class="inline-block bg-accent text-primary font-bold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full w-fit mb-4">Académico</span>
-<h4 class="text-xl font-black text-slate-900 mb-4 font-display leading-tight">Primeros puestos en el Regional de Matemática</h4>
-<p class="text-slate-600 text-sm leading-relaxed mb-6 flex-grow">
-                            Celebramos el esfuerzo de nuestra delegación de secundaria que obtuvo 5 medallas de oro en el certamen regional más importante.
-                        </p>
-<a class="text-secondary font-bold text-sm flex items-center group hover:text-primary transition-colors" href="#">
-                            Leer más
-                            <span class="material-symbols-outlined text-lg ml-1 group-hover:translate-x-1 transition-transform">chevron_right</span>
-</a>
 </div>
-</article>
-<article class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow border border-slate-100 flex flex-col">
-<div class="relative h-56 overflow-hidden">
-<img alt="Taller de Oratoria" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYdfHitF3cGUaOx3bVE3yg-UpNX2qWuG0uQkT4jpppXq8_YCbCWWcIr9kySXAjujflh-otNaY48DjXbCoOp3SIcjYyJon2bRilDO4X3-0Is2lZLZK1uOc-yXkNkJvRSTMl6KrMmUL52ySmU0s8_6tcl1OvVJJaNJBg_e_gLVmDw57qoF_Rjio0hvCk4YGC2PXzMtPg8hUCRT0q_640BrDUAIR4QFzyJN7M02ULvD6Xcd8RNvxWLBr7lHc39_h7buek2aqmMS8I6NoH"/>
+<div class="glass group rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-200 flex flex-col items-center text-center">
+<div class="w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center mb-4 ring-8 ring-emerald-500/10 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-white text-4xl">palette</span>
 </div>
-<div class="p-8 flex flex-col flex-grow">
-<span class="inline-block bg-slate-100 text-slate-700 font-bold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full w-fit mb-4">Cultura</span>
-<h4 class="text-xl font-black text-slate-900 mb-4 font-display leading-tight">Taller de Oratoria: Liderazgo desde el aula</h4>
-<p class="text-slate-600 text-sm leading-relaxed mb-6 flex-grow">
-                            Iniciamos un nuevo ciclo de formación en habilidades blandas, potenciando la voz y la confianza de nuestros futuros líderes.
-                        </p>
-<a class="text-secondary font-bold text-sm flex items-center group hover:text-primary transition-colors" href="#">
-                            Leer más
-                            <span class="material-symbols-outlined text-lg ml-1 group-hover:translate-x-1 transition-transform">chevron_right</span>
-</a>
+<h4 class="font-black text-secondary text-lg mb-1">Arte y Cultura</h4>
+<p class="text-slate-500 text-sm mb-6">Angela Calvay Huaman</p>
+<div class="w-full space-y-2">
+<button class="w-full bg-secondary text-white py-2.5 rounded-xl font-bold text-sm hover:bg-opacity-90 transition-all">Ver Material</button>
+<button class="w-full border border-secondary/20 text-secondary py-2.5 rounded-xl font-bold text-sm hover:bg-secondary/5 transition-all">Entrar a Clase</button>
 </div>
-</article>
-</div>
-<div class="mt-16 text-center">
-<button class="bg-secondary text-white px-10 py-4 rounded-full font-bold hover:bg-[#073365] transition-all shadow-xl shadow-secondary/30 inline-flex items-center space-x-2">
-<span>Cargar más</span>
-<span class="material-symbols-outlined">expand_more</span>
-</button>
 </div>
 </div>
 </section>
-<footer class="bg-primary text-white pt-20 pb-10 px-4">
-<div class="max-w-7xl mx-auto">
-<div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-<div class="col-span-1 md:col-span-1">
-<div class="flex items-center space-x-3 mb-6">
-<div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-primary">
-<span class="material-icons-round text-3xl">school</span>
 </div>
-<span class="font-black text-xl tracking-tight uppercase">Amancistas</span>
+<aside class="w-full lg:w-80 border-l border-slate-200 p-6 lg:p-8 space-y-8 bg-white hidden xl:block overflow-y-auto">
+<section>
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-black text-secondary uppercase text-sm tracking-widest">Tareas Pendientes</h3>
+<span class="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">4 Hoy</span>
 </div>
-<p class="text-accent/80 text-sm leading-relaxed">
-                        Comprometidos con la formación integral de ciudadanos éticos, competentes y preparados para transformar la sociedad.
-                    </p>
+<div class="space-y-4">
+<div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-primary/30 transition-all cursor-pointer">
+<p class="text-[10px] font-bold text-primary mb-1 uppercase">Matemáticas</p>
+<p class="font-bold text-slate-800 text-sm mb-2">Ecuaciones de segundo grado</p>
+<div class="flex items-center gap-2 text-[11px] text-slate-500">
+<span class="material-symbols-outlined text-xs">schedule</span>
+                        Vence hoy, 11:59 PM
+                    </div>
+</div>
+<div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-primary/30 transition-all cursor-pointer">
+<p class="text-[10px] font-bold text-emerald-600 mb-1 uppercase">Arte</p>
+<p class="font-bold text-slate-800 text-sm mb-2">Proyecto: Mural Escolar</p>
+<div class="flex items-center gap-2 text-[11px] text-slate-500">
+<span class="material-symbols-outlined text-xs">schedule</span>
+                        Mañana, 08:00 AM
+                    </div>
+</div>
+<div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-primary/30 transition-all cursor-pointer opacity-70">
+<p class="text-[10px] font-bold text-amber-600 mb-1 uppercase">Religión</p>
+<p class="font-bold text-slate-800 text-sm mb-2">Resumen de Lectura Semanal</p>
+<div class="flex items-center gap-2 text-[11px] text-slate-500">
+<span class="material-symbols-outlined text-xs">schedule</span>
+                        Viernes, 2:00 PM
+                    </div>
+</div>
+</div>
+</section>
+<section>
+<h3 class="font-black text-secondary uppercase text-sm tracking-widest mb-4">Notificaciones</h3>
+<div class="space-y-4">
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-blue-600 text-sm">campaign</span>
 </div>
 <div>
-<h5 class="font-black text-lg mb-6 text-white">Enlaces Rápidos</h5>
-<ul class="space-y-4 text-accent/70">
-<li><a class="hover:text-accent transition-colors" href="#">Admisión 2024</a></li>
-<li><a class="hover:text-accent transition-colors" href="#">Convenios Universitarios</a></li>
-<li><a class="hover:text-accent transition-colors" href="#">Extracurriculares</a></li>
-<li><a class="hover:text-accent transition-colors" href="#">Galería de Fotos</a></li>
-</ul>
+<p class="text-sm"><span class="font-bold">Comunicado:</span> El lunes no habrá clases por feriado regional.</p>
+<p class="text-[10px] text-slate-400 mt-1">Hace 2 horas</p>
 </div>
-<div class="col-span-1 md:col-span-2">
-<h5 class="font-black text-lg mb-6 text-white">Contáctanos</h5>
-<div class="space-y-4">
-<div class="flex items-center space-x-4 group cursor-pointer">
-<div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-<span class="material-icons-round text-accent">place</span>
 </div>
-<span class="text-accent/80">Av. Las Orquídeas 123, Urb. San Isidro</span>
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-sm">grade</span>
 </div>
-<div class="flex items-center space-x-4 group cursor-pointer">
-<div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-<span class="material-icons-round text-accent">mail</span>
-</div>
-<span class="text-accent/80">informes@amancistas.edu.pe</span>
-</div>
-<div class="flex items-center space-x-4 group cursor-pointer">
-<div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-<span class="material-icons-round text-accent">phone</span>
-</div>
-<span class="text-accent/80">+51 987 654 321</span>
+<div>
+<p class="text-sm"><span class="font-bold">Nueva Calificación:</span> Has recibido 18 en Examen Parcial de Química.</p>
+<p class="text-[10px] text-slate-400 mt-1">Hace 5 horas</p>
 </div>
 </div>
 </div>
+</section>
+<section class="bg-accent/30 p-5 rounded-3xl border border-accent">
+<h4 class="text-xs font-black text-primary/80 uppercase mb-3">Tu Progreso</h4>
+<div class="flex items-center gap-4">
+<div class="relative w-16 h-16">
+<svg class="w-full h-full" viewBox="0 0 36 36">
+<path class="stroke-current text-slate-200" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="3"></path>
+<path class="stroke-current text-primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-dasharray="75, 100" stroke-linecap="round" stroke-width="3"></path>
+<text class="text-[8px] font-bold fill-primary" text-anchor="middle" x="18" y="20.35">75%</text>
+</svg>
 </div>
-<div class="pt-10 border-t border-white/10 text-center">
-<p class="text-accent/50 text-xs">
-                    2024 © Copyright Amancio Varona Yumari | Todos los Derechos Reservados
-                </p>
+<div>
+<p class="text-sm font-bold text-slate-800">Casi ahí!</p>
+<p class="text-[10px] text-slate-500">Has completado 12 de 16 unidades curriculares.</p>
 </div>
 </div>
-</footer>
+</section>
+</aside>
+</main>
+<div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-3 lg:hidden z-50">
+<button class="flex flex-col items-center text-primary">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-bold">Inicio</span>
+</button>
+<button class="flex flex-col items-center text-slate-400">
+<span class="material-symbols-outlined">book</span>
+<span class="text-[10px] font-bold">Cursos</span>
+</button>
+<button class="flex flex-col items-center text-slate-400">
+<span class="material-symbols-outlined">notifications</span>
+<span class="text-[10px] font-bold">Avisos</span>
+</button>
+<button class="flex flex-col items-center text-slate-400">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold">Perfil</span>
+</button>
+</div>
 
 </body></html>
