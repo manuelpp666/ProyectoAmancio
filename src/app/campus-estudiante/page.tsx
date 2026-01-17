@@ -32,7 +32,7 @@ export default function Page() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-black text-[#701C32] leading-none uppercase tracking-tight">Amancio</h1>
-                  <p className="text-[#093E7A] font-bold text-sm tracking-widest uppercase">Verona</p>
+                  <p className="text-[#093E7A] font-bold text-sm tracking-widest uppercase">Varona</p>
                 </div>
               </div>
             </div>
