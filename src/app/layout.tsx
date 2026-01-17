@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Amancio Verona",
+  title: "Amancio Varona",
   description: "La mejor institución educativa de Tumán",
 };
 

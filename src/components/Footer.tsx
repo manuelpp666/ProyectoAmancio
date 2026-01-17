@@ -57,7 +57,7 @@ export default function Footer() {
           </div>
           <div className="pt-10 border-t border-white/10 text-center">
             <p className="text-[#FFF1E3]/50 text-xs">
-              2024 © Copyright Amancio Varona Yumari | Todos los Derechos Reservados
+              2024 © Copyright Amancio Varona | Todos los Derechos Reservados
             </p>
           </div>
         </div>

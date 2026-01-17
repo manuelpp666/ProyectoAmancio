@@ -16,7 +16,7 @@ export default function Header() {
                   />
                 </Link>
               </div>
-              <span className="font-black text-xl tracking-tight text-[#701C32] uppercase">Amancio Verona</span>
+              <span className="font-black text-xl tracking-tight text-[#701C32] uppercase">Amancio Varona</span>
             </div>
             <div className="hidden md:flex space-x-8 items-center">
               <a className="font-bold text-sm uppercase tracking-wider text-slate-700 hover:text-[#701C32] transition-colors" href="/">Inicio</a>
