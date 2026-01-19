@@ -7,7 +7,7 @@ export default function Footer() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
             <div className="col-span-1 md:col-span-1">
               <div className="flex items-center space-x-3 mb-6">
-                <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-[#701C32]">
+                <div className="w-12 h-12  rounded-lg flex items-center justify-center text-[#701C32]">
                   <Link href="/">
                   <img
                     src="/logo.png"

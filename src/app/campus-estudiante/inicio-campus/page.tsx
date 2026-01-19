@@ -1,196 +1,236 @@
-export default function Page() {
-    return (
-        <div className="bg-[#f8fafc] text-slate-800 min-h-screen flex">
+// src/app/campus-estudiante/inicio-campus/page.tsx
+import { ArrowRight, Megaphone, Star, Wallet, Clock, Calendar } from "lucide-react";
 
+export default function DashboardPage() {
+  return (
+    <div className="max-w-[1600px] mx-auto space-y-8">
+      
+      {/* 1. HEADER TEXT (Fuera del grid para ancho completo) */}
+      <div>
+        <h1 className="text-3xl font-bold text-[#701C32] mb-1">!Hola, Gabriela!</h1>
+        <p className="text-gray-500 text-sm">Bienvenido a tu nuevo Campus Virtual.</p>
+      </div>
 
-
-
-            {/* Sidebar - Se mantiene igual */}
-            <aside className="w-20 lg:w-64 bg-[#701C32] flex flex-col h-screen sticky top-0 transition-all duration-300 shrink-0">
-                <div className="p-6 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0">
-                        <img src="/logo.png" alt="Logo Amancio Varona" className="h-10 object-contain cursor-pointer" />
+      {/* 2. GRID PRINCIPAL (Contenido Izquierda | Widgets Derecha) */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+        
+        {/* --- COLUMNA IZQUIERDA (Spans 8 o 9) --- */}
+        <div className="xl:col-span-9 space-y-8">
+            
+            {/* BANNER ROJO */}
+            <div className="w-full bg-[#701C32] rounded-2xl p-8 md:p-10 text-white relative overflow-hidden shadow-lg">
+                <div className="relative z-10 max-w-2xl">
+                    <div className="inline-block px-4 py-1.5 bg-white/20 rounded-full text-[10px] font-bold tracking-wide mb-4 backdrop-blur-sm">
+                        PRÓXIMO EVENTO: 3 DÍAS
                     </div>
-                    <span className="text-white font-bold text-xl hidden lg:block tracking-tight">Campus Virtual</span>
+                    <h2 className="text-4xl font-bold mb-3">Inicio de clases</h2>
+                    <p className="text-sm md:text-base text-white/90 mb-8 max-w-lg">
+                        Prepárate para la llegada del año 2026 con esmero y dedicación.
+                    </p>
+                    <button className="px-6 py-2.5 border border-white/40 text-white rounded-lg hover:bg-white hover:text-[#701C32] transition-all font-medium text-sm">
+                        Ver próximos eventos
+                    </button>
                 </div>
-                <nav className="flex-1 px-4 mt-4 space-y-2">
-                    <a className="flex items-center gap-4 p-3 rounded-xl bg-white/10 text-white" href="#"><span className="material-symbols-outlined">home</span><span className="hidden lg:block font-medium">Inicio</span></a>
-                    <a className="flex items-center gap-4 p-3 rounded-xl text-white/70 hover:bg-white/5 hover:text-white transition-all" href="#"><span className="material-symbols-outlined">book</span><span className="hidden lg:block font-medium">Cursos</span></a>
-                    <a className="flex items-center gap-4 p-3 rounded-xl text-white/70 hover:bg-white/5 hover:text-white transition-all" href="#"><span className="material-symbols-outlined">forum</span><span className="hidden lg:block font-medium">Mensajería</span></a>
-                    <a className="flex items-center gap-4 p-3 rounded-xl text-white/70 hover:bg-white/5 hover:text-white transition-all" href="#"><span className="material-symbols-outlined">person</span><span className="hidden lg:block font-medium">Alumno</span></a>
-                    <a className="flex items-center gap-4 p-3 rounded-xl text-white/70 hover:bg-white/5 hover:text-white transition-all" href="#"><span className="material-symbols-outlined">swap_horiz</span><span className="hidden lg:block font-medium">Trámites</span></a>
-                </nav>
-            </aside>
+                {/* Decoración de fondo opcional */}
+                <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-black/10 to-transparent pointer-events-none"></div>
+            </div>
 
-            {/* Main Content */}
-            <main className="flex-1 flex flex-col h-screen overflow-hidden">
+            {/* CURSOS RECIENTES */}
+            <div>
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-[#701C32] font-bold text-lg uppercase">Cursos Recientes</h3>
+                    <a href="#" className="text-xs font-bold text-[#701C32] hover:underline flex items-center gap-1">
+                        Ver todos <ArrowRight size={14}/>
+                    </a>
+                </div>
 
-                {/* Header Superior Blanco */}
-                <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-end px-8 shrink-0">
-                    <div className="flex items-center gap-6">
-                        <button className="text-slate-400">
-                            <span className="material-symbols-outlined">notifications</span>
-                        </button>
-                        <div className="flex items-center gap-3 text-right">
-                            <div>
-                                <p className="text-sm font-bold leading-none">Gabriela Antonet</p>
-                                <p className="text-[10px] text-slate-500 mt-1">1er Año de Secundaria</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    {/* CARD 1: Matemática */}
+                    <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center text-center">
+                        <div className="h-28 w-full flex items-center justify-center mb-2">
+                             {/* Reemplaza src con tu imagen real: /matematica.png */}
+                            <img src="https://placehold.co/150x120/png?text=Matemática" alt="Matemática" className="h-full object-contain" />
+                        </div>
+                        <div className="w-full text-left">
+                            <h4 className="font-bold text-gray-800 text-sm">Matemática</h4>
+                            <p className="text-[11px] text-gray-400 mb-4">Puicon Rivera, José Emmanuel</p>
+                            <div className="flex justify-end">
+                                <button className="text-[11px] font-bold text-[#701C32] flex items-center gap-1 hover:gap-2 transition-all">
+                                    Ir al curso <ArrowRight size={12} />
+                                </button>
                             </div>
-                            <img className="w-10 h-10 rounded-full border border-slate-200" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7b5QfDXJv-TIDshrAmqIXyfNO4BVhmsTxQkziWxh_YHjC_IHPAtaUgmm-cLFNcbKWrvs4ZcmBgDSml9cDUynT9ayJkkOrjD5UfOd-4fnITEP_h4ipxL7i7JDvTL2gw_IUoUmcVY1pv3shvzTwCgl2kg4dcfl8_oPY2-roIHXAD5FX1XXhRxpwzd0yBuO0qOs407w_QgIH2Ickj5ue73RnhdMfRG-SPAC3f54KVtoAW3ZRL3PmLtjImNAx_RAt0g-QDJGl5YY30BRR" alt="Avatar" />
                         </div>
                     </div>
-                </header>
 
-                {/* Área de scroll principal */}
-                <div className="flex-1 overflow-y-auto bg-[#f1f3f6]">
-                    <div className="flex flex-col xl:flex-row p-6 lg:p-8 gap-6">
-
-                        {/* Columna Izquierda (Cursos y Banner) - Ahora más ancha */}
-                        <div className="flex-1 space-y-8">
-                            <section>
-                                <h1 className="text-4xl font-black text-[#701C32]">!Hola, Gabriela!</h1>
-                                <p className="text-[#701C32] font-medium">Bienvenido a tu nuevo Campus Virtual.</p>
-                            </section>
-
-                            {/* Banner */}
-                            <section className="bg-[#701C32] rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
-                                <div className="relative z-10 max-w-md">
-                                    <span className="inline-block bg-white/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase mb-4">PRÓXIMO EVENTO: 3 DÍAS</span>
-                                    <h2 className="text-4xl font-black mb-4">Inicio de clases</h2>
-                                    <p className="opacity-90 mb-6">Preparáte para la llegada del año 2026 con esmero y dedicación.</p>
-                                    <button className="border border-white/40 bg-white/10 px-6 py-2 rounded-xl font-bold">Ver próximos eventos</button>
-                                </div>
-                            </section>
-
-                            {/* Grid de Cursos - Ajustado a ~222px */}
-                            <section>
-                                <div className="flex items-center justify-between mb-6">
-                                    <h3 className="text-lg font-black text-[#701C32] uppercase">Cursos Recientes</h3>
-                                    <a className="text-slate-500 text-sm flex items-center gap-1" href="#">Ver todos <span className="material-symbols-outlined text-sm">chevron_right</span></a>
-                                </div>
-
-                                {/* Aquí está el truco: auto-fill con min-max de 222px */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[repeat(auto-fill,minmax(222px,1fr))] gap-4">
-
-                                    {/* Tarjeta de Curso */}
-                                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center min-w-[222px]">
-                                        <img src="/matematicas.png" className="w-24 h-24 mb-4 object-contain" alt="matematica" />
-                                        <h4 className="font-bold text-sm">Matemática</h4>
-                                        <p className="text-[10px] text-slate-400 mb-4">Puicon Rivera, José Emmanuel</p>
-                                        <a href="#" className="text-[10px] font-bold text-[#701C32] flex items-center gap-1">Ir al curso <span className="material-symbols-outlined text-xs">arrow_forward</span></a>
-                                    </div>
-
-                                    {/* Repetir para los demás cursos... */}
-                                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center min-w-[222px]">
-                                        <img src="/religion.png" className="w-24 h-24 mb-4 object-contain" alt="religion" />
-                                        <h4 className="font-bold text-sm">Religión</h4>
-                                        <p className="text-[10px] text-slate-400 mb-4">Puicon Rivera, José Emmanuel</p>
-                                        <a href="#" className="text-[10px] font-bold text-[#701C32] flex items-center gap-1">Ir al curso <span className="material-symbols-outlined text-xs">arrow_forward</span></a>
-                                    </div>
-
-                                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center min-w-[222px]">
-                                        <img src="/cienciasS.png" className="w-24 h-24 mb-4 object-contain" alt="sociales" />
-                                        <h4 className="font-bold text-sm">Ciencias sociales</h4>
-                                        <p className="text-[10px] text-slate-400 mb-4">Puicon Rivera, José Emmanuel</p>
-                                        <a href="#" className="text-[10px] font-bold text-[#701C32] flex items-center gap-1">Ir al curso <span className="material-symbols-outlined text-xs">arrow_forward</span></a>
-                                    </div>
-
-                                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center min-w-[222px]">
-                                        <img src="/comunicacion.png" className="w-24 h-24 mb-4 object-contain" alt="comunicacion" />
-                                        <h4 className="font-bold text-sm">Comunicación</h4>
-                                        <p className="text-[10px] text-slate-400 mb-4">Puicon Rivera, José Emmanuel</p>
-                                        <a href="#" className="text-[10px] font-bold text-[#701C32] flex items-center gap-1">Ir al curso <span className="material-symbols-outlined text-xs">arrow_forward</span></a>
-                                    </div>
-
-                                    <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center min-w-[222px]">
-                                        <img src="/quimica.png" className="w-24 h-24 mb-4 object-contain" alt="quimica" />
-                                        <h4 className="font-bold text-sm">Química</h4>
-                                        <p className="text-[10px] text-slate-400 mb-4">Puicon Rivera, José Emmanuel</p>
-                                        <a href="#" className="text-[10px] font-bold text-[#701C32] flex items-center gap-1">Ir al curso <span className="material-symbols-outlined text-xs">arrow_forward</span></a>
-                                    </div>
-
-                                </div>
-                            </section>
+                    {/* CARD 2: Religión */}
+                    <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center text-center">
+                        <div className="h-28 w-full flex items-center justify-center mb-2">
+                            <img src="https://placehold.co/150x120/png?text=Religión" alt="Religión" className="h-full object-contain" />
                         </div>
-
-                        {/* Columna Derecha (Notificaciones y Tareas) - Más delgada */}
-                        <div className="w-full xl:w-64 space-y-6 shrink-0">
-                            <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
-                                <h3 className="font-black text-[#701C32] uppercase text-[12px] text-center mb-4">Tareas Pendientes</h3>
-                                <div className="space-y-3">
-                                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                                        <p className="text-[9px] font-bold text-[#701C32]">MATEMÁTICA</p>
-                                        <p className="text-[11px] font-bold leading-tight py-1">Lista de ejercicios para desarrollar</p>
-                                        <p className="text-[9px] text-slate-400 flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">schedule</span> 20/01/2026</p>
-                                    </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                                        <p className="text-[9px] font-bold text-[#701C32]">QUÍMICA</p>
-                                        <p className="text-[11px] font-bold leading-tight py-1">Tarea de fórmulas</p>
-                                        <p className="text-[9px] text-slate-400 flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">schedule</span> 12/03/2026</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
-                                <h3 className="font-black text-[#701C32] uppercase text-[12px] text-center mb-6">Notificaciones</h3>
-
-                                <div className="space-y-4">
-                                    {/* Notificación 1 */}
-                                    <div className="flex gap-3 items-center"> {/* CAMBIO: items-center para centrar verticalmente */}
-                                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                                            <span className="material-symbols-outlined text-[16px]">campaign</span>
-                                        </div>
-                                        <p className="text-[10px] leading-tight text-slate-600">
-                                            <span className="font-bold text-slate-800">Aviso:</span> Feriado el lunes.
-                                        </p>
-                                    </div>
-
-                                    {/* Notificación 2 */}
-                                    <div className="flex gap-3 items-center"> {/* CAMBIO: items-center */}
-                                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                                            <span className="material-symbols-outlined text-[16px]">star</span>
-                                        </div>
-                                        <p className="text-[10px] leading-tight text-slate-600">
-                                            <span className="font-bold text-slate-800">Calificación:</span> Nueva nota en Arte.
-                                        </p>
-                                    </div>
-                                    <div className="flex gap-3 items-center"> {/* CAMBIO: items-center */}
-                                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                                            <span className="material-symbols-outlined text-[16px]">star</span>
-                                        </div>
-                                        <p className="text-[10px] leading-tight text-slate-600">
-                                            <span className="font-bold text-slate-800">Tarea:</span> Tarea verificada por el profesor
-                                        </p>
-                                    </div>
-                                </div>
+                        <div className="w-full text-left">
+                            <h4 className="font-bold text-gray-800 text-sm">Religión</h4>
+                            <p className="text-[11px] text-gray-400 mb-4">Puicon Rivera, José Emmanuel</p>
+                            <div className="flex justify-end">
+                                <button className="text-[11px] font-bold text-[#701C32] flex items-center gap-1 hover:gap-2 transition-all">
+                                    Ir al curso <ArrowRight size={12} />
+                                </button>
                             </div>
                         </div>
+                    </div>
 
+                    {/* CARD 3: Ciencias Sociales */}
+                    <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center text-center">
+                        <div className="h-28 w-full flex items-center justify-center mb-2">
+                            <img src="https://placehold.co/150x120/png?text=Sociales" alt="Sociales" className="h-full object-contain" />
+                        </div>
+                        <div className="w-full text-left">
+                            <h4 className="font-bold text-gray-800 text-sm">Ciencias Sociales</h4>
+                            <p className="text-[11px] text-gray-400 mb-4">Puicon Rivera, José Emmanuel</p>
+                            <div className="flex justify-end">
+                                <button className="text-[11px] font-bold text-[#701C32] flex items-center gap-1 hover:gap-2 transition-all">
+                                    Ir al curso <ArrowRight size={12} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* CARD 4: Comunicación */}
+                    <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center text-center">
+                        <div className="h-28 w-full flex items-center justify-center mb-2">
+                            <img src="https://placehold.co/150x120/png?text=Comunicación" alt="Comunicación" className="h-full object-contain" />
+                        </div>
+                        <div className="w-full text-left">
+                            <h4 className="font-bold text-gray-800 text-sm">Comunicación</h4>
+                            <p className="text-[11px] text-gray-400 mb-4">Puicon Rivera, José Emmanuel</p>
+                            <div className="flex justify-end">
+                                <button className="text-[11px] font-bold text-[#701C32] flex items-center gap-1 hover:gap-2 transition-all">
+                                    Ir al curso <ArrowRight size={12} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                     {/* CARD 5: Química */}
+                     <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center text-center">
+                        <div className="h-28 w-full flex items-center justify-center mb-2">
+                            <img src="https://placehold.co/150x120/png?text=Química" alt="Química" className="h-full object-contain" />
+                        </div>
+                        <div className="w-full text-left">
+                            <h4 className="font-bold text-gray-800 text-sm">Química</h4>
+                            <p className="text-[11px] text-gray-400 mb-4">Puicon Rivera, José Emmanuel</p>
+                            <div className="flex justify-end">
+                                <button className="text-[11px] font-bold text-[#701C32] flex items-center gap-1 hover:gap-2 transition-all">
+                                    Ir al curso <ArrowRight size={12} />
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </main>
-
-            {/* Mobile Bottom Navigation */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-3 lg:hidden z-50">
-                <button className="flex flex-col items-center text-[#701C32]">
-                    <span className="material-symbols-outlined">home</span>
-                    <span className="text-[10px] font-bold">Inicio</span>
-                </button>
-                <button className="flex flex-col items-center text-slate-400">
-                    <span className="material-symbols-outlined">book</span>
-                    <span className="text-[10px] font-bold">Cursos</span>
-                </button>
-                <button className="flex flex-col items-center text-slate-400">
-                    <span className="material-symbols-outlined">notifications</span>
-                    <span className="text-[10px] font-bold">Avisos</span>
-                </button>
-                <button className="flex flex-col items-center text-slate-400">
-                    <span className="material-symbols-outlined">person</span>
-                    <span className="text-[10px] font-bold">Perfil</span>
-                </button>
             </div>
         </div>
-    );
+
+        {/* --- COLUMNA DERECHA (Spans 3 o 4) --- */}
+        <div className="xl:col-span-3 space-y-6">
+            
+            {/* WIDGET: TAREAS PENDIENTES */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                <h3 className="text-[#701C32] font-bold text-sm uppercase mb-4 tracking-wide">Tareas Pendientes</h3>
+                <div className="space-y-3">
+                    
+                    {/* Tarea Item 1 */}
+                    <div className="bg-[#F8F9FA] rounded-lg p-3 border border-gray-100">
+                        <p className="text-[10px] font-bold text-[#701C32] mb-1 uppercase">Matemática</p>
+                        <p className="text-xs text-gray-700 font-medium mb-2 leading-snug">Lista de ejercicios para desarrollar</p>
+                        <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                            <Clock size={12} />
+                            Fecha entrega: 20/01/2026
+                        </div>
+                    </div>
+
+                    {/* Tarea Item 2 */}
+                    <div className="bg-[#F8F9FA] rounded-lg p-3 border border-gray-100">
+                        <p className="text-[10px] font-bold text-[#701C32] mb-1 uppercase">Ciencias Sociales</p>
+                        <p className="text-xs text-gray-700 font-medium mb-2 leading-snug">Lectura para aprender y exponer en clase</p>
+                        <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                             <Clock size={12} />
+                            Fecha entrega: 18/01/2026
+                        </div>
+                    </div>
+
+                    {/* Tarea Item 3 */}
+                    <div className="bg-[#F8F9FA] rounded-lg p-3 border border-gray-100">
+                        <p className="text-[10px] font-bold text-[#701C32] mb-1 uppercase">Religión</p>
+                        <p className="text-xs text-gray-700 font-medium mb-2 leading-snug">Lectura de resumen y cuestionario</p>
+                        <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                             <Clock size={12} />
+                            Fecha entrega: 23/01/2026
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* WIDGET: NOTIFICACIONES */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                <h3 className="text-[#701C32] font-bold text-sm uppercase mb-4 tracking-wide">Notificaciones</h3>
+                <div className="space-y-5">
+                    
+                    {/* Notif 1 */}
+                    <div className="flex gap-3 items-start">
+                        <div className="w-8 h-8 rounded-full bg-[#701C32]/10 text-[#701C32] flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <Megaphone size={14} />
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-800 leading-tight mb-1">
+                                <span className="font-bold">Comunicado:</span> Suspensión de clases el día lunes por feriado nacional.
+                            </p>
+                            <span className="text-[10px] text-gray-400">Hace 2 horas</span>
+                        </div>
+                    </div>
+
+                    {/* Notif 2 */}
+                    <div className="flex gap-3 items-start">
+                        <div className="w-8 h-8 rounded-full bg-[#701C32]/10 text-[#701C32] flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <Star size={14} />
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-800 leading-tight mb-1">
+                                <span className="font-bold">Calificación:</span> Haz recibido 18 en Examen Parcial de Química.
+                            </p>
+                            <span className="text-[10px] text-gray-400">Hace 4 horas</span>
+                        </div>
+                    </div>
+
+                    {/* Notif 3 */}
+                    <div className="flex gap-3 items-start">
+                        <div className="w-8 h-8 rounded-full bg-[#701C32]/10 text-[#701C32] flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <Star size={14} />
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-800 leading-tight mb-1">
+                                <span className="font-bold">Calificación:</span> Haz recibido 19 en Lectura y Cuestionario de Ciencias Sociales.
+                            </p>
+                            <span className="text-[10px] text-gray-400">Hace 1 día</span>
+                        </div>
+                    </div>
+
+                     {/* Notif 4 */}
+                     <div className="flex gap-3 items-start">
+                        <div className="w-8 h-8 rounded-full bg-[#701C32]/10 text-[#701C32] flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <Wallet size={14} />
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-800 leading-tight mb-1">
+                                <span className="font-bold">Pagos:</span> Pago pendiente de 240 soles para Pensión mes de Marzo.
+                            </p>
+                            <span className="text-[10px] text-gray-400">Hace 1 día</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+      </div>
+    </div>
+  );
 }
