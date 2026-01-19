@@ -16,6 +16,8 @@ export default function CursosPage() {
   ];
 
   return (
+    
+    
     <div className="max-w-[1600px] mx-auto space-y-6 pb-8">
       
       {/* CABECERA Y FILTROS */}
