@@ -10,10 +10,11 @@ export function HeaderCampus({ onOpenMenu }: { onOpenMenu: () => void }) {
         <span className="font-bold text-[#701C32] text-lg">Campus Virtual</span>
       </div>
       <div className="flex items-center gap-4 ml-auto">
-        <Link href="inicio-campus/notificaciones" className="relative text-gray-400"><Bell size={22} /></Link>
+        <Link href="/campus-estudiante/inicio-campus/notificaciones" className="relative text-gray-400"><Bell size={22} /></Link>
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
             <p className="text-sm font-bold text-gray-800">Gabriela Antonet</p>
+            <p className="text-[11px] text-gray-500">5to Año de Secundaria</p>
           </div>
           <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Gabriela" className="w-10 h-10 rounded-full border" alt="Perfil" />
         </div>

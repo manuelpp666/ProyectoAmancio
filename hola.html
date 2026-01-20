@@ -1,42 +1,40 @@
 <!DOCTYPE html>
-<html class="light" lang="es"><head>
+<html lang="es"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Student Campus - Versión Permanente</title>
+<title>Campus Virtual - Historial de Pagos Completo</title>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script>
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        primary: "#701C32", // Maroon
-                        secondary: "#093E7A", // Blue
-                        accent: "#FFF1E3", // Cream/Beige
-                        "background-light": "#f8fafc",
-                    },
-                    fontFamily: {
-                        display: ["Lato", "sans-serif"],
-                        body: ["Lato", "sans-serif"],
-                    },
-                    borderRadius: {
-                        DEFAULT: "12px",
-                    },
-                },
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#701C32",
+              secondary: "#093E7A",
+              "background-light": "#F8FAFC",
             },
-        };
+            fontFamily: {
+              display: ["Lato", "sans-serif"],
+              sans: ["Lato", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "0.75rem",
+            },
+          },
+        },
+      };
     </script>
 <style type="text/tailwindcss">
-        body { font-family: 'Lato', sans-serif; }
-        .glass {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+        body {
+            font-family: 'Lato', sans-serif;
+        }
+        .sidebar-active {
+            background-color: rgba(255, 255, 255, 0.15);
         }
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -44,221 +42,222 @@
     </style>
 </head>
 <body class="bg-background-light text-slate-800 min-h-screen flex">
-<aside class="w-20 lg:w-64 bg-secondary flex flex-col h-screen sticky top-0 transition-all duration-300">
+<aside class="w-64 bg-primary text-white flex flex-col fixed h-full z-10">
 <div class="p-6 flex items-center gap-3">
-<div class="w-10 h-10 bg-white rounded-full flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-secondary text-2xl">school</span>
+<div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl font-bold">school</span>
 </div>
-<span class="text-white font-bold text-xl hidden lg:block tracking-tight">Campus Virtual</span>
+<span class="text-xl font-black tracking-tight uppercase">Campus Virtual</span>
 </div>
-<nav class="flex-1 px-4 mt-4 space-y-2">
-<a class="flex items-center gap-4 p-3 rounded-xl bg-white/10 text-white group" href="#">
-<span class="material-symbols-outlined">dashboard</span>
-<span class="hidden lg:block font-medium">Dashboard</span>
+<nav class="flex-1 px-4 py-6 space-y-2">
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-medium">Inicio</span>
 </a>
-<a class="flex items-center gap-4 p-3 rounded-xl text-white/70 hover:bg-white/5 hover:text-white transition-all" href="#">
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors" href="#">
 <span class="material-symbols-outlined">book</span>
-<span class="hidden lg:block font-medium">Mis Cursos</span>
+<span class="font-medium">Cursos</span>
 </a>
-<a class="flex items-center gap-4 p-3 rounded-xl text-white/70 hover:bg-white/5 hover:text-white transition-all" href="#">
-<span class="material-symbols-outlined">event_available</span>
-<span class="hidden lg:block font-medium">Asistencia</span>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors" href="#">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="font-medium">Mensajería</span>
 </a>
-<a class="flex items-center gap-4 p-3 rounded-xl text-white/70 hover:bg-white/5 hover:text-white transition-all" href="#">
-<span class="material-symbols-outlined">assignment</span>
-<span class="hidden lg:block font-medium">Calificaciones</span>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-medium">Alumno</span>
 </a>
-<a class="flex items-center gap-4 p-3 rounded-xl text-white/70 hover:bg-white/5 hover:text-white transition-all" href="#">
-<span class="material-symbols-outlined">mail</span>
-<span class="hidden lg:block font-medium">Mensajes</span>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg sidebar-active transition-colors" href="#">
+<span class="material-symbols-outlined">swap_horiz</span>
+<span class="font-medium">Trámites</span>
 </a>
 </nav>
-<div class="p-4 border-t border-white/10">
-<div class="p-3 flex items-center gap-3">
-<img alt="Avatar Usuario" class="w-10 h-10 rounded-full border-2 border-primary" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7b5QfDXJv-TIDshrAmqIXyfNO4BVhmsTxQkziWxh_YHjC_IHPAtaUgmm-cLFNcbKWrvs4ZcmBgDSml9cDUynT9ayJkkOrjD5UfOd-4fnITEP_h4ipxL7i7JDvTL2gw_IUoUmcVY1pv3shvzTwCgl2kg4dcfl8_oPY2-roIHXAD5FX1XXhRxpwzd0yBuO0qOs407w_QgIH2Ickj5ue73RnhdMfRG-SPAC3f54KVtoAW3ZRL3PmLtjImNAx_RAt0g-QDJGl5YY30BRR"/>
-<div class="hidden lg:block overflow-hidden">
-<p class="text-white text-sm font-bold truncate">Vela Barandiaran</p>
-<p class="text-white/50 text-xs truncate">Estudiante 4° Año</p>
-</div>
-</div>
-</div>
 </aside>
-<main class="flex-1 flex flex-col lg:flex-row h-screen overflow-hidden">
-<div class="flex-1 overflow-y-auto p-6 lg:p-8 space-y-8">
-<header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-<div>
-<h1 class="text-3xl font-black text-secondary">¡Hola, Kassandra!</h1>
-<p class="text-slate-500 font-medium">Bienvenido de nuevo a tu Course Hub.</p>
+<main class="flex-1 ml-64 min-h-screen">
+<header class="bg-white h-16 flex items-center justify-end px-8 border-b border-slate-100 sticky top-0 z-20">
+<div class="flex items-center gap-6">
+<button class="relative text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+</button>
+<div class="flex items-center gap-3">
+<div class="text-right">
+<p class="text-sm font-bold text-slate-900">Gabriela Antonet</p>
+<p class="text-xs text-slate-500">1er Año de Secundaria</p>
 </div>
-<div class="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
-<span class="material-symbols-outlined text-slate-400 px-2">search</span>
-<input class="bg-transparent border-none focus:ring-0 text-sm w-48 lg:w-64" placeholder="Buscar cursos o tareas..." type="text"/>
+<img alt="Profile" class="w-9 h-9 rounded-full object-cover border-2 border-slate-100" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCc21AvWswLbzuNHlvlo0myoe6pbL5tCqMs4LGL2bledMojVRaTHcwa8XT6xrGxwGkargLvOM3KFPynXiDwYh9Bkop7u_1PcA2DshOW_ZXBB_IWWoKXfr8FWmYCqaEfrIJ6-0Yf3gQqR9EhqOdrhn6ygSenClm3MX_bDVAOpcA3iPfCOW69r2hQmE8M8iu4XX2bOLofub44f-GClV7RIUMeL6Zhz0rKsXjmrH3mJf8cZcSkxUwX_ER62L2nYHKlpnF3fseJJcgiqwuW"/>
+</div>
 </div>
 </header>
-<section class="relative overflow-hidden rounded-3xl bg-primary p-8 text-accent shadow-xl">
-<div class="relative z-10 max-w-xl">
-<span class="inline-block bg-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4">Próxima Clase en 15 min</span>
-<h2 class="text-4xl font-black mb-4 leading-tight">Metodología de la Investigación</h2>
-<p class="opacity-90 mb-6 text-lg">Continúa donde te quedaste: "Capítulo 4: Diseño de Muestreo". La sesión en vivo comenzará pronto.</p>
-<div class="flex gap-4">
-<button class="bg-accent text-primary px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition-transform active:scale-95">
-<span class="material-symbols-outlined">play_circle</span> Entrar a Clase
-                    </button>
-<button class="bg-white/10 hover:bg-white/20 border border-white/20 px-6 py-3 rounded-xl font-bold transition-all">
-                        Ver Material
-                    </button>
+<div class="p-8 max-w-7xl mx-auto">
+<div class="mb-8 flex items-center justify-between">
+<div>
+<h1 class="text-3xl font-black text-primary mb-1">Historial de Pagos Completo</h1>
+<p class="text-slate-500">Consulta el detalle de todas tus transacciones realizadas.</p>
 </div>
+<button class="flex items-center gap-2 text-sm font-bold text-secondary hover:underline">
+<span class="material-symbols-outlined text-lg">arrow_back</span>
+                    Volver a Trámites
+                </button>
 </div>
-<div class="absolute top-0 right-0 w-1/2 h-full opacity-10 pointer-events-none">
-<svg class="scale-150 origin-top-right" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-<path d="M44.7,-76.4C58.1,-69.2,69.2,-58.1,76.4,-44.7C83.7,-31.3,87.1,-15.7,85.6,-0.9C84,13.9,77.5,27.8,68.9,39.4C60.3,51,49.5,60.2,37.3,67.6C25,75,12.5,80.5,-0.6,81.5C-13.7,82.5,-27.4,79,-39.8,71.7C-52.2,64.4,-63.3,53.2,-71,40.4C-78.6,27.6,-82.8,13.8,-82.1,0.4C-81.4,-13,-75.8,-26,-67.4,-37.2C-59,-48.4,-47.8,-57.8,-35.6,-65.8C-23.4,-73.8,-11.7,-80.4,1.8,-83.5C15.3,-86.6,31.3,-83.6,44.7,-76.4Z" fill="#FFF" transform="translate(100 100)"></path>
-</svg>
+<div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-8">
+<div class="p-6 border-b border-slate-100">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+<div class="space-y-1">
+<label class="text-[10px] uppercase font-black text-slate-400 tracking-wider">Desde</label>
+<input class="w-full border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary" type="date"/>
 </div>
-</section>
-<section>
-<div class="flex items-center justify-between mb-6">
-<h3 class="text-xl font-black text-secondary uppercase tracking-wide">Mis Cursos (4° Año)</h3>
-<a class="text-primary font-bold flex items-center gap-1 hover:underline" href="#">Ver todos <span class="material-symbols-outlined">chevron_right</span></a>
+<div class="space-y-1">
+<label class="text-[10px] uppercase font-black text-slate-400 tracking-wider">Hasta</label>
+<input class="w-full border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary" type="date"/>
 </div>
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-<div class="glass group rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-200 flex flex-col items-center text-center">
-<div class="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mb-4 ring-8 ring-secondary/10 group-hover:scale-110 transition-transform">
-<span class="material-symbols-outlined text-white text-4xl">lightbulb</span>
-</div>
-<h4 class="font-black text-secondary text-lg mb-1">Metodología</h4>
-<p class="text-slate-500 text-sm mb-6">Dacna Ramos Saavedra</p>
-<div class="w-full space-y-2">
-<button class="w-full bg-secondary text-white py-2.5 rounded-xl font-bold text-sm hover:bg-opacity-90 transition-all">Ver Material</button>
-<button class="w-full border border-secondary/20 text-secondary py-2.5 rounded-xl font-bold text-sm hover:bg-secondary/5 transition-all">Entrar a Clase</button>
-</div>
-</div>
-<div class="glass group rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-200 flex flex-col items-center text-center">
-<div class="w-20 h-20 rounded-full bg-primary flex items-center justify-center mb-4 ring-8 ring-primary/10 group-hover:scale-110 transition-transform">
-<span class="material-symbols-outlined text-white text-4xl">functions</span>
-</div>
-<h4 class="font-black text-secondary text-lg mb-1">Matemática</h4>
-<p class="text-slate-500 text-sm mb-6">Profesor de Prueba</p>
-<div class="w-full space-y-2">
-<button class="w-full bg-secondary text-white py-2.5 rounded-xl font-bold text-sm hover:bg-opacity-90 transition-all">Ver Material</button>
-<button class="w-full border border-secondary/20 text-secondary py-2.5 rounded-xl font-bold text-sm hover:bg-secondary/5 transition-all">Entrar a Clase</button>
-</div>
-</div>
-<div class="glass group rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-200 flex flex-col items-center text-center">
-<div class="w-20 h-20 rounded-full bg-amber-500 flex items-center justify-center mb-4 ring-8 ring-amber-500/10 group-hover:scale-110 transition-transform">
-<span class="material-symbols-outlined text-white text-4xl">church</span>
-</div>
-<h4 class="font-black text-secondary text-lg mb-1">Religión</h4>
-<p class="text-slate-500 text-sm mb-6">Cesar Delgado Coronel</p>
-<div class="w-full space-y-2">
-<button class="w-full bg-secondary text-white py-2.5 rounded-xl font-bold text-sm hover:bg-opacity-90 transition-all">Ver Material</button>
-<button class="w-full border border-secondary/20 text-secondary py-2.5 rounded-xl font-bold text-sm hover:bg-secondary/5 transition-all">Entrar a Clase</button>
-</div>
-</div>
-<div class="glass group rounded-3xl p-6 shadow-sm hover:shadow-xl transition-all border border-slate-200 flex flex-col items-center text-center">
-<div class="w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center mb-4 ring-8 ring-emerald-500/10 group-hover:scale-110 transition-transform">
-<span class="material-symbols-outlined text-white text-4xl">palette</span>
-</div>
-<h4 class="font-black text-secondary text-lg mb-1">Arte y Cultura</h4>
-<p class="text-slate-500 text-sm mb-6">Angela Calvay Huaman</p>
-<div class="w-full space-y-2">
-<button class="w-full bg-secondary text-white py-2.5 rounded-xl font-bold text-sm hover:bg-opacity-90 transition-all">Ver Material</button>
-<button class="w-full border border-secondary/20 text-secondary py-2.5 rounded-xl font-bold text-sm hover:bg-secondary/5 transition-all">Entrar a Clase</button>
-</div>
-</div>
-</div>
-</section>
-</div>
-<aside class="w-full lg:w-80 border-l border-slate-200 p-6 lg:p-8 space-y-8 bg-white hidden xl:block overflow-y-auto">
-<section>
-<div class="flex items-center justify-between mb-4">
-<h3 class="font-black text-secondary uppercase text-sm tracking-widest">Tareas Pendientes</h3>
-<span class="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">4 Hoy</span>
-</div>
-<div class="space-y-4">
-<div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-primary/30 transition-all cursor-pointer">
-<p class="text-[10px] font-bold text-primary mb-1 uppercase">Matemáticas</p>
-<p class="font-bold text-slate-800 text-sm mb-2">Ecuaciones de segundo grado</p>
-<div class="flex items-center gap-2 text-[11px] text-slate-500">
-<span class="material-symbols-outlined text-xs">schedule</span>
-                        Vence hoy, 11:59 PM
-                    </div>
-</div>
-<div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-primary/30 transition-all cursor-pointer">
-<p class="text-[10px] font-bold text-emerald-600 mb-1 uppercase">Arte</p>
-<p class="font-bold text-slate-800 text-sm mb-2">Proyecto: Mural Escolar</p>
-<div class="flex items-center gap-2 text-[11px] text-slate-500">
-<span class="material-symbols-outlined text-xs">schedule</span>
-                        Mañana, 08:00 AM
-                    </div>
-</div>
-<div class="p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-primary/30 transition-all cursor-pointer opacity-70">
-<p class="text-[10px] font-bold text-amber-600 mb-1 uppercase">Religión</p>
-<p class="font-bold text-slate-800 text-sm mb-2">Resumen de Lectura Semanal</p>
-<div class="flex items-center gap-2 text-[11px] text-slate-500">
-<span class="material-symbols-outlined text-xs">schedule</span>
-                        Viernes, 2:00 PM
-                    </div>
-</div>
-</div>
-</section>
-<section>
-<h3 class="font-black text-secondary uppercase text-sm tracking-widest mb-4">Notificaciones</h3>
-<div class="space-y-4">
-<div class="flex gap-3">
-<div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-blue-600 text-sm">campaign</span>
+<div class="space-y-1">
+<label class="text-[10px] uppercase font-black text-slate-400 tracking-wider">Concepto de Pago</label>
+<select class="w-full border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
+<option>Todos los conceptos</option>
+<option>Pensión Mensual</option>
+<option>Matrícula</option>
+<option>Reserva de Vacante</option>
+<option>Derecho de Examen</option>
+<option>Materiales</option>
+</select>
 </div>
 <div>
-<p class="text-sm"><span class="font-bold">Comunicado:</span> El lunes no habrá clases por feriado regional.</p>
-<p class="text-[10px] text-slate-400 mt-1">Hace 2 horas</p>
-</div>
-</div>
-<div class="flex gap-3">
-<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-primary text-sm">grade</span>
-</div>
-<div>
-<p class="text-sm"><span class="font-bold">Nueva Calificación:</span> Has recibido 18 en Examen Parcial de Química.</p>
-<p class="text-[10px] text-slate-400 mt-1">Hace 5 horas</p>
+<button class="w-full bg-primary text-white py-2 px-4 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">filter_alt</span>
+                                Aplicar Filtros
+                            </button>
 </div>
 </div>
 </div>
-</section>
-<section class="bg-accent/30 p-5 rounded-3xl border border-accent">
-<h4 class="text-xs font-black text-primary/80 uppercase mb-3">Tu Progreso</h4>
-<div class="flex items-center gap-4">
-<div class="relative w-16 h-16">
-<svg class="w-full h-full" viewBox="0 0 36 36">
-<path class="stroke-current text-slate-200" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-width="3"></path>
-<path class="stroke-current text-primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke-dasharray="75, 100" stroke-linecap="round" stroke-width="3"></path>
-<text class="text-[8px] font-bold fill-primary" text-anchor="middle" x="18" y="20.35">75%</text>
-</svg>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-sm">
+<thead>
+<tr class="text-slate-400 font-bold uppercase text-[10px] tracking-widest border-b border-slate-100 bg-slate-50/50">
+<th class="px-6 py-4">Fecha de Pago</th>
+<th class="px-6 py-4">Concepto</th>
+<th class="px-6 py-4">Nro. de Operación</th>
+<th class="px-6 py-4">Método de Pago</th>
+<th class="px-6 py-4 text-right">Importe (S/)</th>
+<th class="px-6 py-4 text-center">Recibo</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="px-6 py-4 text-slate-600 font-medium">15/01/2026</td>
+<td class="px-6 py-4 font-bold text-slate-800">Matrícula Escolar 2026</td>
+<td class="px-6 py-4 font-mono text-xs text-slate-500">TR-9982312</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-500 text-lg">credit_card</span>
+                                        Tarjeta Visa
+                                    </div>
+</td>
+<td class="px-6 py-4 text-right font-black">450.00</td>
+<td class="px-6 py-4 text-center">
+<button class="p-2 hover:bg-red-50 rounded-full transition-colors group">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">picture_as_pdf</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="px-6 py-4 text-slate-600 font-medium">12/12/2025</td>
+<td class="px-6 py-4 font-bold text-slate-800">Reserva de Vacante 2026</td>
+<td class="px-6 py-4 font-mono text-xs text-slate-500">TR-9972100</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-green-500 text-lg">qr_code_2</span>
+                                        Yape
+                                    </div>
+</td>
+<td class="px-6 py-4 text-right font-black">250.00</td>
+<td class="px-6 py-4 text-center">
+<button class="p-2 hover:bg-red-50 rounded-full transition-colors group">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">picture_as_pdf</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="px-6 py-4 text-slate-600 font-medium">01/11/2025</td>
+<td class="px-6 py-4 font-bold text-slate-800">Cuota APAFA 2026</td>
+<td class="px-6 py-4 font-mono text-xs text-slate-500">TR-9965401</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-lg">account_balance</span>
+                                        Transferencia BCP
+                                    </div>
+</td>
+<td class="px-6 py-4 text-right font-black">50.00</td>
+<td class="px-6 py-4 text-center">
+<button class="p-2 hover:bg-red-50 rounded-full transition-colors group">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">picture_as_pdf</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="px-6 py-4 text-slate-600 font-medium">05/10/2025</td>
+<td class="px-6 py-4 font-bold text-slate-800">Pensión Mensual 09 - 2025</td>
+<td class="px-6 py-4 font-mono text-xs text-slate-500">TR-9954322</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-500 text-lg">credit_card</span>
+                                        Tarjeta Visa
+                                    </div>
+</td>
+<td class="px-6 py-4 text-right font-black">300.00</td>
+<td class="px-6 py-4 text-center">
+<button class="p-2 hover:bg-red-50 rounded-full transition-colors group">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">picture_as_pdf</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors">
+<td class="px-6 py-4 text-slate-600 font-medium">05/09/2025</td>
+<td class="px-6 py-4 font-bold text-slate-800">Pensión Mensual 08 - 2025</td>
+<td class="px-6 py-4 font-mono text-xs text-slate-500">TR-9941098</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-400 text-lg">payments</span>
+                                        Efectivo (Agente)
+                                    </div>
+</td>
+<td class="px-6 py-4 text-right font-black">300.00</td>
+<td class="px-6 py-4 text-center">
+<button class="p-2 hover:bg-red-50 rounded-full transition-colors group">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">picture_as_pdf</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
 </div>
-<div>
-<p class="text-sm font-bold text-slate-800">Casi ahí!</p>
-<p class="text-[10px] text-slate-500">Has completado 12 de 16 unidades curriculares.</p>
+<div class="p-6 border-t border-slate-100 flex items-center justify-between bg-slate-50/30">
+<p class="text-xs text-slate-500 font-medium">Mostrando 5 de 42 transacciones</p>
+<div class="flex items-center gap-2">
+<button class="p-2 border border-slate-200 rounded hover:bg-white transition-colors disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-lg leading-none">chevron_left</span>
+</button>
+<button class="px-3 py-1 bg-primary text-white text-xs font-bold rounded">1</button>
+<button class="px-3 py-1 text-slate-600 hover:bg-white text-xs font-bold rounded">2</button>
+<button class="px-3 py-1 text-slate-600 hover:bg-white text-xs font-bold rounded">3</button>
+<span class="text-slate-400 text-xs">...</span>
+<button class="px-3 py-1 text-slate-600 hover:bg-white text-xs font-bold rounded">9</button>
+<button class="p-2 border border-slate-200 rounded hover:bg-white transition-colors">
+<span class="material-symbols-outlined text-lg leading-none">chevron_right</span>
+</button>
 </div>
 </div>
-</section>
-</aside>
+</div>
+<div class="flex justify-end gap-4">
+<button class="bg-white border border-slate-200 text-slate-700 px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-slate-50 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">print</span>
+                    Imprimir Reporte
+                </button>
+<button class="bg-secondary text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">download</span>
+                    Descargar Historial (Excel)
+                </button>
+</div>
+</div>
 </main>
-<div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-3 lg:hidden z-50">
-<button class="flex flex-col items-center text-primary">
-<span class="material-symbols-outlined">home</span>
-<span class="text-[10px] font-bold">Inicio</span>
-</button>
-<button class="flex flex-col items-center text-slate-400">
-<span class="material-symbols-outlined">book</span>
-<span class="text-[10px] font-bold">Cursos</span>
-</button>
-<button class="flex flex-col items-center text-slate-400">
-<span class="material-symbols-outlined">notifications</span>
-<span class="text-[10px] font-bold">Avisos</span>
-</button>
-<button class="flex flex-col items-center text-slate-400">
-<span class="material-symbols-outlined">person</span>
-<span class="text-[10px] font-bold">Perfil</span>
-</button>
-</div>
 
 </body></html>
