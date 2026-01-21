@@ -1,5 +1,9 @@
 "use client";
 import { useRouter } from "next/navigation";
+//Esto luego se borrara. Es usado para entrar al panel de control 
+import Link from 'next/link';
+//FIn de esto luego se borrara
+
 
 export default function Page() {
   const router = useRouter();
@@ -88,6 +92,14 @@ export default function Page() {
               >
                 Ingresar
               </button>
+              <Link href="/campus-estudiante/panel-control" className="w-full">
+              <button 
+                className="w-full bg-[#093E7A] hover:bg-[#072e5c] text-white font-black py-4 rounded-xl shadow-lg shadow-[#093E7A]/20 transition-all active:scale-[0.98] uppercase tracking-wide" 
+              >
+                Ingresar como admin
+              </button>
+              </Link>
+              
             </form>
 
             {/* Footer Links */}

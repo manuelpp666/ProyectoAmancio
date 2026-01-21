@@ -2,262 +2,191 @@
 <html lang="es"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Campus Virtual - Historial de Pagos Completo</title>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<title>Registro de Estudiante - Administración</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script>
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            colors: {
-              primary: "#701C32",
-              secondary: "#093E7A",
-              "background-light": "#F8FAFC",
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#093E7A",
+                        "maroon": "#701C32",
+                        "background-light": "#FAFAFA",
+                    },
+                    fontFamily: {
+                        "sans": ["Lato", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.375rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                    },
+                },
             },
-            fontFamily: {
-              display: ["Lato", "sans-serif"],
-              sans: ["Lato", "sans-serif"],
-            },
-            borderRadius: {
-              DEFAULT: "0.75rem",
-            },
-          },
-        },
-      };
+        }
     </script>
 <style type="text/tailwindcss">
-        body {
-            font-family: 'Lato', sans-serif;
-        }
-        .sidebar-active {
-            background-color: rgba(255, 255, 255, 0.15);
+        @layer base {
+            body {
+                @apply bg-background-light text-slate-800 font-sans;
+            }
         }
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
+        .active-nav {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 4px solid #ffffff;
+        }
     </style>
 </head>
-<body class="bg-background-light text-slate-800 min-h-screen flex">
-<aside class="w-64 bg-primary text-white flex flex-col fixed h-full z-10">
+<body class="font-sans antialiased">
+<div class="flex min-h-screen">
+<aside class="w-64 bg-maroon text-white flex flex-col fixed h-full z-10 shadow-xl">
 <div class="p-6 flex items-center gap-3">
-<div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-<span class="material-symbols-outlined text-primary text-3xl font-bold">school</span>
+<div class="size-10 rounded-lg bg-white/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-white">school</span>
 </div>
-<span class="text-xl font-black tracking-tight uppercase">Campus Virtual</span>
+<div>
+<h1 class="text-sm font-bold leading-tight uppercase tracking-wider">Administración</h1>
+<p class="text-xs text-white/70">Unidad Educativa</p>
 </div>
-<nav class="flex-1 px-4 py-6 space-y-2">
-<a class="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors" href="#">
-<span class="material-symbols-outlined">home</span>
-<span class="font-medium">Inicio</span>
-</a>
-<a class="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors" href="#">
-<span class="material-symbols-outlined">book</span>
-<span class="font-medium">Cursos</span>
-</a>
-<a class="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors" href="#">
-<span class="material-symbols-outlined">chat_bubble</span>
-<span class="font-medium">Mensajería</span>
-</a>
-<a class="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors" href="#">
+</div>
+<nav class="flex-1 mt-4">
+<div class="px-4 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-white/10 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                        Dashboard
+                    </a>
+<a class="flex items-center gap-3 px-4 py-3 text-sm font-medium active-nav rounded-r-lg transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+                        Estudiantes
+                    </a>
+<a class="flex items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-white/10 rounded-lg transition-colors" href="#">
 <span class="material-symbols-outlined">person</span>
-<span class="font-medium">Alumno</span>
-</a>
-<a class="flex items-center gap-4 px-4 py-3 rounded-lg sidebar-active transition-colors" href="#">
-<span class="material-symbols-outlined">swap_horiz</span>
-<span class="font-medium">Trámites</span>
-</a>
-</nav>
-</aside>
-<main class="flex-1 ml-64 min-h-screen">
-<header class="bg-white h-16 flex items-center justify-end px-8 border-b border-slate-100 sticky top-0 z-20">
-<div class="flex items-center gap-6">
-<button class="relative text-slate-400 hover:text-primary transition-colors">
-<span class="material-symbols-outlined">notifications</span>
-<span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-</button>
-<div class="flex items-center gap-3">
-<div class="text-right">
-<p class="text-sm font-bold text-slate-900">Gabriela Antonet</p>
-<p class="text-xs text-slate-500">1er Año de Secundaria</p>
+                        Profesores
+                    </a>
+<a class="flex items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-white/10 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">grade</span>
+                        Calificaciones
+                    </a>
+<a class="flex items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-white/10 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+                        Configuración
+                    </a>
 </div>
-<img alt="Profile" class="w-9 h-9 rounded-full object-cover border-2 border-slate-100" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCc21AvWswLbzuNHlvlo0myoe6pbL5tCqMs4LGL2bledMojVRaTHcwa8XT6xrGxwGkargLvOM3KFPynXiDwYh9Bkop7u_1PcA2DshOW_ZXBB_IWWoKXfr8FWmYCqaEfrIJ6-0Yf3gQqR9EhqOdrhn6ygSenClm3MX_bDVAOpcA3iPfCOW69r2hQmE8M8iu4XX2bOLofub44f-GClV7RIUMeL6Zhz0rKsXjmrH3mJf8cZcSkxUwX_ER62L2nYHKlpnF3fseJJcgiqwuW"/>
+</nav>
+<div class="p-4 border-t border-white/10">
+<a class="flex items-center gap-3 px-4 py-3 text-sm font-medium hover:bg-white/10 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">help_outline</span>
+                    Soporte
+                </a>
+</div>
+</aside>
+<main class="flex-1 ml-64 min-h-screen flex flex-col bg-white">
+<header class="px-10 py-8 border-b border-slate-100 bg-white sticky top-0 z-10">
+<nav class="text-xs text-slate-500 mb-2 flex items-center gap-2">
+<a class="hover:text-primary transition-colors" href="#">Estudiantes</a>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-slate-400">Nuevo Registro</span>
+</nav>
+<div class="flex justify-between items-center">
+<div>
+<h2 class="text-3xl font-black text-slate-900 tracking-tight">Registro de Nuevo Estudiante</h2>
+<p class="text-slate-500 text-sm mt-1">Complete todos los campos para dar de alta al alumno en el sistema institucional.</p>
 </div>
 </div>
 </header>
-<div class="p-8 max-w-7xl mx-auto">
-<div class="mb-8 flex items-center justify-between">
-<div>
-<h1 class="text-3xl font-black text-primary mb-1">Historial de Pagos Completo</h1>
-<p class="text-slate-500">Consulta el detalle de todas tus transacciones realizadas.</p>
+<div class="px-10 py-8 max-w-5xl">
+<form class="space-y-12">
+<section>
+<div class="flex items-center gap-2 mb-6 border-b border-slate-100 pb-2">
+<span class="material-symbols-outlined text-maroon">person</span>
+<h3 class="text-lg font-bold text-maroon uppercase tracking-wide">Datos Personales</h3>
 </div>
-<button class="flex items-center gap-2 text-sm font-bold text-secondary hover:underline">
-<span class="material-symbols-outlined text-lg">arrow_back</span>
-                    Volver a Trámites
-                </button>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-700 uppercase" for="nombres">Nombres</label>
+<input class="w-full border-slate-200 rounded-lg focus:ring-primary focus:border-primary text-sm p-2.5 transition-shadow" id="nombres" placeholder="Ej. Juan Andrés" type="text"/>
 </div>
-<div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-8">
-<div class="p-6 border-b border-slate-100">
-<div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-<div class="space-y-1">
-<label class="text-[10px] uppercase font-black text-slate-400 tracking-wider">Desde</label>
-<input class="w-full border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary" type="date"/>
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-700 uppercase" for="apellidos">Apellidos</label>
+<input class="w-full border-slate-200 rounded-lg focus:ring-primary focus:border-primary text-sm p-2.5 transition-shadow" id="apellidos" placeholder="Ej. Pérez García" type="text"/>
 </div>
-<div class="space-y-1">
-<label class="text-[10px] uppercase font-black text-slate-400 tracking-wider">Hasta</label>
-<input class="w-full border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary" type="date"/>
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-700 uppercase" for="dni">ID / DNI</label>
+<input class="w-full border-slate-200 rounded-lg focus:ring-primary focus:border-primary text-sm p-2.5 transition-shadow" id="dni" placeholder="000000000" type="text"/>
 </div>
-<div class="space-y-1">
-<label class="text-[10px] uppercase font-black text-slate-400 tracking-wider">Concepto de Pago</label>
-<select class="w-full border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
-<option>Todos los conceptos</option>
-<option>Pensión Mensual</option>
-<option>Matrícula</option>
-<option>Reserva de Vacante</option>
-<option>Derecho de Examen</option>
-<option>Materiales</option>
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-700 uppercase" for="dob">Fecha de Nacimiento</label>
+<input class="w-full border-slate-200 rounded-lg focus:ring-primary focus:border-primary text-sm p-2.5 transition-shadow" id="dob" type="date"/>
+</div>
+</div>
+</section>
+<section>
+<div class="flex items-center gap-2 mb-6 border-b border-slate-100 pb-2">
+<span class="material-symbols-outlined text-maroon">history_edu</span>
+<h3 class="text-lg font-bold text-maroon uppercase tracking-wide">Datos Académicos</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-700 uppercase" for="grado">Grado / Sección</label>
+<select class="w-full border-slate-200 rounded-lg focus:ring-primary focus:border-primary text-sm p-2.5 bg-white transition-shadow" id="grado">
+<option value="">Seleccione una opción</option>
+<option value="10-a">10mo Grado - Sección A</option>
+<option value="10-b">10mo Grado - Sección B</option>
+<option value="11-a">11mo Grado - Sección A</option>
+<option value="11-b">11mo Grado - Sección B</option>
 </select>
 </div>
-<div>
-<button class="w-full bg-primary text-white py-2 px-4 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
-<span class="material-symbols-outlined text-lg">filter_alt</span>
-                                Aplicar Filtros
-                            </button>
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-700 uppercase" for="enrollment">Año de Ingreso</label>
+<input class="w-full border-slate-200 rounded-lg focus:ring-primary focus:border-primary text-sm p-2.5 transition-shadow" id="enrollment" placeholder="2024" type="number" value="2024"/>
 </div>
 </div>
+</section>
+<section>
+<div class="flex items-center gap-2 mb-6 border-b border-slate-100 pb-2">
+<span class="material-symbols-outlined text-maroon">family_restroom</span>
+<h3 class="text-lg font-bold text-maroon uppercase tracking-wide">Información del Apoderado</h3>
 </div>
-<div class="overflow-x-auto">
-<table class="w-full text-left text-sm">
-<thead>
-<tr class="text-slate-400 font-bold uppercase text-[10px] tracking-widest border-b border-slate-100 bg-slate-50/50">
-<th class="px-6 py-4">Fecha de Pago</th>
-<th class="px-6 py-4">Concepto</th>
-<th class="px-6 py-4">Nro. de Operación</th>
-<th class="px-6 py-4">Método de Pago</th>
-<th class="px-6 py-4 text-right">Importe (S/)</th>
-<th class="px-6 py-4 text-center">Recibo</th>
-</tr>
-</thead>
-<tbody class="divide-y divide-slate-100">
-<tr class="hover:bg-slate-50 transition-colors">
-<td class="px-6 py-4 text-slate-600 font-medium">15/01/2026</td>
-<td class="px-6 py-4 font-bold text-slate-800">Matrícula Escolar 2026</td>
-<td class="px-6 py-4 font-mono text-xs text-slate-500">TR-9982312</td>
-<td class="px-6 py-4">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-blue-500 text-lg">credit_card</span>
-                                        Tarjeta Visa
-                                    </div>
-</td>
-<td class="px-6 py-4 text-right font-black">450.00</td>
-<td class="px-6 py-4 text-center">
-<button class="p-2 hover:bg-red-50 rounded-full transition-colors group">
-<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">picture_as_pdf</span>
-</button>
-</td>
-</tr>
-<tr class="hover:bg-slate-50 transition-colors">
-<td class="px-6 py-4 text-slate-600 font-medium">12/12/2025</td>
-<td class="px-6 py-4 font-bold text-slate-800">Reserva de Vacante 2026</td>
-<td class="px-6 py-4 font-mono text-xs text-slate-500">TR-9972100</td>
-<td class="px-6 py-4">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-green-500 text-lg">qr_code_2</span>
-                                        Yape
-                                    </div>
-</td>
-<td class="px-6 py-4 text-right font-black">250.00</td>
-<td class="px-6 py-4 text-center">
-<button class="p-2 hover:bg-red-50 rounded-full transition-colors group">
-<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">picture_as_pdf</span>
-</button>
-</td>
-</tr>
-<tr class="hover:bg-slate-50 transition-colors">
-<td class="px-6 py-4 text-slate-600 font-medium">01/11/2025</td>
-<td class="px-6 py-4 font-bold text-slate-800">Cuota APAFA 2026</td>
-<td class="px-6 py-4 font-mono text-xs text-slate-500">TR-9965401</td>
-<td class="px-6 py-4">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-slate-400 text-lg">account_balance</span>
-                                        Transferencia BCP
-                                    </div>
-</td>
-<td class="px-6 py-4 text-right font-black">50.00</td>
-<td class="px-6 py-4 text-center">
-<button class="p-2 hover:bg-red-50 rounded-full transition-colors group">
-<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">picture_as_pdf</span>
-</button>
-</td>
-</tr>
-<tr class="hover:bg-slate-50 transition-colors">
-<td class="px-6 py-4 text-slate-600 font-medium">05/10/2025</td>
-<td class="px-6 py-4 font-bold text-slate-800">Pensión Mensual 09 - 2025</td>
-<td class="px-6 py-4 font-mono text-xs text-slate-500">TR-9954322</td>
-<td class="px-6 py-4">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-blue-500 text-lg">credit_card</span>
-                                        Tarjeta Visa
-                                    </div>
-</td>
-<td class="px-6 py-4 text-right font-black">300.00</td>
-<td class="px-6 py-4 text-center">
-<button class="p-2 hover:bg-red-50 rounded-full transition-colors group">
-<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">picture_as_pdf</span>
-</button>
-</td>
-</tr>
-<tr class="hover:bg-slate-50 transition-colors">
-<td class="px-6 py-4 text-slate-600 font-medium">05/09/2025</td>
-<td class="px-6 py-4 font-bold text-slate-800">Pensión Mensual 08 - 2025</td>
-<td class="px-6 py-4 font-mono text-xs text-slate-500">TR-9941098</td>
-<td class="px-6 py-4">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-blue-400 text-lg">payments</span>
-                                        Efectivo (Agente)
-                                    </div>
-</td>
-<td class="px-6 py-4 text-right font-black">300.00</td>
-<td class="px-6 py-4 text-center">
-<button class="p-2 hover:bg-red-50 rounded-full transition-colors group">
-<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">picture_as_pdf</span>
-</button>
-</td>
-</tr>
-</tbody>
-</table>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+<div class="space-y-2 md:col-span-2">
+<label class="text-xs font-bold text-slate-700 uppercase" for="apoderado_nombre">Nombre Completo del Apoderado</label>
+<input class="w-full border-slate-200 rounded-lg focus:ring-primary focus:border-primary text-sm p-2.5 transition-shadow" id="apoderado_nombre" placeholder="Nombre y Apellido" type="text"/>
 </div>
-<div class="p-6 border-t border-slate-100 flex items-center justify-between bg-slate-50/30">
-<p class="text-xs text-slate-500 font-medium">Mostrando 5 de 42 transacciones</p>
-<div class="flex items-center gap-2">
-<button class="p-2 border border-slate-200 rounded hover:bg-white transition-colors disabled:opacity-50" disabled="">
-<span class="material-symbols-outlined text-lg leading-none">chevron_left</span>
-</button>
-<button class="px-3 py-1 bg-primary text-white text-xs font-bold rounded">1</button>
-<button class="px-3 py-1 text-slate-600 hover:bg-white text-xs font-bold rounded">2</button>
-<button class="px-3 py-1 text-slate-600 hover:bg-white text-xs font-bold rounded">3</button>
-<span class="text-slate-400 text-xs">...</span>
-<button class="px-3 py-1 text-slate-600 hover:bg-white text-xs font-bold rounded">9</button>
-<button class="p-2 border border-slate-200 rounded hover:bg-white transition-colors">
-<span class="material-symbols-outlined text-lg leading-none">chevron_right</span>
-</button>
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-700 uppercase" for="parentesco">Parentesco</label>
+<select class="w-full border-slate-200 rounded-lg focus:ring-primary focus:border-primary text-sm p-2.5 bg-white transition-shadow" id="parentesco">
+<option value="">Seleccione</option>
+<option value="padre">Padre</option>
+<option value="madre">Madre</option>
+<option value="tutor">Tutor Legal</option>
+<option value="otro">Otro</option>
+</select>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-700 uppercase" for="telefono">Teléfono de Contacto</label>
+<input class="w-full border-slate-200 rounded-lg focus:ring-primary focus:border-primary text-sm p-2.5 transition-shadow" id="telefono" placeholder="+58 4XX XXXXXXX" type="tel"/>
+</div>
+<div class="space-y-2 md:col-span-2">
+<label class="text-xs font-bold text-slate-700 uppercase" for="email">Correo Electrónico</label>
+<input class="w-full border-slate-200 rounded-lg focus:ring-primary focus:border-primary text-sm p-2.5 transition-shadow" id="email" placeholder="correo@ejemplo.com" type="email"/>
 </div>
 </div>
+</section>
+<div class="flex items-center justify-end gap-4 pt-8 border-t border-slate-100">
+<button class="px-8 py-3 rounded-lg text-sm font-bold border-2 border-maroon text-maroon hover:bg-maroon hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-maroon focus:ring-offset-2" type="button">
+                            Cancelar
+                        </button>
+<button class="px-8 py-3 rounded-lg text-sm font-bold bg-primary text-white hover:bg-[#073263] transition-all shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2" type="submit">
+                            Guardar Estudiante
+                        </button>
 </div>
-<div class="flex justify-end gap-4">
-<button class="bg-white border border-slate-200 text-slate-700 px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-slate-50 transition-colors flex items-center gap-2">
-<span class="material-symbols-outlined text-lg">print</span>
-                    Imprimir Reporte
-                </button>
-<button class="bg-secondary text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity flex items-center gap-2">
-<span class="material-symbols-outlined text-lg">download</span>
-                    Descargar Historial (Excel)
-                </button>
-</div>
+</form>
 </div>
 </main>
+</div>
 
 </body></html>
