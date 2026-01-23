@@ -82,7 +82,7 @@ export function AsidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
           />
 
           <SidebarLink 
-            href="/cursos" 
+            href="/campus-estudiante/panel-control/gestion-academica" 
             icon={<GraduationCap size={20} />} 
             label="Cursos y Materias" 
             onClick={onClose} 
