@@ -24,7 +24,7 @@ export default function Header() {
               <a className="font-bold text-sm uppercase tracking-wider text-slate-700 hover:text-[#701C32] transition-colors" href="/acerca-de">Acerca de</a>
               <a className="font-bold text-sm uppercase tracking-wider text-slate-700 hover:text-[#701C32] transition-colors" href="/docentes">Docentes</a>
               <a className="font-bold text-sm uppercase tracking-wider text-slate-700 hover:text-[#701C32] transition-colors" href="/calendario">Calendario</a>
-              <a className="bg-[#093E7A] text-white px-6 py-2.5 rounded-full font-bold text-sm uppercase tracking-wider hover:bg-[#073365] transition-all shadow-lg shadow-[#093E7A]/20" href="/campus-estudiante">Campus Estudiantil</a>
+              <a className="bg-[#093E7A] text-white px-6 py-2.5 rounded-full font-bold text-sm uppercase tracking-wider hover:bg-[#073365] transition-all shadow-lg shadow-[#093E7A]/20" href="/campus-estudiante">Campus Virtual</a>
             </div>
             <div className="md:hidden">
               <span className="material-icons-round text-3xl cursor-pointer text-[#701C32]">menu</span>
