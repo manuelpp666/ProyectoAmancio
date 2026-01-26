@@ -18,11 +18,11 @@ export function AsideCampus({ isOpen, onClose }: { isOpen: boolean; onClose: () 
         <button onClick={onClose} className="lg:hidden text-white/80"><X size={24} /></button>
       </div>
       <nav className="flex-1 py-6 space-y-2 px-3 overflow-y-auto custom-scrollbar">
-        <Link href="/campus-estudiante/inicio-campus" onClick={onClose} className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg">
+        <Link href="/campus/campus-estudiante/inicio-campus" onClick={onClose} className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg">
           <Home size={20} /> Inicio
         </Link>
         <Link
-          href="/campus-estudiante/inicio-campus/cursos"
+          href="/campus/campus-estudiante/inicio-campus/cursos"
           onClick={onClose}
           className="flex items-center gap-3 px-4 py-3 text-white/80 hover:bg-white/10 hover:text-white rounded-lg transition-colors group"
         >
@@ -31,7 +31,7 @@ export function AsideCampus({ isOpen, onClose }: { isOpen: boolean; onClose: () 
         </Link>
 
         <Link
-          href="/campus-estudiante/inicio-campus/mensajeria"
+          href="/campus/campus-estudiante/inicio-campus/mensajeria"
           onClick={onClose}
           className="flex items-center gap-3 px-4 py-3 text-white/80 hover:bg-white/10 hover:text-white rounded-lg transition-colors group"
         >
@@ -78,13 +78,13 @@ export function AsideCampus({ isOpen, onClose }: { isOpen: boolean; onClose: () 
           {/* Contenedor de Miniopciones */}
           <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isTramitesOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"}`}>
             <div className="pl-11 pr-4 py-1 space-y-1">
-              <Link href="/campus-estudiante/inicio-campus/tramites" className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
+              <Link href="/campus/campus-estudiante/inicio-campus/tramites" className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
                 Estado de cuenta
               </Link>
-              <Link href="/campus-estudiante/inicio-campus/tramites/pago" className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
+              <Link href="/campus/campus-estudiante/inicio-campus/tramites/pago" className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
                 Pagar pensión
               </Link>
-              <Link href="/campus-estudiante/inicio-campus/tramites/manual" className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
+              <Link href="/campus/campus-estudiante/inicio-campus/tramites/manual" className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
                 Manual de pagos
               </Link>
             </div>

@@ -158,7 +158,7 @@ export default function Page() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <Link href="/campus-estudiante/inicio-campus/tramites/pago/confirmacion" className="w-full">
+                                        <Link href="/campus/campus-estudiante/inicio-campus/tramites/pago/confirmacion" className="w-full">
                                             <button className="w-full bg-white text-[#701C32] py-4 rounded-xl font-black text-lg hover:bg-slate-100 transition-all shadow-lg active:scale-95 duration-100 flex items-center justify-center gap-2">
                                                 CONFIRMAR PAGO
                                                 <ChevronRight className="w-5 h-5" />

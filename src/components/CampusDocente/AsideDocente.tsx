@@ -21,7 +21,7 @@ export function AsideDocente({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       <nav className="flex-1 py-6 space-y-2 px-3 overflow-y-auto custom-scrollbar">
         
         <Link 
-          href="/campus-docente/inicio-docente" 
+          href="/campus/campus-docente/inicio-docente" 
           onClick={onClose} 
           className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg"
         >
@@ -29,7 +29,7 @@ export function AsideDocente({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         </Link>
         
         <Link
-          href="/campus-docente/inicio-docente/cursos"
+          href="/campus/campus-docente/inicio-docente/cursos"
           onClick={onClose}
           className="flex items-center gap-3 px-4 py-3 text-white/80 hover:bg-white/10 hover:text-white rounded-lg transition-colors group"
         >
@@ -38,7 +38,7 @@ export function AsideDocente({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         </Link>
 
         <Link
-          href="/campus-docente/inicio-docente/mensajeria"
+          href="/campus/campus-docente/inicio-docente/mensajeria"
           onClick={onClose}
           className="flex items-center gap-3 px-4 py-3 text-white/80 hover:bg-white/10 hover:text-white rounded-lg transition-colors group"
         >

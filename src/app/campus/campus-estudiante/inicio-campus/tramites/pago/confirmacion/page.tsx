@@ -125,7 +125,7 @@ export default function Page() {
                       <span className="font-medium">Pago 100% seguro y encriptado</span>
                     </div>
                     <div className="flex flex-col-reverse md:flex-row items-center space-y-reverse space-y-4 md:space-y-0 md:space-x-6 w-full md:w-auto">
-                      <Link href="/campus-estudiante/inicio-campus/tramites/pago" className="w-full">
+                      <Link href="/campus/campus-estudiante/inicio-campus/tramites/pago" className="w-full">
                        <button className="text-slate-500 hover:text-[#701C32] font-bold text-sm transition-colors flex items-center gap-1 group/back">
                         <ArrowLeft className="w-4 h-4 transition-transform group-hover/back:-translate-x-1" />
                         Volver al paso anterior

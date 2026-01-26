@@ -30,7 +30,7 @@ export default function MisCursosDocente() {
                
                <div className="mt-auto">
                  <Link 
-                   href={`/campus-docente/inicio-docente/cursos/${curso.id}`}
+                   href={`/campus/campus-docente/inicio-docente/cursos/${curso.id}`}
                    className="w-full flex items-center justify-center gap-2 bg-white border border-[#701C32] text-[#701C32] py-2 rounded-lg font-bold text-sm hover:bg-[#701C32] hover:text-white transition-colors"
                  >
                    Gestionar Curso <ArrowRight size={16}/>

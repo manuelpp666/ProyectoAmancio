@@ -120,7 +120,7 @@ export default function Page() {
                     <FileText className="text-green-500 w-5 h-5" />
                     HISTORIAL DE PAGOS
                   </h3>
-                  <Link href="/campus-estudiante/inicio-campus/tramites/historial" className="w-full">
+                  <Link href="/campus/campus-estudiante/inicio-campus/tramites/historial" className="w-full">
                   <button className="text-xs font-bold text-slate-400 hover:text-[#701C32] transition-colors uppercase tracking-wider">Ver todo el historial</button>
                   </Link>
                   

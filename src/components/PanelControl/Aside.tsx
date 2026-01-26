@@ -53,36 +53,36 @@ export function AsidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
           <div className="text-white/30 text-[10px] uppercase font-black tracking-[0.2em] px-4 mb-4">Menú Principal</div>
 
           <SidebarLink 
-            href="/panel-control" 
+            href="/campus/panel-control" 
             icon={<LayoutDashboard size={20} />} 
             label="Panel de Control" 
-            active={isActive("/campus-estudiante/inicio-campus")}
+            active={isActive("/campus/panel-control")}
             onClick={onClose} 
           />
 
           <SidebarLink 
-            href="/panel-control/gestion-estudiantes" 
+            href="/campus/panel-control/gestion-estudiantes" 
             icon={<Users size={20} />} 
             label="Gestión de Estudiantes" 
             onClick={onClose} 
           />
 
           <SidebarLink 
-            href="/panel-control/pagina-web" 
+            href="/campus/panel-control/pagina-web" 
             icon={<Globe size={20} />} 
             label="Contenido Web" 
             onClick={onClose} 
           />
 
           <SidebarLink 
-            href="/panel-control/chatbot" 
+            href="/campus/panel-control/chatbot" 
             icon={<Bot size={20} />} 
             label="Gestionar Chatbot" 
             onClick={onClose} 
           />
 
           <SidebarLink 
-            href="/panel-control/gestion-academica" 
+            href="/campus/panel-control/gestion-academica" 
             icon={<GraduationCap size={20} />} 
             label="Cursos y Materias" 
             onClick={onClose} 

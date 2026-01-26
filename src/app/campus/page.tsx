@@ -17,12 +17,12 @@ export default function LoginPage() {
     // En un futuro, aquí conectarás con tu API de Python
     setTimeout(() => {
       if (username.toLowerCase().includes("admin")) {
-        router.push("/panel-control");
+        router.push("/campus/panel-control");
       } else if (username.toLowerCase().includes("docente") || username.toLowerCase().includes("profe")) {
-        router.push("/campus-docente/inicio-docente");
+        router.push("/campus/campus-docente/inicio-docente");
       } else {
         // Por defecto, cualquier otro usuario va al campus estudiante
-        router.push("/campus-estudiante/inicio-campus");
+        router.push("/campus/campus-estudiante/inicio-campus");
       }
       setLoading(false);
     }, 1000); 

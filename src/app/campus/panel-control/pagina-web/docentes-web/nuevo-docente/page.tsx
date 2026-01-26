@@ -29,7 +29,7 @@ export default function RegistrarDocentePage() {
           <header className="h-20 border-b bg-white flex items-center justify-between px-8 shrink-0">
             <div className="flex items-center gap-6">
               <Link 
-                href="/panel-control/pagina-web/docentes-web"
+                href="/campus/panel-control/pagina-web/docentes-web"
                 className="w-10 h-10 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-[#093E7A] transition-all"
               >
                 <ArrowLeft size={24} />

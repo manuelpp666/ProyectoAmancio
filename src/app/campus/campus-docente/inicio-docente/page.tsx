@@ -34,14 +34,14 @@ export default function InicioDocentePage() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="font-bold text-lg text-gray-800">Mis Cursos Recientes</h2>
-          <Link href="/campus-docente/inicio-docente/cursos" className="text-[#701C32] text-sm font-medium hover:underline flex items-center gap-1">
+          <Link href="/campus/campus-docente/inicio-docente/cursos" className="text-[#701C32] text-sm font-medium hover:underline flex items-center gap-1">
             Ver todos <ArrowRight size={16}/>
           </Link>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
            {/* Card Curso 1 */}
-           <Link href="/campus-docente/inicio-docente/cursos/1" className="group block">
+           <Link href="/campus/campus-docente/inicio-docente/cursos/1" className="group block">
               <div className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow hover:border-[#701C32]/30 bg-white">
                  <div className="flex justify-between items-start mb-4">
                     <span className="bg-[#701C32]/10 text-[#701C32] text-xs font-bold px-2 py-1 rounded">5to Sec. A</span>
@@ -51,7 +51,7 @@ export default function InicioDocentePage() {
               </div>
            </Link>
            {/* Card Curso 2 */}
-           <Link href="/campus-docente/inicio-docente/cursos/2" className="group block">
+           <Link href="/campus/campus-docente/inicio-docente/cursos/2" className="group block">
               <div className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow hover:border-[#701C32]/30 bg-white">
                  <div className="flex justify-between items-start mb-4">
                     <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded">4to Sec. B</span>

@@ -14,7 +14,7 @@ export default function HistorialPagos() {
               <h1 className="text-3xl font-black text-primary mb-1">Historial de Pagos Completo</h1>
               <p className="text-slate-500">Consulta el detalle de todas tus transacciones realizadas.</p>
             </div>
-            <Link href="/campus-estudiante/inicio-campus/tramites" className="w-full">
+            <Link href="/campus/campus-estudiante/inicio-campus/tramites" className="w-full">
               <button className="flex items-center gap-2 text-sm font-bold text-secondary hover:underline">
                 <span className="material-symbols-outlined text-lg">arrow_back</span>
                 Volver a Trámites
