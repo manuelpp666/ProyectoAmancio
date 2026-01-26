@@ -37,7 +37,7 @@ export default function GestionEstudiantesPage() {
                                 <h2 className="text-3xl font-black text-[#111418] tracking-tight">Gestión de Estudiantes</h2>
                                 <p className="text-[#617489] text-sm mt-1">Administración centralizada de alumnos matriculados.</p>
                             </div>
-                            <Link href="/campus-estudiante/panel-control/gestion-estudiantes/registrar-estudiante">
+                            <Link href="/panel-control/gestion-estudiantes/registrar-estudiante">
                                 <button className="flex items-center gap-2 bg-[#093E7A] hover:bg-[#072e5a] text-white px-6 py-3 rounded-lg text-sm font-bold transition-all shadow-md">
                                     <span className="material-symbols-outlined text-[20px]">add_circle</span>
                                     <span>Registrar Nuevo Estudiante</span>

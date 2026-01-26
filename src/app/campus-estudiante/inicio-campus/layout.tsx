@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { AsideCampus as Sidebar } from "@/src/components/Campus/AsideCampus";
-import { HeaderCampus as Header } from "@/src/components/Campus/HeaderCampus";
+import { AsideCampus as Sidebar } from "@/src/components/CampusDocente/AsideCampus";
+import { HeaderCampus as Header } from "@/src/components/CampusDocente/HeaderCampus";
 
 
 

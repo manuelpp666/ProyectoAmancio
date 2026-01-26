@@ -18,37 +18,37 @@ export default function HeaderPanel() {
     return (
         <div className="bg-white px-8">
             <div className="flex gap-8 border-b">
-                <Link href="/campus-estudiante/panel-control/gestion-academica">
-                    <button className={getTabClass("/campus-estudiante/panel-control/gestion-academica")}>
+                <Link href="/panel-control/gestion-academica">
+                    <button className={getTabClass("/panel-control/gestion-academica")}>
                         <span className="material-symbols-outlined text-[20px] fill-icon">account_tree</span>
                         Estructura Escolar
                     </button>
                 </Link>
 
-                <Link href="/campus-estudiante/panel-control/gestion-academica/gestion-horario">
-                    <button className={getTabClass("/campus-estudiante/panel-control/gestion-academica/gestion-horario")}>
+                <Link href="/panel-control/gestion-academica/gestion-horario">
+                    <button className={getTabClass("/panel-control/gestion-academica/gestion-horario")}>
                         <span className="material-symbols-outlined text-[20px]">menu_book</span>
                         Gestion de horarios
                     </button>
                 </Link>
 
-                <Link href="/campus-estudiante/panel-control/gestion-academica/asignar-docente">
-                    <button className={getTabClass("/campus-estudiante/panel-control/gestion-academica/asignar-docente")}>
+                <Link href="/panel-control/gestion-academica/asignar-docente">
+                    <button className={getTabClass("/panel-control/gestion-academica/asignar-docente")}>
                         <span className="material-symbols-outlined text-[20px]">assignment_ind</span>
                         Asignación de Docentes
                     </button>
                 </Link>
 
-                <Link href="/campus-estudiante/panel-control/gestion-academica/asignar-estudiante">
-                    <button className={getTabClass("/campus-estudiante/panel-control/gestion-academica/asignar-estudiante")}>
+                <Link href="/panel-control/gestion-academica/asignar-estudiante">
+                    <button className={getTabClass("/panel-control/gestion-academica/asignar-estudiante")}>
                         <span className="material-symbols-outlined text-[20px]">group</span>
                         Asignación de Estudiantes
                     </button>
                 </Link>
 
-                <Link href="/campus-estudiante/panel-control/gestion-academica/gestion-cursos">
+                <Link href="/panel-control/gestion-academica/gestion-cursos">
 
-                    <button className={getTabClass("/campus-estudiante/panel-control/gestion-academica/gestion-cursos")}>
+                    <button className={getTabClass("/panel-control/gestion-academica/gestion-cursos")}>
                         <span className="material-symbols-outlined text-[20px]">menu_book</span>
                         Gestion de cursos
                     </button>

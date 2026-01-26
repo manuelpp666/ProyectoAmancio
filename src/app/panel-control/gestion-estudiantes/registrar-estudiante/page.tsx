@@ -36,7 +36,7 @@ export default function RegistroEstudiantePage() {
                         <div className="flex items-center gap-5 w-full">
                             {/* Botón de regreso */}
                             <Link
-                                href="/campus-estudiante/panel-control/gestion-estudiantes"
+                                href="/panel-control/gestion-estudiantes"
                                 className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-[#701C32] transition-all"
                             >
                                 <ArrowLeft size={24} />
@@ -141,7 +141,7 @@ export default function RegistroEstudiantePage() {
 
                             {/* Botones de Acción */}
                             <div className="flex items-center justify-end gap-4 pt-8 border-t border-slate-100">
-                                <Link href="/campus-estudiante/panel-control/gestion-estudiantes">
+                                <Link href="/panel-control/gestion-estudiantes">
                                     <button
                                         className="px-8 py-3 rounded-lg text-sm font-bold border-2 border-[#701C32] text-[#701C32] hover:bg-[#701C32] hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-[#701C32] focus:ring-offset-2"
                                         type="button"

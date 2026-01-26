@@ -41,7 +41,7 @@ export default function GestionDocentesPage() {
                                     <Filter size={18} />
                                     Filtrar
                                 </button>
-                                <Link href="/campus-estudiante/panel-control/pagina-web/docentes-web/nuevo-docente">
+                                <Link href="/panel-control/pagina-web/docentes-web/nuevo-docente">
                                     <button className="flex items-center gap-2 px-6 py-2.5 bg-[#093E7A] text-white rounded-xl hover:bg-[#062d59] transition-all font-black text-sm shadow-lg shadow-[#093E7A]/20 active:scale-95">
                                         <UserPlus size={18} strokeWidth={3} />
                                         Añadir Docente

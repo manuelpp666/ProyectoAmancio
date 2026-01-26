@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AsidePanel as Sidebar } from "@/src/components/PanelControl/Aside";
-import { HeaderCampus as Header } from "@/src/components/Campus/HeaderCampus";
+import { HeaderCampus as Header } from "@/src/components/CampusDocente/HeaderCampus";
 
 
 

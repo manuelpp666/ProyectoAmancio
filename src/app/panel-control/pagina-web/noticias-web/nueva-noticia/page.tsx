@@ -32,7 +32,7 @@ export default function CrearNoticiaPage() {
           <header className="h-20 border-b flex items-center justify-between px-8 bg-white shrink-0">
             <div className="flex items-center gap-5">
               <Link 
-                href="/campus-estudiante/panel-control/pagina-web/noticias-web"
+                href="/panel-control/pagina-web/noticias-web"
                 className="w-10 h-10 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-[#701C32] transition-all"
               >
                 <ArrowLeft size={24} />

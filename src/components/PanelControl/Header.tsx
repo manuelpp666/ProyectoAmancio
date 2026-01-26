@@ -19,31 +19,31 @@ export default function HeaderPanel() {
         <div className="bg-white px-8">
             <div className="flex gap-8 border-b">
 
-                <Link href="/campus-estudiante/panel-control/pagina-web">
-                    <button className={getTabClass("/campus-estudiante/panel-control/pagina-web")}>
+                <Link href="/panel-control/pagina-web">
+                    <button className={getTabClass("/panel-control/pagina-web")}>
                         <span className="material-symbols-outlined text-[20px]">info</span>
                         Información General
                     </button>
                 </Link>
 
-                <Link href="/campus-estudiante/panel-control/pagina-web/noticias-web">
-                    <button className={getTabClass("/campus-estudiante/panel-control/pagina-web/noticias-web")}>
+                <Link href="/panel-control/pagina-web/noticias-web">
+                    <button className={getTabClass("/panel-control/pagina-web/noticias-web")}>
                         <span className="material-symbols-outlined text-[20px]">newspaper</span>
                         Gestión de Noticias
                     </button>
                 </Link>
 
                 {/* Repite la lógica para los demás botones si tienen rutas */}
-                <Link href="/campus-estudiante/panel-control/pagina-web/docentes-web">
-                    <button className={getTabClass("/campus-estudiante/panel-control/pagina-web/docentes-web")}>
+                <Link href="/panel-control/pagina-web/docentes-web">
+                    <button className={getTabClass("/panel-control/pagina-web/docentes-web")}>
                         <span className="material-symbols-outlined text-[20px]">groups</span>
                         Docentes
                     </button>
                 </Link>
 
 
-                <Link href="/campus-estudiante/panel-control/pagina-web/calendario-anual">
-                    <button className={getTabClass("/campus-estudiante/panel-control/pagina-web/calendario-anual")}>
+                <Link href="/panel-control/pagina-web/calendario-anual">
+                    <button className={getTabClass("/panel-control/pagina-web/calendario-anual")}>
                         <span className="material-symbols-outlined text-[20px]">calendar_month</span>
                         Calendario Anual
                     </button>

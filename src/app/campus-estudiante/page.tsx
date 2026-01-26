@@ -17,7 +17,7 @@ export default function LoginPage() {
     // En un futuro, aquí conectarás con tu API de Python
     setTimeout(() => {
       if (username.toLowerCase().includes("admin")) {
-        router.push("/campus-estudiante/panel-control");
+        router.push("/panel-control");
       } else if (username.toLowerCase().includes("docente") || username.toLowerCase().includes("profe")) {
         router.push("/campus-docente/inicio-docente");
       } else {

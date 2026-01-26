@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 // Importamos el nuevo componente. Ajusta la ruta si es necesario.
-import { AsideDocente } from "../../../components/Campus/AsideDocente"; 
+import { AsideDocente } from "../../../components/CampusDocente/AsideDocente"; 
 import { Menu, Bell } from "lucide-react";
 
 export default function DocenteLayout({
