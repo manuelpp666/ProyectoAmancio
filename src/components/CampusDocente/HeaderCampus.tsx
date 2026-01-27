@@ -34,7 +34,7 @@ export function HeaderCampus({ onOpenMenu }: { onOpenMenu: () => void }) {
 
         {/* Contenedor del Perfil con Menú Desplegable */}
         <div className="relative" ref={menuRef}>
-          <div 
+          <div
             className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
@@ -42,35 +42,39 @@ export function HeaderCampus({ onOpenMenu }: { onOpenMenu: () => void }) {
               <p className="text-sm font-bold text-gray-800">Gabriela Antonet</p>
               <p className="text-[11px] text-gray-500">5to Año de Secundaria</p>
             </div>
-            <img 
-              src="https://api.dicebear.com/7.x/avataaars/svg?seed=Gabriela" 
-              className="w-10 h-10 rounded-full border border-gray-200" 
-              alt="Perfil" 
+            <img
+              src="https://api.dicebear.com/7.x/avataaars/svg?seed=Gabriela"
+              className="w-10 h-10 rounded-full border border-gray-200"
+              alt="Perfil"
             />
           </div>
 
           {/* Menú Desplegable (Dropdown) */}
           {isMenuOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-100 py-1 z-50 animate-in fade-in zoom-in duration-200">
-              <Link 
-                href="/campus/perfil" 
+              <Link
+                href="/campus/perfil"
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#701C32]"
               >
                 <User size={16} /> Mis Datos
               </Link>
-              <Link 
-                href="/campus/perfil/cambiar-contrasena" 
+              <Link
+                href="/campus/perfil/cambiar-contrasena"
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#701C32]"
               >
                 <Key size={16} /> Cambiar Contraseña
               </Link>
               <hr className="my-1 border-gray-100" />
-              <button 
-                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                onClick={() => console.log("Cerrar sesión")}
-              >
-                <LogOut size={16} /> Salir
-              </button>
+
+              <Link href="/campus">
+                <button
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  onClick={() => console.log("Cerrar sesión")}
+                >
+                  <LogOut size={16} /> Salir
+                </button>
+              </Link>
+
             </div>
           )}
         </div>

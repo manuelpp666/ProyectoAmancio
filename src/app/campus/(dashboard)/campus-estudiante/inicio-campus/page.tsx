@@ -1,8 +1,16 @@
 // src/app/campus-estudiante/inicio-campus/page.tsx
-
+"use client";
+import { useUser } from "@/src/context/userContext";
+import { useEffect } from "react";
 import { ArrowRight, Megaphone, Star, Wallet, Clock, Calendar } from "lucide-react";
 
 export default function DashboardPage() {
+
+    const { setRole } = useUser();
+
+    useEffect(() => {
+        setRole("estudiante"); // Marcamos que el usuario actual es estudiante
+    }, []);
 
     return (
         <div className="max-w-[1600px] mx-auto space-y-8">

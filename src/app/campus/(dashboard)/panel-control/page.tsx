@@ -1,3 +1,6 @@
+"use client";
+import { useUser } from "@/src/context/userContext";
+import { useEffect } from "react";
 import React from 'react';
 import { 
   LayoutDashboard, 
@@ -18,6 +21,13 @@ import {
 } from 'lucide-react';
 
 export default function DashboardPage() {
+  
+  const { setRole } = useUser();
+
+    useEffect(() => {
+        setRole("admin"); // Marcamos que el usuario actual es estudiante
+    }, []);
+  
   return (
     <div className="bg-[#F8FAFC] text-slate-800 min-h-screen">
       {/* Main Content */}

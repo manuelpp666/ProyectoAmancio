@@ -1,7 +1,18 @@
+"use client";
+import { useUser } from "@/src/context/userContext";
+import { useEffect } from "react";
 import Link from "next/link";
 import { BookOpen, Users, Clock, ArrowRight } from "lucide-react";
 
 export default function InicioDocentePage() {
+  
+  const { setRole } = useUser();
+
+    useEffect(() => {
+        setRole("docente"); // Marcamos que el usuario actual es estudiante
+    }, []);
+
+
   const resumen = [
     { label: "Cursos Asignados", val: "5", icon: BookOpen, color: "bg-blue-50 text-blue-600" },
     { label: "Alumnos Totales", val: "124", icon: Users, color: "bg-green-50 text-green-600" },

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-
+import { UserProvider } from "../context/userContext";
 export const metadata: Metadata = {
   title: "Amancio Varona",
   description: "La mejor institución educativa de Tumán",
@@ -19,7 +19,9 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
       </head>
       <body>
-        {children}
+
+        <UserProvider>{children}</UserProvider>
+        
       </body>
     </html>
   );
