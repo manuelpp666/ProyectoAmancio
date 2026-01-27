@@ -1,6 +1,6 @@
-import Header from "@/src/components/Header";
+import Header from "@/src/components/Pagina-Web/Header";
 import Footer
- from "@/src/components/Footer";
+ from "@/src/components/Pagina-Web/Footer";
 export default function Home() {
 
   return (

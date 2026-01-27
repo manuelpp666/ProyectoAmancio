@@ -1,4 +1,4 @@
-import HeaderPanel from "@/src/components/PanelControl/NavbarGestionAcademica";
+import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 export default function AsignacionDocentesPage() {
   return (
     <>

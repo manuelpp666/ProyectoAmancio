@@ -1,4 +1,4 @@
-import HeaderPanel from "@/src/components/PanelControl/NavbarGestionAcademica";
+import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 
 export default function ConstructorHorariosPage() {
   // Definición de las filas para no repetir código manualmente

@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Footer from "../components/Footer";
-import Header from "../components/Header";
+import Footer from "../components/Pagina-Web/Footer";
+import Header from "../components/Pagina-Web/Header";
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
 

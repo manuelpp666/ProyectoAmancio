@@ -1,6 +1,6 @@
 "use client";
 import React from 'react';
-import HeaderPanel from "@/src/components/PanelControl/Header";
+import HeaderPanel from "@/src/components/Campus/PanelControl/Header";
 import Link from "next/link";
 import {
     UserPlus,

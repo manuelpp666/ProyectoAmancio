@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import Header from "@/src/components/Header";
-import Footer from "@/src/components/Footer";
+import Header from "@/src/components/Pagina-Web/Header";
+import Footer from "@/src/components/Pagina-Web/Footer";
 
 export default function Page() {
     // Estado para manejar la fecha actual del calendario

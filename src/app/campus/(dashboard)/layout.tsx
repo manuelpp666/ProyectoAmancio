@@ -2,10 +2,10 @@
 import { useUser } from "@/src/context/userContext";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { AsideCampus as SidebarEstudiante } from "@/src/components/CampusDocente/AsideCampus";
-import { AsideDocente as SidebarDocente} from "@/src/components/CampusDocente/AsideDocente";
-import { AsidePanel as SidebarPanel } from "@/src/components/PanelControl/Aside";
-import { HeaderCampus as Header } from "@/src/components/CampusDocente/HeaderCampus";
+import { AsideCampus as SidebarEstudiante } from "@/src/components/Campus/CampusEstudiante/AsideCampus";
+import { AsideDocente as SidebarDocente} from "@/src/components/Campus/CampusDocente/AsideDocente";
+import { AsidePanel as SidebarPanel } from "@/src/components/Campus/PanelControl/Aside";
+import { HeaderCampus as Header } from "@/src/components/Campus/HeaderCampus";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   
