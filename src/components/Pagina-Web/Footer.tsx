@@ -25,10 +25,10 @@ export default function Footer() {
             <div>
               <h5 className="font-black text-lg mb-6 text-white">Enlaces Rápidos</h5>
               <ul className="space-y-4 text-[#FFF1E3]/70">
-                <li><a className="hover:text-[#FFF1E3] transition-colors" href="#">Admisión 2024</a></li>
-                <li><a className="hover:text-[#FFF1E3] transition-colors" href="#">Convenios Universitarios</a></li>
-                <li><a className="hover:text-[#FFF1E3] transition-colors" href="#">Extracurriculares</a></li>
-                <li><a className="hover:text-[#FFF1E3] transition-colors" href="#">Galería de Fotos</a></li>
+                <li><a className="hover:text-[#FFF1E3] transition-colors" href="/campus">Campus</a></li>
+                <li><a className="hover:text-[#FFF1E3] transition-colors" href="/noticias">Noticias</a></li>
+                <li><a className="hover:text-[#FFF1E3] transition-colors" href="/acerca-de">Acerca De</a></li>
+                <li><a className="hover:text-[#FFF1E3] transition-colors" href="/docentes">Docentes</a></li>
               </ul>
             </div>
             <div className="col-span-1 md:col-span-2">
@@ -57,7 +57,7 @@ export default function Footer() {
           </div>
           <div className="pt-10 border-t border-white/10 text-center">
             <p className="text-[#FFF1E3]/50 text-xs">
-              2024 © Copyright Amancio Varona | Todos los Derechos Reservados
+              2026 © Copyright Amancio Varona | Todos los Derechos Reservados
             </p>
           </div>
         </div>
