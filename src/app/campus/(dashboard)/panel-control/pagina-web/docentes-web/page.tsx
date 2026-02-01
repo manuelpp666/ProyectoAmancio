@@ -7,18 +7,9 @@ import { useEffect, useState } from 'react';
 import {
     Search,
     UserPlus,
-    Filter,
-    Edit3,
-    UserMinus,
-    CheckCircle2,
-    PauseCircle,
-    XCircle,
     Users,
     UserCheck,
     UserX,
-    MoreVertical,
-    Mail,
-    GraduationCap
 } from "lucide-react";
 
 export default function GestionDocentesPage() {
@@ -108,7 +99,7 @@ export default function GestionDocentesPage() {
                                             <TeacherRow
                                                 key={d.id_docente}
                                                 docente={d}
-                                                status="activo" // Opcional
+                                                status="activo" 
                                             />
                                         ))}
                                     </tbody>

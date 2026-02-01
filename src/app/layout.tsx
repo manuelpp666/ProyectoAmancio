@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { UserProvider } from "../context/userContext";
+import { Toaster } from 'sonner';
 export const metadata: Metadata = {
   title: "Amancio Varona",
   description: "La mejor institución educativa de Tumán",
@@ -21,7 +22,7 @@ export default function RootLayout({
       <body>
 
         <UserProvider>{children}</UserProvider>
-        
+        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
   );
