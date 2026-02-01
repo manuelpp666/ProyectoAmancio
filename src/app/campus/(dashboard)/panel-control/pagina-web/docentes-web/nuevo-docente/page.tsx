@@ -106,7 +106,7 @@ export default function RegistrarDocentePage() {
                         </div>
                       </div>
                     </div>
-                    <FormInput label="Grados Académicos" placeholder="Ej. Magíster en Educación" icon={<GraduationCap size={16} />} />
+                    <FormInput label="Teléfono" placeholder="xxx xxx xxx" icon={<GraduationCap size={16} />} />
                     <div className="md:col-span-2 space-y-2">
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Resumen Profesional</label>
                       <textarea 
@@ -117,28 +117,7 @@ export default function RegistrarDocentePage() {
                   </div>
                 </section>
 
-                {/* Sección 03: Asignación */}
-                <section className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="px-8 py-5 border-b border-gray-50 bg-gray-50/30">
-                    <h3 className="text-[11px] font-black text-[#093E7A] uppercase tracking-[0.2em] flex items-center gap-2">
-                      <FileText size={16} />
-                      03. Asignación de Grados
-                    </h3>
-                  </div>
-                  <div className="p-10">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                      {['1ero Secundaria', '2do Secundaria', '3ero Secundaria', '4to Secundaria', '5to Secundaria'].map((grado) => (
-                        <label key={grado} className="group relative flex items-center gap-4 p-4 rounded-2xl border border-gray-100 bg-gray-50/30 hover:bg-white hover:border-[#093E7A] hover:shadow-md transition-all cursor-pointer overflow-hidden">
-                          <input 
-                            type="checkbox" 
-                            className="w-5 h-5 rounded-lg border-gray-300 text-[#093E7A] focus:ring-[#093E7A] transition-all"
-                          />
-                          <span className="text-xs font-black text-gray-600 uppercase tracking-tighter group-hover:text-[#093E7A] transition-colors">{grado}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </section>
+                
 
                 {/* Botones de Acción */}
                 <div className="flex items-center justify-end gap-6 pt-6 pb-20">

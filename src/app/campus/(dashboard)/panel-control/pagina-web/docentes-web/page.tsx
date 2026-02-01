@@ -1,8 +1,11 @@
 "use client";
-import React from 'react';
 import HeaderPanel from "@/src/components/Campus/PanelControl/Header";
 import Link from "next/link";
+import { Docente } from "@/src/interfaces/docente";
+import { TeacherRow } from "@/src/components/utils/TablaDocente";
+import { useEffect, useState } from 'react';
 import {
+    Search,
     UserPlus,
     Filter,
     Edit3,
@@ -19,6 +22,27 @@ import {
 } from "lucide-react";
 
 export default function GestionDocentesPage() {
+
+    const [docentes, setDocentes] = useState<Docente[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDocentes = async () => {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/docentes/`);
+                const data = await response.json();
+                setDocentes(data);
+            } catch (error) {
+                console.error("Error cargando docentes:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDocentes();
+    }, []);
+
+    if (loading) return <p className="p-8">Cargando docentes...</p>;
     return (
         <div className="min-h-screen bg-[#F8FAFC]">
             <div className="flex h-screen overflow-hidden">
@@ -31,23 +55,31 @@ export default function GestionDocentesPage() {
                     <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
 
                         {/* Header de la Sección */}
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                             <div>
                                 <h3 className="text-3xl font-black text-gray-900 tracking-tight">Administración de Docentes</h3>
                                 <p className="text-sm text-gray-500 mt-1 font-medium">Gestión integral del personal académico y asignación de grados.</p>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition-all font-bold text-sm shadow-sm active:scale-95">
-                                    <Filter size={18} />
-                                    Filtrar
-                                </button>
-                                <Link href="/campus/panel-control/pagina-web/docentes-web/nuevo-docente">
-                                    <button className="flex items-center gap-2 px-6 py-2.5 bg-[#093E7A] text-white rounded-xl hover:bg-[#062d59] transition-all font-black text-sm shadow-lg shadow-[#093E7A]/20 active:scale-95">
+
+                            <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                                {/* Barra de Búsqueda */}
+                                <div className="relative w-full sm:w-80 group">
+                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#093E7A] transition-colors">
+                                        <Search size={18} strokeWidth={2.5} />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar docente o especialidad..."
+                                        className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#093E7A]/5 focus:border-[#093E7A] transition-all font-medium text-sm shadow-sm placeholder:text-gray-400"
+                                    />
+                                </div>
+
+                                <Link href="/campus/panel-control/pagina-web/docentes-web/nuevo-docente" className="w-full sm:w-auto">
+                                    <button className="w-full flex items-center justify-center gap-2 px-6 py-2.5 bg-[#093E7A] text-white rounded-xl hover:bg-[#062d59] transition-all font-black text-sm shadow-lg shadow-[#093E7A]/20 active:scale-95">
                                         <UserPlus size={18} strokeWidth={3} />
                                         Añadir Docente
                                     </button>
                                 </Link>
-
                             </div>
                         </div>
 
@@ -66,44 +98,19 @@ export default function GestionDocentesPage() {
                                         <tr className="bg-gray-50/50 border-b border-gray-100">
                                             <th className="px-8 py-5 text-[11px] font-black text-gray-400 uppercase tracking-[0.15em]">Docente</th>
                                             <th className="px-6 py-5 text-[11px] font-black text-gray-400 uppercase tracking-[0.15em]">Especialidad</th>
-                                            <th className="px-6 py-5 text-[11px] font-black text-gray-400 uppercase tracking-[0.15em]">Grados</th>
+                                            <th className="px-6 py-5 text-[11px] font-black text-gray-400 uppercase tracking-[0.15em]">Teléfono</th>
+                                            <th className="px-8 py-5 text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] text-right">Correo electrónico</th>
                                             <th className="px-6 py-5 text-[11px] font-black text-gray-400 uppercase tracking-[0.15em]">Estado</th>
-                                            <th className="px-8 py-5 text-[11px] font-black text-gray-400 uppercase tracking-[0.15em] text-right">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50">
-                                        <TeacherRow
-                                            name="Elena Rodríguez"
-                                            email="elena.rodriguez@escuela.edu"
-                                            specialty="Ciencias Naturales"
-                                            grades={["1ero Sec.", "2do Sec."]}
-                                            status="activo"
-                                            img="10"
-                                        />
-                                        <TeacherRow
-                                            name="Marco Antonio Solís"
-                                            email="m.solis@escuela.edu"
-                                            specialty="Matemáticas"
-                                            grades={["4to Sec.", "5to Sec."]}
-                                            status="activo"
-                                            img="8"
-                                        />
-                                        <TeacherRow
-                                            name="Carla Méndez"
-                                            email="c.mendez@escuela.edu"
-                                            specialty="Historia y Geografía"
-                                            grades={["3ero Sec."]}
-                                            status="licencia"
-                                            img="9"
-                                        />
-                                        <TeacherRow
-                                            name="Javier López"
-                                            email="j.lopez@escuela.edu"
-                                            specialty="Educación Física"
-                                            grades={[]}
-                                            status="inactivo"
-                                            img="11"
-                                        />
+                                        {docentes.map((d) => (
+                                            <TeacherRow
+                                                key={d.id_docente}
+                                                docente={d}
+                                                status="activo" // Opcional
+                                            />
+                                        ))}
                                     </tbody>
                                 </table>
                             </div>
@@ -115,74 +122,6 @@ export default function GestionDocentesPage() {
     );
 }
 
-// Componente para la Fila de la Tabla
-function TeacherRow({ name, email, specialty, grades, status, img }) {
-    const statusStyles = {
-        activo: { bg: "bg-emerald-50", text: "text-emerald-700", icon: <CheckCircle2 size={14} />, label: "Activo" },
-        licencia: { bg: "bg-amber-50", text: "text-amber-700", icon: <PauseCircle size={14} />, label: "En Licencia" },
-        inactivo: { bg: "bg-red-50", text: "text-red-700", icon: <XCircle size={14} />, label: "Inactivo" }
-    };
-
-    const currentStatus = statusStyles[status];
-
-    return (
-        <tr className={`hover:bg-gray-50/50 transition-colors group ${status === 'inactivo' ? 'opacity-60' : ''}`}>
-            <td className="px-8 py-5">
-                <div className="flex items-center gap-4">
-                    <div className="relative">
-                        <div
-                            className="w-11 h-11 rounded-full bg-gray-200 border-2 border-white shadow-sm bg-cover bg-center"
-                            style={{ backgroundImage: `url('https://i.pravatar.cc/150?u=${img}')` }}
-                        ></div>
-                        {status === 'activo' && <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></div>}
-                    </div>
-                    <div>
-                        <span className="font-bold text-gray-900 block leading-tight">{name}</span>
-                        <span className="text-[11px] text-gray-400 font-medium flex items-center gap-1">
-                            <Mail size={10} /> {email}
-                        </span>
-                    </div>
-                </div>
-            </td>
-            <td className="px-6 py-5">
-                <div className="flex items-center gap-2">
-                    <GraduationCap size={16} className="text-gray-400" />
-                    <span className="text-sm font-bold text-gray-700">{specialty}</span>
-                </div>
-            </td>
-            <td className="px-6 py-5">
-                <div className="flex flex-wrap gap-1.5">
-                    {grades.length > 0 ? grades.map((g, i) => (
-                        <span key={i} className="px-2.5 py-0.5 bg-white border border-gray-200 text-gray-500 rounded-lg text-[10px] font-black uppercase">
-                            {g}
-                        </span>
-                    )) : (
-                        <span className="text-[10px] font-bold text-gray-300 italic tracking-widest">SIN ASIGNAR</span>
-                    )}
-                </div>
-            </td>
-            <td className="px-6 py-5">
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${currentStatus.bg} ${currentStatus.text}`}>
-                    {currentStatus.icon}
-                    {currentStatus.label}
-                </span>
-            </td>
-            <td className="px-8 py-5 text-right">
-                <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-2 text-gray-400 hover:text-[#093E7A] hover:bg-[#093E7A]/5 rounded-xl transition-all" title="Editar Perfil">
-                        <Edit3 size={18} />
-                    </button>
-                    <button className="p-2 text-gray-400 hover:text-[#701C32] hover:bg-[#701C32]/5 rounded-xl transition-all" title="Dar de Baja">
-                        <UserMinus size={18} />
-                    </button>
-                    <button className="p-2 text-gray-400 hover:bg-gray-100 rounded-xl transition-all">
-                        <MoreVertical size={18} />
-                    </button>
-                </div>
-            </td>
-        </tr>
-    );
-}
 
 // Componente para las Tarjetas de Estadísticas
 function StatCard({ label, value, icon, color, bg }) {
