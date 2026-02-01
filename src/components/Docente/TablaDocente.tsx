@@ -1,5 +1,6 @@
 import { Mail, GraduationCap, CheckCircle2, PauseCircle, XCircle, Edit3, UserMinus, MoreVertical, Phone } from 'lucide-react';
 import { Docente } from "@/src/interfaces/docente";
+import Link from 'next/link';
 
 // Definimos qué recibe el componente
 interface TeacherRowProps {
@@ -32,7 +33,7 @@ export const TeacherRow = ({ docente, status = 'activo', img = '1' }: TeacherRow
                     <div>
                         <span className="font-bold text-gray-900 block leading-tight">{docente.nombres} {docente.apellidos}</span>
                         <span className="text-[11px] text-gray-400 font-medium flex items-center gap-1">
-                             DNI: {docente.dni}
+                            DNI: {docente.dni}
                         </span>
                     </div>
                 </div>
@@ -70,9 +71,13 @@ export const TeacherRow = ({ docente, status = 'activo', img = '1' }: TeacherRow
             {/* ACCIONES */}
             <td className="px-4 py-5 text-right">
                 <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-2 text-gray-400 hover:text-[#093E7A] rounded-xl transition-all">
-                        <Edit3 size={18} />
-                    </button>
+
+                    <Link href={`/campus/panel-control/pagina-web/docentes-web/editar/${docente.id_docente}`}>
+                        <button className="p-2 text-gray-400 hover:text-[#093E7A] rounded-xl transition-all">
+                            <Edit3 size={18} />
+                        </button>
+                    </Link>
+
                     <button className="p-2 text-gray-400 hover:text-[#701C32] rounded-xl transition-all">
                         <UserMinus size={18} />
                     </button>

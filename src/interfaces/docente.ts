@@ -13,7 +13,7 @@ export interface Docente {
 export interface DocenteCreate {
   nombres: string;
   apellidos: string;
-  especialidad: string;
+  especialidad: string | null;
   telefono: string;
   email: string;
   dni: string;

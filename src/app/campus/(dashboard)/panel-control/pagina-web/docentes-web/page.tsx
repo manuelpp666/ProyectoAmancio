@@ -2,7 +2,7 @@
 import HeaderPanel from "@/src/components/Campus/PanelControl/Header";
 import Link from "next/link";
 import { Docente } from "@/src/interfaces/docente";
-import { TeacherRow } from "@/src/components/utils/TablaDocente";
+import { TeacherRow } from "@/src/components/Docente/TablaDocente";
 import { useEffect, useState } from 'react';
 import {
     Search,
