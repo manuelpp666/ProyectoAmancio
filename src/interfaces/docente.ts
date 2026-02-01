@@ -7,6 +7,10 @@ export interface Docente {
   email: string;
   dni: string;
   id_usuario?: number | null; // El "?" significa que es opcional
+  usuario?: {
+        activo: boolean;
+        rol: string;
+    };
 }
 
 //Interfaz para el formulario de registro, no se necesita el id_docente todavía

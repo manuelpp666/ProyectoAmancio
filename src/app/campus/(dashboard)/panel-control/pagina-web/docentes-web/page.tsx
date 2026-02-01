@@ -99,7 +99,7 @@ export default function GestionDocentesPage() {
                                             <TeacherRow
                                                 key={d.id_docente}
                                                 docente={d}
-                                                status="activo" 
+                            
                                             />
                                         ))}
                                     </tbody>
