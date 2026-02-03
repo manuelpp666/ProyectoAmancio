@@ -1,6 +1,5 @@
-import { Edit3, Trash2, Calendar, FileText, Youtube, ExternalLink } from 'lucide-react';
+import { Edit3, Trash2, Calendar, FileText, Youtube, Facebook } from 'lucide-react';
 import { NoticiaResponse } from "@/src/interfaces/noticia";
-import Link from 'next/link';
 import { useState } from 'react';
 import { getYouTubeID } from "@/src/components/utils/youtube";
 
@@ -9,14 +8,25 @@ interface NoticiaRowProps {
 }
 
 export const NoticiaRow = ({ noticia }: NoticiaRowProps) => {
-    const [isLoading, setIsLoading] = useState(false);
+    
 
-    // Lógica para obtener la imagen de previsualización
+    // 1. Lógica extendida para tipos de contenido
     const isVideo = noticia.categoria === "video";
+    const isFacebook = noticia.categoria === "facebook"; 
+    const isArticulo = noticia.categoria === "texto";
+
     const videoId = isVideo ? getYouTubeID(noticia.imagen_portada_url || "") : null;
-    const previewImg = isVideo 
-        ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` 
-        : noticia.imagen_portada_url;
+
+    // 2. Ajuste de la imagen de previsualización
+    let previewImg = noticia.imagen_portada_url;
+    
+    if (isVideo) {
+        previewImg = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+    } else if (isFacebook) {
+        // Como Facebook no da miniatura directa por URL, usamos un placeholder 
+        // o un icono. Por ahora, el placeholder.
+        previewImg = '/placeholder-facebook.jpg'; 
+    }
 
     const fecha = new Date(noticia.fecha_publicacion).toLocaleDateString('es-ES', {
         day: '2-digit',
@@ -31,12 +41,19 @@ export const NoticiaRow = ({ noticia }: NoticiaRowProps) => {
                 <div className="flex items-center gap-4">
                     <div className="relative shrink-0">
                         <div
-                            className="w-16 h-10 rounded-lg bg-gray-200 border border-gray-100 shadow-sm bg-cover bg-center overflow-hidden"
-                            style={{ backgroundImage: `url('${previewImg || '/placeholder-news.jpg'}')` }}
+                            className="w-16 h-10 rounded-lg bg-gray-200 border border-gray-100 shadow-sm bg-cover bg-center overflow-hidden flex items-center justify-center"
+                            style={{ backgroundImage: isFacebook ? 'none' : `url('${previewImg || '/placeholder-news.jpg'}')` }}
                         >
+                            {/* Icono superpuesto para Video */}
                             {isVideo && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                                     <Youtube size={16} className="text-white" />
+                                </div>
+                            )}
+                            {/* Icono central para Facebook (ya que no hay miniatura) */}
+                            {isFacebook && (
+                                <div className="w-full h-full bg-blue-600 flex items-center justify-center">
+                                    <Facebook size={18} className="text-white" />
                                 </div>
                             )}
                         </div>
@@ -52,37 +69,41 @@ export const NoticiaRow = ({ noticia }: NoticiaRowProps) => {
                 </div>
             </td>
 
-            {/* CATEGORÍA / TIPO */}
+            {/* CATEGORÍA / TIPO - Ajustado con Switch o Condicional múltiple */}
             <td className="px-6 py-5">
                 <div className="flex items-center gap-2">
-                    {isVideo ? (
+                    {isVideo && (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-50 text-red-700">
                             <Youtube size={12} /> Video
                         </span>
-                    ) : (
+                    )}
+                    
+                    {isFacebook && (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-700">
+                            <Facebook size={12} /> Facebook
+                        </span>
+                    )}
+
+                    {isArticulo && (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-gray-50 text-gray-700">
                             <FileText size={12} /> Artículo
                         </span>
                     )}
                 </div>
             </td>
 
-            {/* FECHA */}
+            {/* ... Resto del componente igual (Fecha, Estado, Acciones) ... */}
             <td className="px-6 py-5">
                 <div className="flex items-center gap-2 text-gray-600">
                     <Calendar size={14} className="text-gray-400" />
                     <span className="text-sm font-medium">{fecha}</span>
                 </div>
             </td>
-
-            {/* ESTADO */}
             <td className="px-6 py-5 text-center">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-700">
                     Publicado
                 </span>
             </td>
-
-            {/* ACCIONES */}
             <td className="px-8 py-5 text-right">
                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button className="p-2 text-gray-400 hover:text-[#093E7A] rounded-xl transition-all">

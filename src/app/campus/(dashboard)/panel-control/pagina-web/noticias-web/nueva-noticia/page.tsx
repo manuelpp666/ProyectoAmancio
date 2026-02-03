@@ -7,14 +7,14 @@ import Link from "next/link";
 import {
   ArrowLeft, Save, Send, Bold, Italic, Underline,
   List, ListOrdered, Quote, Settings, Youtube,
-  Info, CheckCircle2, AlertCircle
+  Info, CheckCircle2, AlertCircle, Facebook
 } from "lucide-react";
 import ImageUpload from "@/src/components/utils/ImageUpload";
 import { getYouTubeID } from "@/src/components/utils/youtube";
 import { NoticiaCreate } from "@/src/interfaces/noticia";
 import { uploadToCloudinary } from "@/src/components/utils/cloudinary";
 import { useForm } from "@/src/hooks/useForm";
-import { toast} from 'sonner';
+import { toast } from 'sonner';
 
 export default function CrearNoticiaPage() {
   const { formData, handleChange, setFormData, resetForm } = useForm({
@@ -53,69 +53,76 @@ export default function CrearNoticiaPage() {
   if (!editor) return null;
 
   const handlePublicar = async () => {
-  // 1. Validaciones iniciales rápidas
-  if (!formData.titulo) return toast.warning("El título es obligatorio");
-  if (formData.tipoContenido === "video" && !videoId) return toast.warning("La URL de YouTube no es válida");
-  if (formData.tipoContenido === "texto" && !portada) return toast.warning("Debes subir una imagen de portada");
+    // 1. Validaciones iniciales rápidas
+    if (!formData.titulo) return toast.warning("El título es obligatorio");
+    if (formData.tipoContenido === "video" && !videoId) return toast.warning("La URL de YouTube no es válida");
+    if (formData.tipoContenido === "facebook" && !formData.videoUrl.includes("facebook.com")) {
+      return toast.warning("La URL de Facebook no es válida");
+    }
+    if (formData.tipoContenido === "texto" && !portada) return toast.warning("Debes subir una imagen de portada");
 
-  setLoading(true);
-  // Iniciamos la notificación de carga
-  const toastId = toast.loading("Publicando noticia en el servidor...");
+    setLoading(true);
+    // Iniciamos la notificación de carga
+    const toastId = toast.loading("Publicando noticia en el servidor...");
 
-  try {
-    let valorAlmacenadoEnPortada = "";
+    try {
+      let valorAlmacenadoEnPortada = "";
 
-    // 2. Lógica de imagen o video
-    if (formData.tipoContenido === "video") {
-      valorAlmacenadoEnPortada = formData.videoUrl;
-    } else {
-      if (portada) {
-        // Podrías poner otro mensaje si la subida a Cloudinary tarda
-        const url = await uploadToCloudinary(portada);
-        if (!url) throw new Error("Error al subir la imagen a Cloudinary");
-        valorAlmacenadoEnPortada = url;
+      // 2. Lógica de imagen o video
+      if (formData.tipoContenido === "video") {
+        valorAlmacenadoEnPortada = formData.videoUrl;
       }
+      else if (formData.tipoContenido === "facebook") {
+        // Guardamos el link de FB directamente en el campo de portada
+        valorAlmacenadoEnPortada = formData.videoUrl;
+      }
+      else {
+        if (portada) {
+          const url = await uploadToCloudinary(portada);
+          if (!url) throw new Error("Error al subir la imagen");
+          valorAlmacenadoEnPortada = url;
+        }
+      }
+
+      // 3. Preparar el Payload
+      const noticiaPayload: NoticiaCreate = {
+        titulo: formData.titulo,
+        id_autor: 1, // ID del usuario real
+        categoria: formData.tipoContenido,
+        contenido: editor?.getHTML() || "",
+        imagen_portada_url: valorAlmacenadoEnPortada,
+      };
+
+      // 4. Petición a FastAPI
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/noticias/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(noticiaPayload),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        const errorMsg = responseData.detail;
+        const message = Array.isArray(errorMsg) ? errorMsg[0].msg : errorMsg;
+        throw new Error(message || "Error al registrar la noticia");
+      }
+
+      // 5. ÉXITO
+      toast.success("¡Noticia publicada exitosamente!", { id: toastId });
+
+      // Opcional: Limpiar el formulario tras el éxito
+      resetForm();
+      setPortada(null);
+      editor?.commands.setContent("");
+
+    } catch (error: any) {
+      // 6. ERROR
+      toast.error(error.message || "Ocurrió un error inesperado", { id: toastId });
+    } finally {
+      setLoading(false);
     }
-
-    // 3. Preparar el Payload
-    const noticiaPayload: NoticiaCreate = {
-      titulo: formData.titulo,
-      id_autor: 1, // ID del usuario real
-      categoria: formData.tipoContenido,
-      contenido: editor?.getHTML() || "",
-      imagen_portada_url: valorAlmacenadoEnPortada,
-    };
-
-    // 4. Petición a FastAPI
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/noticias/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(noticiaPayload),
-    });
-
-    const responseData = await response.json();
-
-    if (!response.ok) {
-      const errorMsg = responseData.detail;
-      const message = Array.isArray(errorMsg) ? errorMsg[0].msg : errorMsg;
-      throw new Error(message || "Error al registrar la noticia");
-    }
-
-    // 5. ÉXITO
-    toast.success("¡Noticia publicada exitosamente!", { id: toastId });
-    
-    // Opcional: Limpiar el formulario tras el éxito
-    resetForm();
-    setPortada(null);
-    editor?.commands.setContent("");
-
-  } catch (error: any) {
-    // 6. ERROR
-    toast.error(error.message || "Ocurrió un error inesperado", { id: toastId });
-  } finally {
-    setLoading(false);
-  }
-};
+  };
   return (
     <div className="min-h-screen bg-[#F6F7F8]">
       <div className="flex h-screen overflow-hidden">
@@ -227,71 +234,91 @@ export default function CrearNoticiaPage() {
                         >
                           <option value="texto">Artículo de Texto</option>
                           <option value="video">Video de YouTube</option>
+                          <option value="facebook">Facebook</option>
                         </select>
                       </div>
 
-                      {/* 4. Bloqueo de URL de Video si es Texto */}
-                      <div className={`space-y-2 transition-opacity duration-300 ${tipoContenido === 'texto' ? 'opacity-40 grayscale pointer-events-none' : 'opacity-100'}`}>
-                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">URL del Video</label>
-                        <div className="relative group">
-                          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-red-500 transition-colors">
-                            <Youtube size={18} />
-                          </div>
-                          <input
-                            name="videoUrl"
-                            value={formData.videoUrl}
-                            onChange={handleChange}
-                            disabled={tipoContenido === 'texto'}
-
-                            className="w-full bg-gray-50 border-gray-200 border rounded-xl pl-10 py-2.5 text-sm focus:ring-2 focus:ring-red-500/10 focus:border-red-500 transition-all font-medium disabled:cursor-not-allowed"
-                            placeholder="https://youtube.com/..."
-                            type="text"
-                          />
-                          {/* Check visual de validación */}
-                          {videoUrl && (
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                              {videoId ? (
-                                <CheckCircle2 size={18} className="text-green-500" />
-                              ) : (
-                                <AlertCircle size={18} className="text-red-400" />
-                              )}
+                      {/* CASO A: Si es VIDEO de YouTube */}
+                      {tipoContenido === 'video' && (
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">URL de YouTube</label>
+                          <div className="relative group">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-red-500 transition-colors">
+                              <Youtube size={18} />
                             </div>
-                          )}
-                        </div>
-                        {/* VISTA PREVIA DEL VIDEO */}
-                        {tipoContenido === 'video' && videoId && (
-                          <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                            <div className="relative aspect-video rounded-xl overflow-hidden border border-gray-200 shadow-inner bg-black">
+                            <input
+                              name="videoUrl"
+                              value={formData.videoUrl}
+                              onChange={handleChange}
+                              className="w-full bg-gray-50 border-gray-200 border rounded-xl pl-10 py-2.5 text-sm focus:ring-2 focus:ring-red-500/10 focus:border-red-500 transition-all font-medium"
+                              placeholder="https://youtube.com/watch?v=..."
+                              type="text"
+                            />
+                            {videoUrl && (
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                {videoId ? (
+                                  <CheckCircle2 size={18} className="text-green-500" />
+                                ) : (
+                                  <AlertCircle size={18} className="text-red-400" />
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          {/* Miniatura de YouTube */}
+                          {videoId && (
+                            <div className="mt-4 relative aspect-video rounded-xl overflow-hidden border border-gray-200 bg-black shadow-sm">
                               <img
                                 src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
-                                alt="Preview"
                                 className="w-full h-full object-cover opacity-80"
+                                alt="Preview"
                               />
                               <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center shadow-lg">
-                                  <div className="w-0 h-0 border-y-[8px] border-y-transparent border-l-[12px] border-l-white ml-1" />
+                                <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center shadow-lg">
+                                  <div className="w-0 h-0 border-y-[6px] border-y-transparent border-l-[10px] border-l-white ml-1" />
                                 </div>
                               </div>
                             </div>
-                            <p className="text-[10px] text-green-600 mt-2 font-bold flex items-center gap-1">
-                              <CheckCircle2 size={12} /> Video detectado correctamente
-                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* CASO B: Si es FACEBOOK */}
+                      {tipoContenido === 'facebook' && (
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Link de Facebook</label>
+                          <div className="relative group">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-blue-600 transition-colors">
+                              <Facebook size={18} />
+                            </div>
+                            <input
+                              name="videoUrl"
+                              value={formData.videoUrl}
+                              onChange={handleChange}
+                              className="w-full bg-gray-50 border-gray-200 border rounded-xl pl-10 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium"
+                              placeholder="https://facebook.com/nombredepage/posts/..."
+                              type="text"
+                            />
                           </div>
-                        )}
-                      </div>
+                          <p className="text-[10px] text-blue-600 font-bold flex items-center gap-1 mt-1">
+                            <Info size={12} /> Se mostrará el post interactivo
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* 5. Bloqueo de Portada si es Video */}
-                  <div className={`bg-white p-6 rounded-2xl border border-gray-200 shadow-sm transition-opacity duration-300 ${tipoContenido === 'video' ? 'opacity-40 grayscale pointer-events-none' : 'opacity-100'}`}>
-                    <ImageUpload
-                      label="Portada"
-                      onImageChange={(file) => setPortada(file)}
-                    />
-                    <p className="text-[10px] text-gray-400 mt-3 font-medium text-center">
-                      Resolución recomendada: 1200 x 630 px
-                    </p>
-                  </div>
+                  {/* CASO C: Si es TEXTO (Muestra la subida de imagen de portada) */}
+                  {tipoContenido === 'texto' && (
+                    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm mt-8 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <ImageUpload
+                        label="Portada del Artículo"
+                        onImageChange={(file) => setPortada(file)}
+                      />
+                      <p className="text-[10px] text-gray-400 mt-3 font-medium text-center italic">
+                        Sube una imagen atractiva para el listado de noticias.
+                      </p>
+                    </div>
+                  )}
 
                   <div className="bg-blue-600 p-6 rounded-2xl text-white shadow-xl shadow-blue-900/10 relative overflow-hidden group">
                     <Info className="absolute -right-2 -bottom-2 w-24 h-24 text-white/10 group-hover:scale-110 transition-transform duration-500" />
@@ -309,10 +336,7 @@ export default function CrearNoticiaPage() {
 
           {/* Footer de Acciones */}
           <footer className="h-24 border-t bg-white px-8 flex items-center justify-between shrink-0 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
-            <button className="flex items-center gap-2 px-6 py-3 text-[#701C32] border-2 border-[#701C32] rounded-xl font-black text-xs uppercase tracking-widest hover:bg-red-50 transition-all active:scale-95">
-              <Save size={18} />
-              Guardar Borrador
-            </button>
+            
             <div className="flex items-center gap-4">
               <button
                 onClick={handlePublicar} // <-- CAMBIAR AQUÍ (antes decía onClick={() => console.log(...)})

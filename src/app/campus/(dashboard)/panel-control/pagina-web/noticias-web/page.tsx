@@ -8,7 +8,7 @@ import {
 import { NoticiaResponse } from "@/src/interfaces/noticia";
 import { NoticiaRow } from "@/src/components/Noticia/TablaNoticia";
 import { useEffect, useState } from 'react';
-import { Search, Newspaper, Video, Globe } from "lucide-react";
+import { Search, Newspaper, Video, Globe, Facebook } from "lucide-react";
 
 export default function GestionContenidoPage() {
 
@@ -34,6 +34,7 @@ export default function GestionContenidoPage() {
     total: noticias.length,
     articulos: noticias.filter(n => n.categoria === 'texto').length,
     videos: noticias.filter(n => n.categoria === 'video').length,
+    facebook: noticias.filter(n => n.categoria === 'facebook').length,
   };
 
   if (loading) return <p className="p-8">Cargando noticias...</p>;
@@ -78,10 +79,36 @@ export default function GestionContenidoPage() {
             </div>
 
             {/* STATS CARDS */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <StatCard label="Total Publicado" value={stats.total.toString()} icon={<Globe size={24} />} color="text-blue-600" bg="bg-blue-50" />
-              <StatCard label="Artículos de Texto" value={stats.articulos.toString()} icon={<Newspaper size={24} />} color="text-emerald-600" bg="bg-emerald-50" />
-              <StatCard label="Videos" value={stats.videos.toString()} icon={<Video size={24} />} color="text-red-600" bg="bg-red-50" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StatCard
+                label="Total Publicado"
+                value={stats.total.toString()}
+                icon={<Globe size={24} />}
+                color="text-blue-600"
+                bg="bg-blue-50"
+              />
+              <StatCard
+                label="Artículos de Texto"
+                value={stats.articulos.toString()}
+                icon={<Newspaper size={24} />}
+                color="text-emerald-600"
+                bg="bg-emerald-50"
+              />
+              <StatCard
+                label="Videos YouTube"
+                value={stats.videos.toString()}
+                icon={<Video size={24} />}
+                color="text-red-600"
+                bg="bg-red-50"
+              />
+              {/* NUEVA TARJETA DE FACEBOOK */}
+              <StatCard
+                label="Posts Facebook"
+                value={stats.facebook.toString()}
+                icon={<Facebook size={24} />}
+                color="text-blue-700"
+                bg="bg-blue-100"
+              />
             </div>
 
             {/* TABLA */}
