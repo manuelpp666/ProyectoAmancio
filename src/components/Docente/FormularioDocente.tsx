@@ -1,8 +1,8 @@
 "use client";
+import { useState } from "react";
 import {
   
   User,
-  Camera,
   Mail,
   Fingerprint,
   Award,
@@ -14,6 +14,7 @@ import {
 import { DocenteCreate, Docente } from "@/src/interfaces/docente";
 import FormInput from '@/src/components/utils/Inputs';
 import { useForm } from '@/src/hooks/useForm';
+import ImageUpload from "@/src/components/utils/ImageUpload";
 
 
 interface DocenteFormProps {
@@ -23,6 +24,9 @@ interface DocenteFormProps {
 }
 
 export function DocenteForm({ initialData, onSubmit, loading }: DocenteFormProps) {
+  
+  const [portada, setPortada] = useState<File | null>(null);
+  
   // El hook usa los datos iniciales si existen, sino empieza vacío
   const { formData, handleChange } = useForm<DocenteCreate>(
     initialData || { nombres: '', apellidos: '', dni: '', email: '', especialidad: '', telefono: '' }
@@ -49,12 +53,10 @@ export function DocenteForm({ initialData, onSubmit, loading }: DocenteFormProps
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
                       {/* Subida de Foto */}
                       <div className="md:col-span-1 flex flex-col items-center space-y-4">
-                        <div className="w-32 h-32 rounded-3xl border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden relative group cursor-pointer hover:border-[#093E7A]/30 transition-all">
-                          <Camera size={32} className="text-gray-300 group-hover:scale-110 transition-transform" />
-                          <div className="absolute inset-0 bg-[#093E7A]/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="text-white text-[10px] font-black uppercase tracking-tighter">Subir Foto</span>
-                          </div>
-                        </div>
+                        <ImageUpload
+                                              label="Subir foto"
+                                              onImageChange={(file) => setPortada(file)}
+                                            />
                         <p className="text-[9px] text-gray-400 text-center font-bold uppercase leading-relaxed tracking-widest">
                           JPG o PNG<br />Máximo 2MB
                         </p>

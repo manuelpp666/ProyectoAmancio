@@ -74,12 +74,7 @@ export default function GestionDocentesPage() {
                             </div>
                         </div>
 
-                        {/* Stats Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <StatCard label="Total Docentes" value="42" icon={<Users size={24} />} color="text-blue-600" bg="bg-blue-50" />
-                            <StatCard label="Personal Activo" value="38" icon={<UserCheck size={24} />} color="text-emerald-600" bg="bg-emerald-50" />
-                            <StatCard label="Inactivos / Licencia" value="4" icon={<UserX size={24} />} color="text-[#701C32]" bg="bg-[#701C32]/10" />
-                        </div>
+                        
 
                         {/* Table Container */}
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -113,20 +108,3 @@ export default function GestionDocentesPage() {
     );
 }
 
-
-// Componente para las Tarjetas de Estadísticas
-function StatCard({ label, value, icon, color, bg }) {
-    return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow group">
-            <div className="flex items-center gap-5">
-                <div className={`p-4 ${bg} ${color} rounded-2xl group-hover:scale-110 transition-transform duration-300`}>
-                    {icon}
-                </div>
-                <div>
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</p>
-                    <h4 className="text-3xl font-black text-gray-900 mt-1">{value}</h4>
-                </div>
-            </div>
-        </div>
-    );
-}

@@ -27,7 +27,7 @@ export default function HeaderPanel() {
                 </Link>
 
                 <Link href="/campus/panel-control/pagina-web/noticias-web">
-                    <button className={getTabClass("/panel-control/pagina-web/noticias-web")}>
+                    <button className={getTabClass("/campus/panel-control/pagina-web/noticias-web")}>
                         <span className="material-symbols-outlined text-[20px]">newspaper</span>
                         Gestión de Noticias
                     </button>
