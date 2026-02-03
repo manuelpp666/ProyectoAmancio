@@ -34,7 +34,7 @@ export default function GestionContenidoPage() {
     total: noticias.length,
     articulos: noticias.filter(n => n.categoria === 'texto').length,
     videos: noticias.filter(n => n.categoria === 'video').length,
-    facebook: noticias.filter(n => n.categoria === 'facebook').length,
+    
   };
 
   if (loading) return <p className="p-8">Cargando noticias...</p>;
@@ -101,14 +101,7 @@ export default function GestionContenidoPage() {
                 color="text-red-600"
                 bg="bg-red-50"
               />
-              {/* NUEVA TARJETA DE FACEBOOK */}
-              <StatCard
-                label="Posts Facebook"
-                value={stats.facebook.toString()}
-                icon={<Facebook size={24} />}
-                color="text-blue-700"
-                bg="bg-blue-100"
-              />
+              
             </div>
 
             {/* TABLA */}

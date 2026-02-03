@@ -56,9 +56,6 @@ export default function CrearNoticiaPage() {
     // 1. Validaciones iniciales rápidas
     if (!formData.titulo) return toast.warning("El título es obligatorio");
     if (formData.tipoContenido === "video" && !videoId) return toast.warning("La URL de YouTube no es válida");
-    if (formData.tipoContenido === "facebook" && !formData.videoUrl.includes("facebook.com")) {
-      return toast.warning("La URL de Facebook no es válida");
-    }
     if (formData.tipoContenido === "texto" && !portada) return toast.warning("Debes subir una imagen de portada");
 
     setLoading(true);
@@ -70,10 +67,6 @@ export default function CrearNoticiaPage() {
 
       // 2. Lógica de imagen o video
       if (formData.tipoContenido === "video") {
-        valorAlmacenadoEnPortada = formData.videoUrl;
-      }
-      else if (formData.tipoContenido === "facebook") {
-        // Guardamos el link de FB directamente en el campo de portada
         valorAlmacenadoEnPortada = formData.videoUrl;
       }
       else {
@@ -234,7 +227,6 @@ export default function CrearNoticiaPage() {
                         >
                           <option value="texto">Artículo de Texto</option>
                           <option value="video">Video de YouTube</option>
-                          <option value="facebook">Facebook</option>
                         </select>
                       </div>
 
@@ -282,28 +274,6 @@ export default function CrearNoticiaPage() {
                         </div>
                       )}
 
-                      {/* CASO B: Si es FACEBOOK */}
-                      {tipoContenido === 'facebook' && (
-                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                          <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">Link de Facebook</label>
-                          <div className="relative group">
-                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-blue-600 transition-colors">
-                              <Facebook size={18} />
-                            </div>
-                            <input
-                              name="videoUrl"
-                              value={formData.videoUrl}
-                              onChange={handleChange}
-                              className="w-full bg-gray-50 border-gray-200 border rounded-xl pl-10 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-medium"
-                              placeholder="https://facebook.com/nombredepage/posts/..."
-                              type="text"
-                            />
-                          </div>
-                          <p className="text-[10px] text-blue-600 font-bold flex items-center gap-1 mt-1">
-                            <Info size={12} /> Se mostrará el post interactivo
-                          </p>
-                        </div>
-                      )}
                     </div>
                   </div>
 
