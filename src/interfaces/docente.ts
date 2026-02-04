@@ -3,6 +3,8 @@ export interface Docente {
   nombres: string;
   apellidos: string;
   especialidad: string | null;
+  descripcion: string | null;     
+  url_perfil: string | null;
   telefono: string;
   email: string;
   dni: string;
@@ -18,6 +20,8 @@ export interface DocenteCreate {
   nombres: string;
   apellidos: string;
   especialidad: string | null;
+  descripcion?: string | null; 
+  url_perfil?: string | null;
   telefono: string;
   email: string;
   dni: string;

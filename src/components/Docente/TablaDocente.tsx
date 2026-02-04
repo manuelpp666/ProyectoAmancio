@@ -1,4 +1,4 @@
-import { GraduationCap, CheckCircle2, PauseCircle, XCircle, Edit3, UserMinus, MoreVertical, Phone } from 'lucide-react';
+import { GraduationCap, CheckCircle2, PauseCircle, XCircle, Edit3, UserMinus, Phone } from 'lucide-react';
 import { Docente } from "@/src/interfaces/docente";
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
@@ -33,7 +33,11 @@ export const TeacherRow = ({ docente, img = '1' }: TeacherRowProps) => {
             setIsLoading(false);
         }
     };
-
+    
+    const profileImage = docente.url_perfil && docente.url_perfil.trim() !== "" 
+        ? docente.url_perfil 
+        : `https://ui-avatars.com/api/?name=${encodeURIComponent(docente.nombres + ' ' + docente.apellidos)}&background=093E7A&color=fff`;   
+    
     const statusKey = docente.usuario?.activo ? 'activo' : 'inactivo';
     const statusStyles = {
         activo: { bg: "bg-emerald-50", text: "text-emerald-700", icon: <CheckCircle2 size={14} />, label: "Activo" },
@@ -50,8 +54,8 @@ export const TeacherRow = ({ docente, img = '1' }: TeacherRowProps) => {
                 <div className="flex items-center gap-4">
                     <div className="relative">
                         <div
-                            className="w-11 h-11 rounded-full bg-gray-200 border-2 border-white shadow-sm bg-cover bg-center"
-                            style={{ backgroundImage: `url('https://i.pravatar.cc/150?u=${docente.id_docente}')` }}
+                            className="w-11 h-11 rounded-full bg-gray-100 border-2 border-white shadow-sm bg-cover bg-center transition-transform group-hover:scale-105"
+                            style={{ backgroundImage: `url('${profileImage}')` }}
                         ></div>
                         {statusKey === 'activo' && (
                             <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></div>

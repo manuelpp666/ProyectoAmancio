@@ -5,17 +5,25 @@ import { Camera, X } from "lucide-react";
 interface ImageUploadProps {
   label: string;
   onImageChange: (file: File | null) => void;
-  defaultValue?: string; // Por si quieres editar algo ya existente
+  initialImage?: string; // Cambiado de defaultValue a initialImage
 }
 
-export default function ImageUpload({ label, onImageChange, defaultValue }: ImageUploadProps) {
-  const [preview, setPreview] = useState<string | null>(defaultValue || null);
+export default function ImageUpload({ label, onImageChange, initialImage }: ImageUploadProps) {
+  // Inicializamos con lo que venga, pero necesitamos el useEffect abajo
+  const [preview, setPreview] = useState<string | null>(initialImage || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // --- AGREGA ESTE EFECTO ---
+  // Esto hace que si la noticia carga después (API), la imagen aparezca
+  useEffect(() => {
+    if (initialImage) {
+      setPreview(initialImage);
+    }
+  }, [initialImage]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validar tamaño (ej. 2MB)
       if (file.size > 2 * 1024 * 1024) {
         alert("El archivo es muy pesado (máximo 2MB)");
         return;
@@ -54,6 +62,7 @@ export default function ImageUpload({ label, onImageChange, defaultValue }: Imag
               <Camera className="text-white" size={32} />
             </div>
             <button
+              type="button" // Importante: especificar type="button" para que no haga submit al formulario
               onClick={removeImage}
               className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg z-10"
             >
