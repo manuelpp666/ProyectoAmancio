@@ -7,20 +7,23 @@ import { useEffect, useState } from 'react';
 import {
     Search,
     UserPlus,
-    Users,
-    UserCheck,
-    UserX,
 } from "lucide-react";
 
 export default function GestionDocentesPage() {
 
     const [docentes, setDocentes] = useState<Docente[]>([]);
     const [loading, setLoading] = useState(true);
-
+const [searchTerm, setSearchTerm] = useState("");
     useEffect(() => {
         const fetchDocentes = async () => {
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/docentes/`);
+                // 2. Construir la URL con el parámetro opcional
+                let url = `${process.env.NEXT_PUBLIC_API_URL}/docentes/`;
+                if (searchTerm) {
+                    url += `?search=${encodeURIComponent(searchTerm)}`;
+                }
+
+                const response = await fetch(url);
                 const data = await response.json();
                 setDocentes(data);
             } catch (error) {
@@ -30,8 +33,13 @@ export default function GestionDocentesPage() {
             }
         };
 
-        fetchDocentes();
-    }, []);
+        // 3. DEBOUNCE: Esperamos 400ms antes de llamar a la API
+        const timer = setTimeout(() => {
+            fetchDocentes();
+        }, 400);
+
+        return () => clearTimeout(timer); // Limpiar el timer si el usuario sigue escribiendo
+    }, [searchTerm]);
 
     if (loading) return <p className="p-8">Cargando docentes...</p>;
     return (
@@ -60,8 +68,10 @@ export default function GestionDocentesPage() {
                                     </div>
                                     <input
                                         type="text"
-                                        placeholder="Buscar docente o especialidad..."
-                                        className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#093E7A]/5 focus:border-[#093E7A] transition-all font-medium text-sm shadow-sm placeholder:text-gray-400"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        placeholder="Busca por nombre, apellido o especialidad..."
+                                        className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#093E7A]/5 focus:border-[#093E7A] transition-all font-medium text-xs shadow-sm placeholder:text-gray-400"
                                     />
                                 </div>
 

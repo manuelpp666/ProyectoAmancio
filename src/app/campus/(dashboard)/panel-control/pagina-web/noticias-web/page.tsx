@@ -1,24 +1,27 @@
 "use client";
 import HeaderPanel from "@/src/components/Campus/PanelControl/Header";
 import Link from "next/link";
-import {
-  Plus,
-  Filter,
-} from "lucide-react";
 import { NoticiaResponse } from "@/src/interfaces/noticia";
 import { NoticiaRow } from "@/src/components/Noticia/TablaNoticia";
 import { useEffect, useState } from 'react';
-import { Search, Newspaper, Video, Globe, Facebook } from "lucide-react";
+import { Search, Newspaper, Video, Globe,Plus} from "lucide-react";
 
 export default function GestionContenidoPage() {
 
   const [noticias, setNoticias] = useState<NoticiaResponse[]>([]);
   const [loading, setLoading] = useState(true);
-
+const [searchTerm, setSearchTerm] = useState("");
   useEffect(() => {
     const fetchNoticias = async () => {
+      // Opcional: solo poner loading true si es la primera carga
+      // setLoading(true); 
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/noticias/`);
+        let url = `${process.env.NEXT_PUBLIC_API_URL}/web/noticias/`;
+        if (searchTerm) {
+          url += `?search=${encodeURIComponent(searchTerm)}`;
+        }
+
+        const response = await fetch(url);
         const data = await response.json();
         setNoticias(data);
       } catch (error) {
@@ -27,8 +30,16 @@ export default function GestionContenidoPage() {
         setLoading(false);
       }
     };
-    fetchNoticias();
-  }, []);
+
+    // 2. Debounce de 400ms
+    const timer = setTimeout(() => {
+      fetchNoticias();
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  
 
   const stats = {
     total: noticias.length,
@@ -65,7 +76,9 @@ export default function GestionContenidoPage() {
                   </div>
                   <input
                     type="text"
-                    placeholder="Buscar por título..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar por título o contenido..."
                     className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#093E7A]/5 focus:border-[#093E7A] transition-all font-medium text-sm shadow-sm"
                   />
                 </div>
