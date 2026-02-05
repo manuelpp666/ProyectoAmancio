@@ -1,5 +1,6 @@
 import Header from "@/src/components/Pagina-Web/Header";
 import Footer from "@/src/components/Pagina-Web/Footer";
+import ChatWidget from "@/src/components/utils/ChatbotWidget";
 
 export default function Home() {
   return (
@@ -127,7 +128,9 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <Footer></Footer>
+      <Footer/>
+      {/* WIDGET DE AMANCIO IA */}
+      <ChatWidget />
     </div>
   );
 }

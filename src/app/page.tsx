@@ -15,12 +15,19 @@ import {
   Award,
   ArrowRight,
   ChevronRight,
+  PlayCircle
 } from "lucide-react";
 import Footer from "../components/Pagina-Web/Footer";
 import Header from "../components/Pagina-Web/Header";
+import ChatWidget from "../components/utils/ChatbotWidget";
+import { NoticiaResponse } from "@/src/interfaces/noticia"; 
+import { getYouTubeID } from "@/src/components/utils/youtube"; 
 
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  const [noticias, setNoticias] = useState<NoticiaResponse[]>([]);
+  const [loadingNoticias, setLoadingNoticias] = useState(true);
 
   const propuestas = [
     {
@@ -52,6 +59,38 @@ export default function Home() {
       color: "#701C32"
     }
   ];
+
+   // --- EFECTO PARA CARGAR NOTICIAS ---
+  useEffect(() => {
+    const fetchNoticias = async () => {
+      try {
+        // Asumiendo que tu API devuelve las noticias ordenadas por fecha
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/noticias/`);
+        const data = await response.json();
+        // Tomamos solo las primeras 3
+        setNoticias(data.slice(0, 3));
+      } catch (error) {
+        console.error("Error cargando noticias:", error);
+      } finally {
+        setLoadingNoticias(false);
+      }
+    };
+    fetchNoticias();
+
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % propuestas.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [propuestas.length]);
+
+  // --- FUNCIÓN PARA IMÁGENES ---
+  const getImageUrl = (noticia: NoticiaResponse) => {
+    if (noticia.categoria === "video") {
+      const videoId = getYouTubeID(noticia.imagen_portada_url || "");
+      return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+    }
+    return noticia.imagen_portada_url || "/placeholder-news.jpg";
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -191,43 +230,77 @@ export default function Home() {
               <h2 className="text-4xl font-black text-[#701C32] mb-4">Noticias Amancistas</h2>
               <div className="w-24 h-1.5 bg-[#093E7A] mx-auto rounded-full"></div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[
-                { title: "Éxito total en nuestra Feria de Ciencias 2023", tag: "Académico", img: "1" },
-                { title: "Primeros puestos en el Regional de Matemática", tag: "Académico", img: "2" },
-                { title: "Taller de Oratoria: Liderazgo desde el aula", tag: "Cultura", img: "3" }
-              ].map((news, i) => (
-                <article key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow border border-slate-100 flex flex-col">
-                  <div className="relative h-56 overflow-hidden">
-                    <img alt={news.title} className="w-full h-full object-cover" src={`http://googleusercontent.com/profile/picture/${news.img}`} />
-                  </div>
-                  <div className="p-8 flex flex-col flex-grow">
-                    <span className="inline-block bg-[#FFF1E3] text-[#701C32] font-bold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full w-fit mb-4">{news.tag}</span>
-                    <h4 className="text-xl font-black text-slate-900 mb-4 leading-tight">{news.title}</h4>
-                    <p className="text-slate-600 text-sm leading-relaxed mb-6 flex-grow">
-                      Descripción breve de la noticia para invitar a la lectura y mantener el interés de la comunidad.
-                    </p>
-                    <a className="text-[#093E7A] font-bold text-sm flex items-center group hover:text-[#701C32] transition-colors" href="#">
-                      Leer más
-                      <ChevronRight size={16} className="ml-1 group-hover:translate-x-1 transition-transform" />
-                    </a>
-                  </div>
-                </article>
-              ))}
-            </div>
+
+            {loadingNoticias ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-96 bg-slate-100 animate-pulse rounded-2xl"></div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {noticias.map((noticia) => (
+                  <article 
+                    key={noticia.id_noticia} 
+                    className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-slate-100 flex flex-col"
+                  >
+                    <div className="relative h-56 overflow-hidden group">
+                      <img 
+                        alt={noticia.titulo} 
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                        src={getImageUrl(noticia)} 
+                      />
+                      {noticia.categoria === "video" && (
+                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                          <div className="bg-white/90 p-2 rounded-full shadow-lg">
+                            <PlayCircle className="text-red-600" size={24} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="p-8 flex flex-col flex-grow">
+                      <span className={`inline-block font-bold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full w-fit mb-4 ${
+                        noticia.categoria === 'video' ? 'bg-red-500 text-white' : 'bg-[#FFF1E3] text-[#701C32]'
+                      }`}>
+                        {noticia.categoria}
+                      </span>
+                      
+                      <h4 className="text-xl font-black text-slate-900 mb-4 leading-tight line-clamp-2">
+                        {noticia.titulo}
+                      </h4>
+                      
+                      <div className="text-slate-600 text-sm leading-relaxed mb-6 flex-grow line-clamp-3" 
+                        dangerouslySetInnerHTML={{ __html: noticia.contenido.substring(0, 150) + "..." }} 
+                      />
+
+                      <Link 
+                        href={`/noticias/${noticia.id_noticia}`}
+                        className="text-[#093E7A] font-bold text-sm flex items-center group hover:text-[#701C32] transition-colors"
+                      >
+                        Leer noticia completa
+                        <ChevronRight size={16} className="ml-1 group-hover:translate-x-1 transition-transform" />
+                      </Link>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+
             <div className="mt-16 text-center">
               <Link href="/noticias">
                 <button className="bg-[#093E7A] text-white px-10 py-4 rounded-full font-bold hover:bg-[#073365] transition-all shadow-xl shadow-[#093E7A]/30 inline-flex items-center space-x-2">
-                  <span>Cargar más</span>
-
+                  <span>Ver todas las noticias</span>
+                  <ArrowRight size={20} />
                 </button>
               </Link>
-
             </div>
           </div>
         </section>
       </main>
       <Footer />
+      {/* WIDGET DE AMANCIO IA */}
+      <ChatWidget />
     </div>
   );
 }

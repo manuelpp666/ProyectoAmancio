@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Header from "@/src/components/Pagina-Web/Header";
 import Footer from "@/src/components/Pagina-Web/Footer";
+import ChatWidget from "@/src/components/utils/ChatbotWidget";
 
 export default function Page() {
     // Estado para manejar la fecha actual del calendario
@@ -205,7 +206,9 @@ export default function Page() {
             </main>
 
             {/* Footer */}
-            <Footer></Footer>
+            <Footer/>
+            {/* WIDGET DE AMANCIO IA */}
+            <ChatWidget />
         </div>
     );
 }
