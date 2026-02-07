@@ -1,255 +1,192 @@
+"use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
+import { AlumnoBase } from "@/src/interfaces/admision";
 
 export default function GestionEstudiantesPage() {
+    const [alumnos, setAlumnos] = useState<AlumnoBase[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [filtroPostulantes, setFiltroPostulantes] = useState(false);
+
+    // Estados para el Modal de Rechazo
+    const [modalRechazo, setModalRechazo] = useState({ abierto: false, id: 0, nombre: "" });
+    const [motivoRechazo, setMotivoRechazo] = useState("");
+
+    const cargarDatos = async () => {
+        setLoading(true);
+        try {
+            const endpoint = filtroPostulantes ? "/alumnos/solicitudes-pendientes" : "/alumnos/";
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`);
+            if (!response.ok) throw new Error("Error al obtener datos");
+            const data = await response.json();
+            setAlumnos(data);
+        } catch (error) {
+            toast.error("No se pudo conectar con el servidor");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        cargarDatos();
+    }, [filtroPostulantes]);
+
+    // 2. Función Principal de Decisión
+    const ejecutarDecision = async (id: number, aprobado: boolean, motivo?: string) => {
+        const url = `${process.env.NEXT_PUBLIC_API_URL}/alumnos/decidir-admision/${id}?aprobado=${aprobado}${motivo ? `&motivo=${motivo}` : ""}`;
+
+        const promise = fetch(url, { method: "POST" }).then(async (res) => {
+            if (!res.ok) throw new Error();
+            cargarDatos();
+            return res.json();
+        });
+
+        toast.promise(promise, {
+            loading: 'Procesando...',
+            success: aprobado ? 'Alumno admitido correctamente' : 'Postulación rechazada',
+            error: 'Error al procesar la solicitud',
+        });
+
+        if (!aprobado) {
+            setModalRechazo({ abierto: false, id: 0, nombre: "" });
+            setMotivoRechazo("");
+        }
+    };
+
     return (
         <>
+            <style dangerouslySetInnerHTML={{ __html: `
+                body { background-color: #FDFCFB; color: #111418; font-family: 'Lato', sans-serif; }
+                .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+            `}} />
 
-            <style dangerouslySetInnerHTML={{
-                __html: `
-        body {
-            background-color: #FDFCFB;
-            color: #111418;
-            font-family: 'Lato', sans-serif;
-        }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        .active-nav {
-            background-color: rgba(255, 255, 255, 0.15);
-            border-left: 4px solid #ffffff;
-        }
-        /* Definición de colores del tema original */
-        :root {
-            --primary: #093E7A;
-            --maroon: #701C32;
-        }
-      `}} />
+            {/* --- MODAL DE RECHAZO --- */}
+            {modalRechazo.abierto && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-6">
+                            <h3 className="text-xl font-black text-gray-900">Rechazar Postulación</h3>
+                            <p className="text-gray-500 text-sm mt-1">
+                                Indica el motivo por el cual no se admite a <b>{modalRechazo.nombre}</b>.
+                            </p>
+                            
+                            <textarea
+                                value={motivoRechazo}
+                                onChange={(e) => setMotivoRechazo(e.target.value)}
+                                className="w-full mt-4 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none transition-all text-sm min-h-[100px]"
+                                placeholder="Ej: Documentación incompleta, vacantes agotadas..."
+                            />
+
+                            <div className="flex gap-3 mt-6">
+                                <button 
+                                    onClick={() => setModalRechazo({ abierto: false, id: 0, nombre: "" })}
+                                    className="flex-1 px-4 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button 
+                                    disabled={!motivoRechazo.trim()}
+                                    onClick={() => ejecutarDecision(modalRechazo.id, false, motivoRechazo)}
+                                    className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                                >
+                                    Confirmar Rechazo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="flex h-screen overflow-hidden bg-[#F8FAFC] antialiased">
-
-
-                {/* Main Content Area */}
                 <div className="flex-1 flex flex-col h-full overflow-y-auto custom-scrollbar">
-                    {/* Header Section */}
+                    
+                    {/* Header */}
                     <div className="px-8 pt-8 pb-4">
                         <div className="flex flex-wrap items-center justify-between gap-4">
                             <div>
-                                <h2 className="text-3xl font-black text-[#111418] tracking-tight">Gestión de Estudiantes</h2>
-                                <p className="text-[#617489] text-sm mt-1">Administración centralizada de alumnos matriculados.</p>
+                                <h2 className="text-3xl font-black text-[#111418] tracking-tight">
+                                    {filtroPostulantes ? "Solicitudes de Admisión" : "Gestión de Estudiantes"}
+                                </h2>
+                                <p className="text-[#617489] text-sm mt-1">Panel de control administrativo.</p>
                             </div>
-                            <Link href="/campus/panel-control/gestion-estudiantes/registrar-estudiante">
-                                <button className="flex items-center gap-2 bg-[#093E7A] hover:bg-[#072e5a] text-white px-6 py-3 rounded-lg text-sm font-bold transition-all shadow-md">
-                                    <span className="material-symbols-outlined text-[20px]">add_circle</span>
-                                    <span>Registrar Nuevo Estudiante</span>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setFiltroPostulantes(!filtroPostulantes)}
+                                    className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-bold transition-all border ${filtroPostulantes ? "bg-orange-100 border-orange-300 text-orange-700" : "bg-white border-gray-200 text-gray-600"}`}
+                                >
+                                    <span className="material-symbols-outlined">{filtroPostulantes ? 'group' : 'pending_actions'}</span>
+                                    {filtroPostulantes ? "Ver Todos los Alumnos" : "Ver Solicitudes Pendientes"}
                                 </button>
-                            </Link>
 
-
-                        </div>
-                    </div>
-
-                    {/* Search Bar */}
-                    <div className="px-8 py-4">
-                        <div className="bg-white rounded-xl border border-[#e5e7eb] p-1 flex items-center shadow-sm">
-                            <div className="flex-1 relative">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <span className="material-symbols-outlined text-[#617489]">search</span>
-                                </div>
-                                <input
-                                    className="block w-full pl-12 pr-4 py-3 bg-transparent border-none focus:ring-0 text-[#111418] placeholder:text-[#617489] text-sm"
-                                    placeholder="Buscar por nombre, grado, sección o representante..."
-                                    type="text"
-                                />
+                                <Link href="/campus/panel-control/gestion-estudiantes/registrar-estudiante">
+                                    <button className="flex items-center gap-2 bg-[#093E7A] hover:bg-[#072e5a] text-white px-6 py-3 rounded-lg text-sm font-bold transition-all shadow-md">
+                                        <span className="material-symbols-outlined text-[20px]">add_circle</span>
+                                        <span>Registrar Nuevo</span>
+                                    </button>
+                                </Link>
                             </div>
-                            <button className="px-4 py-2 text-[#617489] hover:bg-gray-50 rounded-lg transition-colors">
-                                <span className="material-symbols-outlined">tune</span>
-                            </button>
                         </div>
                     </div>
 
-                    {/* Table Container */}
+                    {/* Tabla */}
                     <div className="px-8 py-4 flex-1">
                         <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden shadow-sm">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="bg-[#fcfafa] border-b border-[#e5e7eb]">
-                                            <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-[#617489]">Foto</th>
-                                            <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-[#617489]">Nombre Completo</th>
-                                            <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-[#617489]">Grado / Sección</th>
-                                            <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-[#617489]">Contacto Representante</th>
-                                            <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-[#617489]">Estado</th>
-                                            <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-[#617489] text-right">Acciones</th>
+                                            <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Nombre Completo</th>
+                                            <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">DNI</th>
+                                            <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Grado</th>
+                                            <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Estado</th>
+                                            <th className="px-6 py-4 text-xs font-black uppercase text-[#617489] text-right">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#f3f4f6]">
-                                        {/* Estudiante 1 */}
-                                        <tr className="hover:bg-[#fcfafa] transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="size-11 rounded-full bg-cover bg-center ring-2 ring-gray-50 shadow-sm" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCEzY-mzj4DeVu1799EHEdUgyQl20weDqYHWGF8tLRHrsKlbVE_urFl97q1CqgzRr4_yu6mIYCL6SGqqOaMAoPx4-00PPgx83U4_lu6mq2Eh542qrHjlb-_pjQS2WYl10eunPjhUEm_u9ehoo4Ml7UKVzelkNPcdhU8syUbbAuysrryvWkYIzHGThqX1Jy-7oMhrXuv4KEbVxjYWokv0OmZ9m3H8YdgMxN2r2tJs7NO7xHBpzJFCOMjiIubcLb-xEESDOta8zob9mWG")' }}></div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="text-sm font-bold text-[#111418]">Carlos Ruiz</div>
-                                                <div className="text-xs text-[#617489]">ID: 2024-0012</div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-[#4b5563]">10mo Grado - Sección A</td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2 text-sm text-[#4b5563]">
-                                                    <span className="material-symbols-outlined text-[16px]">call</span>
-                                                    +58 412 555-0101
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#eef2ff] text-[#093E7A]">
-                                                    Activo
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-end gap-1">
-                                                    <button className="p-2 text-[#093E7A] hover:bg-[#093E7A]/5 rounded-lg transition-colors">
-                                                        <span className="material-symbols-outlined">edit</span>
-                                                    </button>
-                                                    <button className="p-2 text-[#701C32] hover:bg-[#701C32]/5 rounded-lg transition-colors">
-                                                        <span className="material-symbols-outlined">delete</span>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        {/* Estudiante 2 */}
-                                        <tr className="hover:bg-[#fcfafa] transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="size-11 rounded-full bg-cover bg-center ring-2 ring-gray-50 shadow-sm" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuAw3a2qeVHtiL1zHgs62CdTZwL8aL98gsms6eqQKDLbCWklR2yPEor0VDoF5BhAsZQiXCoHCIEfhenCvbOIj0-azD7yFgxr4CzT9g3T2IgVjKpPw7ZwE-0YjNfj44ptiiWF_rPjJCV_3VvyRjoBtkhtEIPufoW9p8OQWDkyk14z161CAPIagMD-qE5Vu6pN3XaiXbfI0SKf2XPyUSGuttk2hPkek6EEyvvX4FaBLBY2ruqC-awuvPFGDLXCHqy4UcWKJhl_C_32m5Ht")' }}></div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="text-sm font-bold text-[#111418]">Maria Garcia</div>
-                                                <div className="text-xs text-[#617489]">ID: 2024-0045</div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-[#4b5563]">11mo Grado - Sección B</td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2 text-sm text-[#4b5563]">
-                                                    <span className="material-symbols-outlined text-[16px]">call</span>
-                                                    +58 424 555-0202
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500">
-                                                    Inactivo
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-end gap-1">
-                                                    <button className="p-2 text-[#093E7A] hover:bg-[#093E7A]/5 rounded-lg transition-colors">
-                                                        <span className="material-symbols-outlined">edit</span>
-                                                    </button>
-                                                    <button className="p-2 text-[#701C32] hover:bg-[#701C32]/5 rounded-lg transition-colors">
-                                                        <span className="material-symbols-outlined">delete</span>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        {/* Estudiante 3 */}
-                                        <tr className="hover:bg-[#fcfafa] transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="size-11 rounded-full bg-cover bg-center ring-2 ring-gray-50 shadow-sm" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuDxM65pEgfV6JsaEBaVjB8rXGn5AnBBvpw5RFZAGJbWmeE488-MlbIehJ0BEAynjpO1WmmER0OjsY_q9vhC_82T6jLf2SSkmMGiqAtlGfNmnz5Dwj8C7SceOBQ3qijWnEteO7Eys7BIScV-DFsgVJYSjISlGkghUAs6pFrshm6B9SY-bxfOVjks3TtNXCmZjD1eU-zRgJ5Rw4CSllcxZntHMMtok2hAZBNL-yS3LphBPRdeqbw8JHfb_Q6aVAndKc1oRQVs4izJ4z80")' }}></div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="text-sm font-bold text-[#111418]">Jose Hernandez</div>
-                                                <div className="text-xs text-[#617489]">ID: 2024-0021</div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-[#4b5563]">9no Grado - Sección C</td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2 text-sm text-[#4b5563]">
-                                                    <span className="material-symbols-outlined text-[16px]">call</span>
-                                                    +58 414 555-0303
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#eef2ff] text-[#093E7A]">
-                                                    Activo
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-end gap-1">
-                                                    <button className="p-2 text-[#093E7A] hover:bg-[#093E7A]/5 rounded-lg transition-colors">
-                                                        <span className="material-symbols-outlined">edit</span>
-                                                    </button>
-                                                    <button className="p-2 text-[#701C32] hover:bg-[#701C32]/5 rounded-lg transition-colors">
-                                                        <span className="material-symbols-outlined">delete</span>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        {/* Estudiante 4 */}
-                                        <tr className="hover:bg-[#fcfafa] transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="size-11 rounded-full bg-cover bg-center ring-2 ring-gray-50 shadow-sm" style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuC-rw9D7ZN686PkBXKXfW8e3IXv2546PSnJzIXYZzSD-2KriXvIsDsAcC9dakam6xnWZq2gYkX3Ynq39i2E-ZerxWShtWOMLAMklKiDyIHTLCXhmfZHBoabaMNIlKQq98UCHJln5Whj-FHh-G24g1iBBXxAoWhTF8eBMqk1bK5H-6hDYSQeBfGsz-i_1aEuTCzWUR1ZPIdz7RS_yWA2A0uVQIIOs5wS1sfH3hN_x0BN9bz7ZPF8UmHVC_l7PZ_2tbKAD6EDVCIGrgZs")' }}></div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="text-sm font-bold text-[#111418]">Ana Martinez</div>
-                                                <div className="text-xs text-[#617489]">ID: 2024-0089</div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-[#4b5563]">10mo Grado - Sección A</td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2 text-sm text-[#4b5563]">
-                                                    <span className="material-symbols-outlined text-[16px]">call</span>
-                                                    +58 412 555-0404
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#eef2ff] text-[#093E7A]">
-                                                    Activo
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-end gap-1">
-                                                    <button className="p-2 text-[#093E7A] hover:bg-[#093E7A]/5 rounded-lg transition-colors">
-                                                        <span className="material-symbols-outlined">edit</span>
-                                                    </button>
-                                                    <button className="p-2 text-[#701C32] hover:bg-[#701C32]/5 rounded-lg transition-colors">
-                                                        <span className="material-symbols-outlined">delete</span>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                        {loading ? (
+                                            <tr><td colSpan={5} className="text-center py-10 text-gray-400 text-sm italic">Cargando registros...</td></tr>
+                                        ) : alumnos.length === 0 ? (
+                                            <tr><td colSpan={5} className="text-center py-10 text-gray-400 text-sm">No hay alumnos para mostrar.</td></tr>
+                                        ) : (
+                                            alumnos.map((alumno) => (
+                                                <tr key={alumno.id_alumno} className="hover:bg-[#fcfafa] transition-colors">
+                                                    <td className="px-6 py-4 text-sm font-bold text-[#111418]">{alumno.nombres} {alumno.apellidos}</td>
+                                                    <td className="px-6 py-4 text-sm text-[#4b5563]">{alumno.dni}</td>
+                                                    <td className="px-6 py-4 text-sm text-[#4b5563]">{alumno.grado}</td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${['ADMITIDO', 'ESTUDIANTE', 'ACTIVO'].includes(alumno.estado_ingreso) ? 'bg-green-100 text-green-700' : alumno.estado_ingreso === 'RECHAZADO' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-[#093E7A]'}`}>
+                                                            {alumno.estado_ingreso}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <div className="flex justify-end gap-2">
+                                                            {alumno.estado_ingreso === "POSTULANTE" ? (
+                                                                <>
+                                                                    <button 
+                                                                        onClick={() => ejecutarDecision(alumno.id_alumno, true)}
+                                                                        className="px-3 py-1 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700"
+                                                                    >ADMITIR</button>
+                                                                    <button 
+                                                                        onClick={() => setModalRechazo({ abierto: true, id: alumno.id_alumno, nombre: `${alumno.nombres} ${alumno.apellidos}` })}
+                                                                        className="px-3 py-1 bg-red-100 text-red-600 rounded text-xs font-bold hover:bg-red-200"
+                                                                    >RECHAZAR</button>
+                                                                </>
+                                                            ) : (
+                                                                <button className="p-2 text-[#093E7A] hover:bg-[#093E7A]/5 rounded-lg">
+                                                                    <span className="material-symbols-outlined">edit</span>
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
-
-                            {/* Pagination */}
-                            <div className="px-6 py-4 flex items-center justify-between bg-[#fcfafa] border-t border-[#e5e7eb]">
-                                <p className="text-sm text-[#617489]">Mostrando 4 de 156 estudiantes</p>
-                                <div className="flex items-center gap-1">
-                                    <button className="p-2 text-[#111418] hover:bg-gray-200 rounded-lg disabled:opacity-30" disabled>
-                                        <span className="material-symbols-outlined text-sm">chevron_left</span>
-                                    </button>
-                                    <button className="size-8 flex items-center justify-center text-sm font-bold bg-[#093E7A] text-white rounded-lg shadow-sm">1</button>
-                                    <button className="size-8 flex items-center justify-center text-sm text-[#111418] hover:bg-gray-200 rounded-lg">2</button>
-                                    <button className="size-8 flex items-center justify-center text-sm text-[#111418] hover:bg-gray-200 rounded-lg">3</button>
-                                    <span className="px-1 text-[#617489]">...</span>
-                                    <button className="size-8 flex items-center justify-center text-sm text-[#111418] hover:bg-gray-200 rounded-lg">15</button>
-                                    <button className="p-2 text-[#111418] hover:bg-gray-200 rounded-lg">
-                                        <span className="material-symbols-outlined text-sm">chevron_right</span>
-                                    </button>
-                                </div>
-                            </div>
                         </div>
                     </div>
-
-                    {/* Footer Stats */}
-                    <footer className="px-8 py-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="p-5 bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
-                            <div className="text-xs font-black text-[#617489] uppercase tracking-wider">Total Matriculados</div>
-                            <div className="text-2xl font-black text-[#093E7A] mt-1">1,248</div>
-                        </div>
-                        <div className="p-5 bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
-                            <div className="text-xs font-black text-[#617489] uppercase tracking-wider">Nuevos este mes</div>
-                            <div className="text-2xl font-black text-[#093E7A] mt-1">12</div>
-                        </div>
-                        <div className="p-5 bg-white border border-[#e5e7eb] rounded-xl shadow-sm">
-                            <div className="text-xs font-black text-[#617489] uppercase tracking-wider">Asistencia Promedio</div>
-                            <div className="text-2xl font-black text-[#093E7A] mt-1">94.2%</div>
-                        </div>
-                    </footer>
                 </div>
             </div>
         </>

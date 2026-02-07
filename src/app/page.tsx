@@ -23,6 +23,7 @@ import ChatWidget from "../components/utils/ChatbotWidget";
 import { NoticiaResponse } from "@/src/interfaces/noticia"; 
 import { getYouTubeID } from "@/src/components/utils/youtube"; 
 
+
 export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -116,10 +117,14 @@ export default function Home() {
           <div className="relative z-10 text-center px-4 max-w-4xl">
             <h1 className="text-5xl md:text-7xl font-black text-[#701C32] mb-6 leading-tight">Formando líderes para el futuro</h1>
             <p className="text-xl md:text-2xl text-slate-700 mb-10 font-light">Excelencia académica y valores que trascienden generaciones.</p>
-            <button className="bg-[#093E7A] text-white px-10 py-4 rounded-full font-bold text-lg hover:scale-105 transition-transform shadow-xl shadow-[#093E7A]/30 flex items-center space-x-2 mx-auto">
-              <span>Admisión 2024</span>
+            
+            <Link href="/admision">
+              <button className="bg-[#093E7A] text-white px-10 py-4 rounded-full font-bold text-lg hover:scale-105 transition-transform shadow-xl shadow-[#093E7A]/30 flex items-center space-x-2 mx-auto">
+              <span>Admisión</span>
               <ArrowRight size={20} />
             </button>
+              </Link>
+            
           </div>
         </section>
 

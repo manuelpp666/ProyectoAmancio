@@ -1,38 +1,54 @@
 "use client";
 import { useUser } from "@/src/context/userContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react"; // Añadimos useState
 import React from 'react';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Globe, 
-  Bot, 
-  BookOpen, 
-  Settings, 
-  LogOut, 
-  Bell, 
-  TrendingUp, 
-  BadgeCheck, 
-  Calendar, 
+import Link from "next/link"; // Importante para la navegación
+import {
+  LayoutDashboard,
+  Users,
+  Globe,
+  UserPlus, // Cambiamos Bot por UserPlus
+  BookOpen,
+  Settings,
+  LogOut,
+  Bell,
+  TrendingUp,
+  BadgeCheck,
+  Calendar,
   Newspaper,
   FileText,
   ChevronRight,
-  Zap
+  Zap,
+  ArrowRight
 } from 'lucide-react';
 
 export default function DashboardPage() {
-  
-  const { setRole } = useUser();
 
-    useEffect(() => {
-        setRole("admin"); // Marcamos que el usuario actual es estudiante
-    }, []);
-  
+  const { setRole } = useUser();
+  const [postulantesCount, setPostulantesCount] = useState(0);
+  useEffect(() => {
+    setRole("admin");
+    // Llamada a la API para obtener el número de pendientes
+    const fetchPostulantes = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/alumnos/solicitudes-pendientes`);
+        if (res.ok) {
+          const data = await res.json();
+          setPostulantesCount(data.length);
+        }
+      } catch (error) {
+        console.error("Error cargando conteo de postulantes:", error);
+      }
+    };
+
+    fetchPostulantes();
+  }, []);
+
   return (
     <div className="bg-[#F8FAFC] text-slate-800 min-h-screen">
       {/* Main Content */}
       <div className="w-full h-full space-y-6 pb-8">
-        
+
 
         <div className="p-4 md:p-8 space-y-8 w-full">
           {/* Welcome Banner */}
@@ -48,10 +64,10 @@ export default function DashboardPage() {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard icon={<Users className="text-blue-600"/>} bg="bg-blue-50" label="Total Estudiantes" value="1,250" growth="+5.2%" />
-            <StatCard icon={<BadgeCheck className="text-purple-600"/>} bg="bg-purple-50" label="Docentes Activos" value="84" growth="+2.1%" />
-            <StatCard icon={<Calendar className="text-orange-600"/>} bg="bg-orange-50" label="Próximos Eventos" value="12" growth="Semana" />
-            <StatCard icon={<Newspaper className="text-emerald-600"/>} bg="bg-emerald-50" label="Noticias" value="45" growth="+12.5%" />
+            <StatCard icon={<Users className="text-blue-600" />} bg="bg-blue-50" label="Total Estudiantes" value="1,250" growth="+5.2%" />
+            <StatCard icon={<BadgeCheck className="text-purple-600" />} bg="bg-purple-50" label="Docentes Activos" value="84" growth="+2.1%" />
+            <StatCard icon={<Calendar className="text-orange-600" />} bg="bg-orange-50" label="Próximos Eventos" value="12" growth="Semana" />
+            <StatCard icon={<Newspaper className="text-emerald-600" />} bg="bg-emerald-50" label="Noticias" value="45" growth="+12.5%" />
           </div>
 
           {/* Main Grid Content */}
@@ -124,33 +140,41 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Health Stats */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-8 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group">
-            <div className="absolute right-0 top-0 w-24 h-24 bg-[#09397c]/5 rounded-bl-full group-hover:scale-110 transition-transform"></div>
-            <div className="flex-1">
-              <h3 className="text-xl font-black text-gray-900 flex items-center gap-2">
-                <Bot className="w-6 h-6 text-[#09397c]" />
-                Knowledge Base Health
-              </h3>
-              <p className="text-gray-500 mt-2 leading-relaxed">Tu chatbot ha respondido con éxito al <span className="text-emerald-600 font-bold">92%</span> de las consultas esta semana.</p>
-              
-              <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-8">
-                <div className="flex gap-8">
-                  <div className="flex flex-col">
-                    <span className="text-3xl font-black text-[#09397c]">2.4k</span>
-                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Consultas Mes</span>
-                  </div>
-                  <div className="w-px h-12 bg-gray-100"></div>
-                  <div className="flex flex-col">
-                    <span className="text-3xl font-black text-[#09397c]">1.2s</span>
-                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Respuesta</span>
-                  </div>
-                </div>
+          <div className="bg-white border border-gray-200 rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group">
+            {/* Elemento decorativo */}
+            <div className="absolute right-0 top-0 w-32 h-32 bg-orange-500/5 rounded-bl-full group-hover:scale-110 transition-transform"></div>
+            
+            <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+                <UserPlus className="w-8 h-8 text-orange-600" />
+            </div>
 
-                <button className="bg-[#09397c] text-white px-8 py-3 rounded-xl text-sm font-black hover:bg-[#062d59] transition-all flex items-center gap-3 shadow-lg shadow-[#09397c]/20 hover:-translate-y-0.5 active:scale-95">
-                  <Settings className="w-4 h-4" />
-                  GESTIONAR CHATBOT
-                </button>
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <h3 className="text-xl font-black text-gray-900">Solicitudes de Admisión</h3>
+                {postulantesCount > 0 && (
+                    <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-black animate-pulse">
+                        PENDIENTE
+                    </span>
+                )}
+              </div>
+              
+              <p className="text-gray-500 mt-2 leading-relaxed max-w-2xl">
+                Actualmente hay <span className="text-orange-600 font-black text-lg">{postulantesCount}</span> estudiantes postulando al colegio. 
+                Revisa sus perfiles y completa el proceso de admisión para generar sus accesos.
+              </p>
+              
+              <div className="mt-6 flex flex-col sm:flex-row sm:items-center gap-4">
+                <Link href="/campus/panel-control/gestion-estudiantes" className="w-full sm:w-auto">
+                    <button className="w-full bg-[#09397c] text-white px-8 py-4 rounded-xl text-sm font-black hover:bg-[#062d59] transition-all flex items-center justify-center gap-3 shadow-lg shadow-[#09397c]/20 hover:-translate-y-0.5 active:scale-95">
+                      IR A GESTIÓN DE ADMISIÓN
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                </Link>
+                
+                <div className="flex items-center gap-2 text-xs font-bold text-gray-400 px-2">
+                    <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
+                    Actualizado en tiempo real
+                </div>
               </div>
             </div>
           </div>
