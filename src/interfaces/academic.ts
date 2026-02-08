@@ -6,9 +6,10 @@ export interface Area {
 export interface Seccion {
   id_seccion: number;
   id_grado: number;
+  id_anio_escolar: string;
   nombre: string;
-  aula?: string; // Opcional según tu DB
   vacantes: number;
+  grado?: Grado;
 }
 
 export interface Grado {
@@ -16,20 +17,20 @@ export interface Grado {
   id_nivel: number;
   nombre: string;
   orden: number;
-  secciones: Seccion[];
+  nivel?: Nivel;
 }
 
 export interface Nivel {
   id_nivel: number;
   nombre: string;
-  grados: Grado[];
 }
 
 export interface AnioEscolar {
   id_anio_escolar: string;
-  fecha_inicio: string; // Las fechas vienen como string de la API
+  fecha_inicio: string;
   fecha_fin: string;
   activo: boolean;
+  tipo: 'REGULAR' | 'VERANO'; // Nuevo
 }
 
 export interface Curso {

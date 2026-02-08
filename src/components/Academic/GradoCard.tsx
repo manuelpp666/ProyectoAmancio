@@ -1,47 +1,80 @@
-import { Grado } from "@/src/interfaces/academic";
-import { SeccionBadge } from "./SeccionBadge";
+import React from "react";
+import { Grado, Seccion } from "@/src/interfaces/academic"; // Ajusta la ruta si es necesario
 
-// 1. Agregamos onAddSeccion a la interfaz de Props
 interface GradoCardProps {
-  grado: Grado;
-  onAddSeccion: () => void; // Esta función viene desde el padre (page.tsx)
+  grado: Grado & { secciones?: Seccion[] };
+  onAddSeccion: () => void;
+  onEditSeccion: (seccion: Seccion) => void;
+  onDeleteSeccion: (id: number) => void;
+  // Eliminamos las props de edición de grado ya que no se usarán
+  onEditGrado?: (grado: Grado) => void; 
+  onDeleteGrado?: (grado: Grado) => void;
 }
 
-export const GradoCard = ({ grado, onAddSeccion, onEditSeccion, onDeleteSeccion, onEditGrado, onDeleteGrado }: any) => (
-      <div className="border border-gray-100 rounded-lg p-4 bg-gray-50/50 hover:bg-white hover:shadow-md transition-all group/card">
-    <div className="flex justify-between items-start mb-3">
-      <span className="text-sm font-black text-gray-700">{grado.nombre}</span>
-      <div className="flex gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
-        <button onClick={() => onEditGrado(grado)} className="text-gray-400 hover:text-[#093E7A]">
-          <span className="material-symbols-outlined text-lg">edit</span>
-        </button>
-        <button onClick={() => onDeleteGrado(grado)} className="text-gray-400 hover:text-red-600">
-          <span className="material-symbols-outlined text-lg">delete</span>
+export default function GradoCard({
+  grado,
+  onAddSeccion,
+  onEditSeccion,
+  onDeleteSeccion,
+}: GradoCardProps) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-blue-300 transition h-full flex flex-col justify-between group">
+      
+      {/* --- ENCABEZADO DEL GRADO --- */}
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="font-bold text-gray-800 text-lg">{grado.nombre}</h3>
+          <span className="text-xs text-gray-400">Orden: {grado.orden}</span>
+        </div>
+        
+        {/* BOTÓN AGREGAR SECCIÓN (Único botón visible en la cabecera) */}
+        <button 
+            onClick={onAddSeccion}
+            title="Agregar Sección"
+            className="bg-blue-50 text-blue-600 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-600 hover:text-white transition"
+        >
+            <span className="material-symbols-outlined text-sm">add</span>
         </button>
       </div>
+
+      {/* --- LISTA DE SECCIONES --- */}
+      <div className="flex flex-wrap gap-2">
+        {grado.secciones && grado.secciones.length > 0 ? (
+          grado.secciones.map((sec) => (
+            <div 
+              key={sec.id_seccion} 
+              className="group/badge relative px-3 py-1.5 bg-gray-50 text-gray-700 text-sm font-medium rounded-lg border border-gray-200 flex items-center gap-2 hover:bg-blue-50 hover:border-blue-200 transition pr-8 cursor-pointer"
+              onClick={() => onEditSeccion(sec)} // Click en todo el badge para editar
+            >
+              {/* Indicador de Color (Opcional, decorativo) */}
+              <span className={`w-2 h-2 rounded-full ${
+                  sec.nombre === 'Rojo' ? 'bg-red-500' :
+                  sec.nombre === 'Azul' ? 'bg-blue-500' :
+                  sec.nombre === 'Amarillo' ? 'bg-yellow-400' :
+                  sec.nombre === 'Verde' ? 'bg-green-500' :
+                  'bg-gray-800'
+              }`}></span>
+              
+              {sec.nombre} 
+              <span className="text-[10px] text-gray-400">({sec.vacantes})</span>
+
+              {/* Botón Eliminar Sección (Aparece al pasar el mouse - hover) */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation(); // Evitar abrir el modal de editar
+                  onDeleteSeccion(sec.id_seccion);
+                }}
+                className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-300 hover:text-red-500 opacity-0 group-hover/badge:opacity-100 transition p-1"
+                title="Eliminar Sección"
+              >
+                <span className="material-symbols-outlined text-[16px]">close</span>
+              </button>
+            </div>
+          ))
+        ) : (
+          <span className="text-xs text-gray-400 italic py-2">Sin secciones asignadas</span>
+        )}
+      </div>
     </div>
-    
-    <div className="flex flex-wrap gap-2 mb-4">
-      {grado.secciones.map((sec) => (
-        <SeccionBadge 
-    key={sec.id_seccion} 
-    seccion={sec} 
-    onEdit={() => onEditSeccion(sec)} // Pásala desde page.tsx
-    onDelete={onDeleteSeccion}       // Pásala desde page.tsx
-  />
-      ))}
-      
-      {/* 2. Asignamos la función al evento onClick */}
-      <button 
-        onClick={onAddSeccion}
-        className="size-8 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:border-[#093E7A] hover:text-[#093E7A] transition-colors"
-      >
-        <span className="material-symbols-outlined text-sm">add</span>
-      </button>
-    </div>
-    
-    <p className="text-[10px] font-bold text-gray-400 uppercase">
-       {grado.secciones.length} Secciones activas
-    </p>
-  </div>
-);
+  );
+}
