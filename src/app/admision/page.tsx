@@ -44,9 +44,7 @@ export default function AdmisionPage() {
       email: "",
       direccion: "",
     },
-    tipo_parentesco: "PADRE",
-    es_apoderado: true,
-    vive_con_alumno: true,
+    tipo_parentesco: "PADRE"
   });
 
   const handleSubmit = async (e: React.FormEvent) => {

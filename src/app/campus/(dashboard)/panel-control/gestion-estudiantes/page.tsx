@@ -226,18 +226,21 @@ const verDetalle = async (id: number) => {
                                     </h4>
                                     <div className="space-y-3">
                                         {modalInfo.datos.familiares.map((fam: any, i: number) => (
-                                            <div key={i} className="flex items-center justify-between p-4 border border-slate-100 rounded-xl bg-white shadow-sm hover:border-emerald-200 transition-all">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`p-2 rounded-lg ${fam.es_apoderado ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'}`}>
-                                                        <span className="material-symbols-outlined">{fam.es_apoderado ? 'shield_person' : 'person'}</span>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-black text-slate-700">{fam.nombre}</p>
-                                                        <p className="text-[10px] text-slate-400 font-bold uppercase">{fam.parentesco} • Tel: {fam.telefono}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
+    <div key={i} className="flex items-center justify-between p-4 border border-slate-100 rounded-xl bg-white shadow-sm hover:border-emerald-200 transition-all">
+        <div className="flex items-center gap-3">
+            {/* Ahora usamos un color neutro o azul, ya que no hay un "apoderado" marcado en esta tabla */}
+            <div className="p-2 rounded-lg bg-blue-50 text-[#093E7A]">
+                <span className="material-symbols-outlined">family_restroom</span>
+            </div>
+            <div>
+                <p className="text-sm font-black text-slate-700">{fam.nombre}</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">
+                    {fam.parentesco} {fam.dni ? `• DNI: ${fam.dni}` : ''} • Tel: {fam.telefono || 'Sin número'}
+                </p>
+            </div>
+        </div>
+    </div>
+))}
                                     </div>
                                 </div>
                             </div>
