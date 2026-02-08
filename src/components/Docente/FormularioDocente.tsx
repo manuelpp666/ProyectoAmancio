@@ -207,10 +207,7 @@ export function DocenteForm({ initialData, onSubmit, loading }: DocenteFormProps
 
       {/* Botones de Acción */}
       <div className="flex items-center justify-end gap-6 pt-6 pb-20">
-        <button type="button" className="flex items-center gap-2 px-8 py-3 text-[#701C32] font-black text-[11px] uppercase tracking-[0.2em] hover:bg-red-50 rounded-xl transition-all active:scale-95">
-          <XCircle size={18} />
-          Cancelar Registro
-        </button>
+        
         <button type="submit"
           disabled={loading} className="flex items-center gap-3 px-10 py-4 bg-[#093E7A] text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-[#062d59] shadow-xl shadow-[#093E7A]/20 transition-all active:scale-95">
           <Save size={18} strokeWidth={2.5} />

@@ -5,7 +5,7 @@ import { Camera, X } from "lucide-react";
 interface ImageUploadProps {
   label: string;
   onImageChange: (file: File | null) => void;
-  initialImage?: string; // Cambiado de defaultValue a initialImage
+  initialImage?: string| null; 
 }
 
 export default function ImageUpload({ label, onImageChange, initialImage }: ImageUploadProps) {
