@@ -52,12 +52,12 @@ export default function GestionEstudiantesPage() {
     };
 
     useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-        cargarDatos();
-    }, 300); // 300ms de debounce para no saturar la API mientras escribes
+        const delayDebounceFn = setTimeout(() => {
+            cargarDatos();
+        }, 300); // 300ms de debounce para no saturar la API mientras escribes
 
-    return () => clearTimeout(delayDebounceFn);
-}, [filtroPostulantes, busqueda]);
+        return () => clearTimeout(delayDebounceFn);
+    }, [filtroPostulantes, busqueda]);
     const verDetalle = async (id: number) => {
         setCargandoDetalle(true);
         try {
@@ -118,17 +118,17 @@ export default function GestionEstudiantesPage() {
                                 <p className="text-[#617489] text-sm mt-1">Panel de control administrativo.</p>
                             </div>
                             <div className="relative flex-1 max-w-md mx-4">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                search
-            </span>
-            <input
-                type="text"
-                placeholder="Buscar por DNI del alumno..."
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#093E7A] outline-none transition-all"
-            />
-        </div>
+                                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                    search
+                                </span>
+                                <input
+                                    type="text"
+                                    placeholder="Buscar por DNI del alumno..."
+                                    value={busqueda}
+                                    onChange={(e) => setBusqueda(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#093E7A] outline-none transition-all"
+                                />
+                            </div>
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setFiltroPostulantes(!filtroPostulantes)}
