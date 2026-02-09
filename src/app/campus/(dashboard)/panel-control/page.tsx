@@ -13,7 +13,7 @@ import {
   Settings,
   LogOut,
   Bell,
-  TrendingUp,
+  Loader2,
   BadgeCheck,
   Calendar,
   Newspaper,
