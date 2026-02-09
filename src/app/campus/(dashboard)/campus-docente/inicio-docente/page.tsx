@@ -2,15 +2,37 @@
 import { useUser } from "@/src/context/userContext";
 import { useEffect } from "react";
 import Link from "next/link";
-import { BookOpen, Users, Clock, ArrowRight } from "lucide-react";
+import { BookOpen, Users, Clock, ArrowRight,Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation"
 
 export default function InicioDocentePage() {
   
-  const { setRole } = useUser();
+  // 1. Extraer datos reales del contexto
+    const { role, username, loading } = useUser();
+    const router = useRouter();
 
+    // 2. Proteger la ruta: Si no es estudiante, lo expulsamos
     useEffect(() => {
-        setRole("docente"); // Marcamos que el usuario actual es estudiante
-    }, []);
+        if (!loading) {
+            if (!role) {
+                router.push("/campus"); // No ha iniciado sesión
+            } else if (role !== "DOCENTE") {
+                router.push("/prohibido"); // Es admin o estudiante intentando entrar aquí
+            }
+        }
+    }, [role, loading, router]);
+
+    // 3. Estado de carga mientras se recupera la sesión del localStorage
+    if (loading) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <Loader2 className="animate-spin text-[#701C32]" size={48} />
+            </div>
+        );
+    }
+
+    // Si no hay rol (y ya terminó de cargar), no renderizamos nada para evitar parpadeos
+    if (!role) return null;
 
 
   const resumen = [

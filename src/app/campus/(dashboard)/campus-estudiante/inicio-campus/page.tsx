@@ -2,15 +2,37 @@
 "use client";
 import { useUser } from "@/src/context/userContext";
 import { useEffect } from "react";
-import { ArrowRight, Megaphone, Star, Wallet, Clock, Calendar } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Megaphone, Star, Wallet, Clock, Loader2 } from "lucide-react";
 
 export default function DashboardPage() {
 
-    const { setRole } = useUser();
+    // 1. Extraer datos reales del contexto
+    const { role, username, loading } = useUser();
+    const router = useRouter();
 
+    // 2. Proteger la ruta: Si no es estudiante, lo expulsamos
     useEffect(() => {
-        setRole("estudiante"); // Marcamos que el usuario actual es estudiante
-    }, []);
+        if (!loading) {
+            if (!role) {
+                router.push("/campus"); // No ha iniciado sesión
+            } else if (role !== "ALUMNO") {
+                router.push("/prohibido"); // Es admin o docente intentando entrar aquí
+            }
+        }
+    }, [role, loading, router]);
+
+    // 3. Estado de carga mientras se recupera la sesión del localStorage
+    if (loading) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <Loader2 className="animate-spin text-[#701C32]" size={48} />
+            </div>
+        );
+    }
+
+    // Si no hay rol (y ya terminó de cargar), no renderizamos nada para evitar parpadeos
+    if (!role) return null;
 
     return (
         <div className="max-w-[1600px] mx-auto space-y-8">

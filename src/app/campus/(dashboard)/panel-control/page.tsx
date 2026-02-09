@@ -2,6 +2,7 @@
 import { useUser } from "@/src/context/userContext";
 import { useEffect, useState } from "react"; // Añadimos useState
 import React from 'react';
+import { useRouter } from "next/navigation";
 import Link from "next/link"; // Importante para la navegación
 import {
   LayoutDashboard,
@@ -24,11 +25,24 @@ import {
 
 export default function DashboardPage() {
 
-  const { setRole } = useUser();
+  // 1. Extraer datos del contexto
+  const { role, username, loading } = useUser();
+  const router = useRouter();
   const [postulantesCount, setPostulantesCount] = useState(0);
+
+  // 2. Proteger la ruta: Solo ADMIN
   useEffect(() => {
-    setRole("admin");
-    // Llamada a la API para obtener el número de pendientes
+    if (!loading) {
+      if (!role) {
+        router.push("/campus");
+      } else if (role.toUpperCase() !== "ADMIN") {
+        router.push("/prohibido");
+      }
+    }
+  }, [role, loading, router]);
+  useEffect(() => {
+    if (role?.toUpperCase() === "ADMIN") {
+// Llamada a la API para obtener el número de pendientes
     const fetchPostulantes = async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/alumnos/solicitudes-pendientes`);
@@ -42,8 +56,22 @@ export default function DashboardPage() {
     };
 
     fetchPostulantes();
-  }, []);
 
+    }
+    
+  }, [role]);
+
+  // 4. Pantalla de carga
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#F8FAFC]">
+        <Loader2 className="animate-spin text-[#701C32]" size={48} />
+      </div>
+    );
+  }
+
+  // Si no es admin, no renderizar nada mientras redirige
+  if (role?.toUpperCase() !== "ADMIN") return null;
   return (
     <div className="bg-[#F8FAFC] text-slate-800 min-h-screen">
       {/* Main Content */}

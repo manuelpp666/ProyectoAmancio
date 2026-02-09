@@ -1,59 +1,78 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/src/context/userContext";
 import Link from "next/link";
-import { User, Lock, GraduationCap, Loader2 } from "lucide-react";
-
+import { User, Lock, GraduationCap, Loader2, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { setUserData } = useUser(); // 2. Extraer la función para guardar datos
+  
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState("");
-  
+  const [password, setPassword] = useState(""); // 3. Estado para la contraseña
+  const [error, setError] = useState<string | null>(null); // 4. Estado para errores visuales
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
-    // SIMULACIÓN DE LOGIN
-    // En un futuro, aquí conectarás con tu API de Python
-    setTimeout(() => {
-      if (username.toLowerCase().includes("admin")) {
+    try {
+      // 5. Llamada real a tu backend de FastAPI
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/usuarios/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: username,
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Manejo de errores del backend (401, 404, etc.)
+        throw new Error(data.detail || "Credenciales incorrectas");
+      }
+
+      // 6. Guardar en el Contexto Global (y localStorage automáticamente si lo configuraste)
+      setUserData(data.rol, data.username);
+
+      // 7. Redirección basada en el ROL REAL de la base de datos
+      if (data.rol === "ADMIN") {
         router.push("/campus/panel-control");
-      } else if (username.toLowerCase().includes("docente") || username.toLowerCase().includes("profe")) {
+      } else if (data.rol === "DOCENTE") {
         router.push("/campus/campus-docente/inicio-docente");
       } else {
-        // Por defecto, cualquier otro usuario va al campus estudiante
         router.push("/campus/campus-estudiante/inicio-campus");
       }
+
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
       setLoading(false);
-    }, 1000); 
+    }
   };
-  
+
   return (
     <div className="antialiased text-slate-900 overflow-hidden bg-white">
-      
       <div className="flex min-h-screen">
-        {/* Sección del Formulario */}
         <main className="w-full lg:w-1/2 xl:w-[45%] flex flex-col justify-center px-6 sm:px-12 md:px-20 lg:px-16 xl:px-24 bg-white z-10 shadow-2xl relative">
           
-          {/* Botón Volver flotante */}
           <Link href="/" className="absolute top-8 left-8 text-slate-400 hover:text-[#701C32] transition-colors flex items-center gap-2 text-sm font-bold">
             <span className="material-symbols-outlined">arrow_back</span>
             Volver al inicio
           </Link>
 
           <div className="max-w-md mx-auto lg:mx-0 w-full">
-            
-            {/* Logo */}
-            <div className="mb-10 flex justify-center lg:justify-start animate-fade-in-up">
+            <div className="mb-10 flex justify-center lg:justify-start">
               <div className="flex items-center gap-3">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-slate-50 border border-slate-100">
-                  {/* Asegúrate de tener el logo en public/logo.png */}
-                  <img
-                    src="/logo.png"
-                    alt="Logo Amancio Varona"
-                    className="h-10 w-auto object-contain"
-                  />
+                  <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-black text-[#701C32] leading-none uppercase tracking-tight">Amancio</h1>
@@ -62,69 +81,52 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Welcome Text */}
-            <div className="mb-8 text-center lg:text-left animate-fade-in-up delay-100">
+            <div className="mb-8 text-center lg:text-left">
               <h2 className="text-3xl font-black text-slate-800 mb-2">Acceso al Campus</h2>
-              <p className="text-slate-500">
-                Bienvenido a la plataforma virtual unificada. Ingresa tus credenciales institucionales.
-              </p>
+              <p className="text-slate-500">Ingresa tus credenciales institucionales.</p>
             </div>
 
-            {/* Login Form */}
-            <form onSubmit={handleSubmit} className="space-y-5 animate-fade-in-up delay-200">
-              
-              {/* Input Usuario */}
+            {/* 8. Alerta de Error Visual */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 flex items-center gap-3 animate-shake">
+                <AlertCircle size={20} />
+                <p className="text-sm font-medium">{error}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2" htmlFor="username">Usuario / DNI</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Usuario / DNI</label>
                 <div className="relative group">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#093E7A] transition-colors" size={20} />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#093E7A]" size={20} />
                   <input 
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A] transition-all outline-none font-medium" 
-                    id="username" 
-                    placeholder="Ej: 12345678" 
+                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#093E7A]" 
                     required 
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                   />
                 </div>
-                <p className="text-[10px] text-slate-400 mt-1 ml-1">
-                  *Tip: Usa "admin", "docente" o tu nombre para probar.
-                </p>
               </div>
 
-              {/* Input Contraseña */}
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2" htmlFor="password">Contraseña</label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Contraseña</label>
                 <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#093E7A] transition-colors" size={20} />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#093E7A]" size={20} />
                   <input 
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A] transition-all outline-none font-medium" 
-                    id="password" 
-                    placeholder="••••••••" 
+                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#093E7A]" 
                     required 
                     type="password"
+                    value={password} // Vinculado al estado
+                    onChange={(e) => setPassword(e.target.value)} // Captura la contraseña
+                    placeholder="••••••••"
                   />
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <input 
-                    className="w-4 h-4 rounded border-slate-300 text-[#093E7A] focus:ring-[#093E7A] cursor-pointer" 
-                    id="remember" 
-                    type="checkbox"
-                  />
-                  <label className="text-sm text-slate-600 font-medium cursor-pointer" htmlFor="remember">Recordarme</label>
-                </div>
-                <a href="#" className="text-sm font-bold text-[#701C32] hover:underline">
-                  ¿Problemas para entrar?
-                </a>
               </div>
 
               <button 
                 disabled={loading}
-                className="w-full bg-[#093E7A] hover:bg-[#072e5c] text-white font-black py-4 rounded-xl shadow-lg shadow-[#093E7A]/20 transition-all active:scale-[0.98] uppercase tracking-wide flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed" 
+                className="w-full bg-[#093E7A] hover:bg-[#072e5c] text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 disabled:opacity-70 transition-all" 
                 type="submit"
               >
                 {loading ? <Loader2 className="animate-spin" /> : <GraduationCap size={20} />}
@@ -133,7 +135,6 @@ export default function LoginPage() {
             </form>
           </div>
         </main>
-
         {/* Sección de Imagen (Banner derecho) */}
         <aside className="hidden lg:block relative lg:flex-1 bg-[#701C32] overflow-hidden">
           {/* Imagen de fondo */}
