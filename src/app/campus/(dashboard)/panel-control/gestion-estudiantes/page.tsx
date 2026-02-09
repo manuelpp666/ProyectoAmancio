@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { AlumnoBase } from "@/src/interfaces/admision";
+import EdadBadge from "@/src/components/utils/CalcularEdad";
 
 function InfoItem({ label, value }: { label: string, value: string }) {
     return (
@@ -214,9 +215,19 @@ const verDetalle = async (id: number) => {
                                         <InfoItem label="Nombres" value={modalInfo.datos.alumno.nombres} />
                                         <InfoItem label="Apellidos" value={modalInfo.datos.alumno.apellidos} />
                                         <InfoItem label="DNI" value={modalInfo.datos.alumno.dni} />
-                                        <InfoItem label="Grado" value={modalInfo.datos.alumno.grado} />
+                                        <div>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mb-0.5">Fecha de Nacimiento</p>
+        <div className="flex items-center">
+            <p className="text-sm font-bold text-slate-800 leading-tight">
+                {modalInfo.datos.alumno.fecha_nacimiento || "---"}
+            </p>
+            <EdadBadge fecha={modalInfo.datos.alumno.fecha_nacimiento} />
+        </div>
+    </div>
+                                        <InfoItem label="Grado al que Postula" value={modalInfo.datos.alumno.grado} />
                                         <InfoItem label="Colegio" value={modalInfo.datos.alumno.colegio_procedencia || "No especifica"} />
                                         <InfoItem label="Dirección" value={modalInfo.datos.alumno.direccion} />
+                                        <InfoItem label="Enfermedades/Alergias" value={modalInfo.datos.alumno.enfermedad || "Ninguna"} />
                                     </div>
                                 </div>
                                 <div>
