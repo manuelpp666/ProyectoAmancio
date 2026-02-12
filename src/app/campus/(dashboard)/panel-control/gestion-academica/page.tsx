@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Nivel, Seccion, AnioEscolar, Grado } from "../../../../../interfaces/academic"; 
+import { Nivel, Seccion, AnioEscolar, Grado } from "@/src/interfaces/academic"; 
 import GradoCard from "@/src/components/Academic/GradoCard"; 
 import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 import { toast } from "sonner";
@@ -29,10 +29,12 @@ export default function GestionAcademicaPage() {
     tipo: "REGULAR"
   });
 
-  // Validar fechas apertura
-  const fechasValidas = nuevoAnioData.fecha_inicio && nuevoAnioData.fecha_fin 
-    ? new Date(nuevoAnioData.fecha_fin) > new Date(nuevoAnioData.fecha_inicio) 
-    : false;
+  // --- MODAL INSCRIPCIONES (NUEVO) ---
+  const [isInscripcionModalOpen, setIsInscripcionModalOpen] = useState(false);
+  const [inscripcionData, setInscripcionData] = useState({
+    inicio_inscripcion: "",
+    fin_inscripcion: ""
+  });
 
   // --- MODAL SECCIÓN ---
   const [isSeccionModalOpen, setIsSeccionModalOpen] = useState(false);
@@ -41,12 +43,20 @@ export default function GestionAcademicaPage() {
   const [nuevaSeccion, setNuevaSeccion] = useState({
     nombre: "",
     vacantes: 30
-    // Eliminado: aula
   });
 
   // --- MODAL COPIAR ---
   const [isCopiarModalOpen, setIsCopiarModalOpen] = useState(false);
   const [anioOrigenCopiar, setAnioOrigenCopiar] = useState("");
+
+  // Validaciones
+  const fechasValidas = nuevoAnioData.fecha_inicio && nuevoAnioData.fecha_fin 
+    ? new Date(nuevoAnioData.fecha_fin) > new Date(nuevoAnioData.fecha_inicio) 
+    : false;
+
+  const fechasInscripcionValidas = inscripcionData.inicio_inscripcion && inscripcionData.fin_inscripcion
+    ? new Date(inscripcionData.fin_inscripcion) > new Date(inscripcionData.inicio_inscripcion)
+    : false;
 
   // =========================================================
   // 1. CARGA DE DATOS
@@ -100,6 +110,17 @@ export default function GestionAcademicaPage() {
       const obj = anios.find(a => a.id_anio_escolar === anioSeleccionado) || null;
       setAnioObj(obj);
       fetchSeccionesDelAnio(anioSeleccionado);
+      
+      // Cargar fechas de inscripción actuales si existen
+      if (obj) {
+        // @ts-ignore (Si TS se queja de las propiedades nuevas)
+        setInscripcionData({
+            // @ts-ignore
+            inicio_inscripcion: obj.inicio_inscripcion || "",
+            // @ts-ignore
+            fin_inscripcion: obj.fin_inscripcion || ""
+        });
+      }
     } else {
       setAnioObj(null);
       setSecciones([]);
@@ -108,16 +129,13 @@ export default function GestionAcademicaPage() {
 
 
   // =========================================================
-  // 2. LÓGICA DE NEGOCIO Y FILTROS
+  // 2. LÓGICA DE FILTROS
   // =========================================================
 
-  // Verificar si el año aún no ha comenzado (para habilitar copiar estructura)
   const isAnioSinComenzar = () => {
     if (!anioObj) return false;
     const hoy = new Date();
-    // Ajustamos la fecha de inicio para comparar correctamente (ignorando horas si es necesario)
     const fechaInicio = new Date(anioObj.fecha_inicio);
-    // Agregamos un día al inicio para que el mismo día de inicio ya cuente como "comenzado" o ajustamos según lógica estricta
     return hoy < fechaInicio; 
   };
 
@@ -128,7 +146,7 @@ export default function GestionAcademicaPage() {
     return niveles.filter(n => {
       const nombre = n.nombre.toLowerCase();
       if (esVerano) {
-        return true; // Verano ve todo (incluyendo pre academia)
+        return true; 
       } else {
         return !nombre.includes("pre") && !nombre.includes("academia");
       }
@@ -159,7 +177,7 @@ export default function GestionAcademicaPage() {
       const res = await fetch(`${API_URL}/academic/anios/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...nuevoAnioData }), // El backend calcula 'activo'
+        body: JSON.stringify({ ...nuevoAnioData }), 
       });
 
       if (res.ok) {
@@ -176,27 +194,29 @@ export default function GestionAcademicaPage() {
     }
   };
 
-  const handleCierreAnio = async () => {
+  // NUEVO HANDLER: Guardar Inscripciones
+  const handleGuardarInscripcion = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!anioSeleccionado) return;
-    toast(`¿Forzar cierre del año ${anioSeleccionado}?`, {
-      description: "Esto bloqueará inmediatamente a los docentes.",
-      action: {
-        label: "Confirmar",
-        onClick: async () => {
-          try {
-            const res = await fetch(`${API_URL}/academic/anios/${anioSeleccionado}/cerrar`, {
-              method: "PATCH"
-            });
-            if (res.ok) {
-              toast.success("Año cerrado manualmente");
-              fetchDatosMaestros();
-            }
-          } catch (e) {
-            toast.error("Error de conexión");
-          }
+
+    try {
+        const res = await fetch(`${API_URL}/academic/anios/${anioSeleccionado}/inscripciones`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(inscripcionData)
+        });
+
+        if (res.ok) {
+            toast.success("Fechas de inscripción actualizadas");
+            setIsInscripcionModalOpen(false);
+            fetchDatosMaestros(); // Recargar para tener los datos frescos
+        } else {
+            const err = await res.json();
+            toast.error(err.detail || "Error al guardar fechas");
         }
-      }
-    });
+    } catch (error) {
+        toast.error("Error de conexión");
+    }
   };
 
   // --- SECCIONES ---
@@ -225,7 +245,8 @@ export default function GestionAcademicaPage() {
         setIsSeccionModalOpen(false);
         fetchSeccionesDelAnio(anioSeleccionado);
       } else {
-        toast.error("Error al guardar sección");
+        const errorData = await response.json();
+        toast.error(errorData.detail || "Error al guardar sección");
       }
     } catch (error) {
       toast.error("Error al guardar sección");
@@ -276,17 +297,17 @@ export default function GestionAcademicaPage() {
     }
   };
 
-  // Helpers de apertura de modales
+  // Helpers
   const prepararNuevaSeccion = (gradoId: number) => {
     setSeccionEnEdicion(null);
     setSelectedGradoId(gradoId);
-    setNuevaSeccion({ nombre: "", vacantes: 30 }); // Sin aula
+    setNuevaSeccion({ nombre: "", vacantes: 30 });
     setIsSeccionModalOpen(true);
   };
   const prepararEditarSeccion = (seccion: Seccion) => {
     setSeccionEnEdicion(seccion);
     setSelectedGradoId(seccion.id_grado);
-    setNuevaSeccion({ nombre: seccion.nombre, vacantes: seccion.vacantes }); // Sin aula
+    setNuevaSeccion({ nombre: seccion.nombre, vacantes: seccion.vacantes });
     setIsSeccionModalOpen(true);
   };
 
@@ -295,8 +316,6 @@ export default function GestionAcademicaPage() {
       <style dangerouslySetInnerHTML={{
         __html: `
         body { font-family: 'Lato', sans-serif; background-color: #F8FAFC; color: #1e293b; }
-        .sidebar-maroon { background-color: #701C32; }
-        .active-tab { border-bottom: 3px solid #093E7A; color: #093E7A; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         .fill-icon { font-variation-settings: 'FILL' 1; }
         ::-webkit-scrollbar { width: 8px; }
@@ -354,7 +373,7 @@ export default function GestionAcademicaPage() {
             <section className="space-y-4">
               <div>
                 <h3 className="text-xl font-black text-gray-900">Gestión del Año Académico</h3>
-                <p className="text-sm text-gray-500">Administre el estado del periodo lectivo y herramientas de migración.</p>
+                <p className="text-sm text-gray-500">Administre el estado del periodo lectivo y las fechas de admisión.</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 
@@ -365,7 +384,7 @@ export default function GestionAcademicaPage() {
                       <span className="material-symbols-outlined text-[#093E7A]">event_available</span>
                       Apertura de Año
                     </h4>
-                    <p className="text-xs text-gray-400 mt-1">Configure los parámetros iniciales para el nuevo ciclo escolar.</p>
+                    <p className="text-xs text-gray-400 mt-1">Configure los parámetros iniciales del ciclo escolar.</p>
                   </div>
                   <button onClick={() => setIsAperturaModalOpen(true)} className="w-full py-2.5 bg-[#093E7A] text-white font-bold rounded-lg text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2">
                     <span className="material-symbols-outlined text-sm">lock_open</span>
@@ -373,26 +392,26 @@ export default function GestionAcademicaPage() {
                   </button>
                 </div>
 
-                {/* Cierre */}
+                {/* NUEVO: Apertura de Inscripciones (Reemplaza Cierre) */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between">
                   <div className="mb-4">
                     <h4 className="font-bold text-gray-800 flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[#701C32]">event_busy</span>
-                      Cierre de Año
+                      <span className="material-symbols-outlined text-[#093E7A]">how_to_reg</span>
+                      Apertura de Inscripciones
                     </h4>
-                    <p className="text-xs text-gray-400 mt-1">Finalice los registros académicos y bloquee modificaciones.</p>
+                    <p className="text-xs text-gray-400 mt-1">Defina el periodo habilitado para nuevas matrículas.</p>
                   </div>
                   <button 
-                    onClick={handleCierreAnio}
-                    disabled={!anioObj?.activo} 
-                    className="w-full py-2.5 bg-[#701C32] text-white font-bold rounded-lg text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => setIsInscripcionModalOpen(true)}
+                    disabled={!anioSeleccionado}
+                    className="w-full py-2.5 bg-white border-2 border-[#093E7A] text-[#093E7A] font-bold rounded-lg text-sm hover:bg-[#093E7A] hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <span className="material-symbols-outlined text-sm">lock</span>
-                    Cierre de Año
+                    <span className="material-symbols-outlined text-sm">date_range</span>
+                    Configurar Fechas
                   </button>
                 </div>
 
-                {/* Copiar (MODIFICADO: Solo si no ha comenzado) */}
+                {/* Copiar */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between">
                   <div className="mb-4">
                     <h4 className="font-bold text-gray-800 flex items-center gap-2">
@@ -403,12 +422,11 @@ export default function GestionAcademicaPage() {
                   </div>
                   <button 
                     onClick={() => setIsCopiarModalOpen(true)}
-                    // Se deshabilita si el año YA comenzó o si no hay año seleccionado
                     disabled={!isAnioSinComenzar()} 
                     className="w-full py-2.5 bg-gray-100 text-gray-700 border border-gray-200 font-bold rounded-lg text-sm hover:bg-gray-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span className="material-symbols-outlined text-sm text-gray-500">auto_awesome_motion</span>
-                    Copiar Estructura Anterior
+                    Copiar Estructura
                   </button>
                   {!isAnioSinComenzar() && anioObj && (
                       <p className="text-[10px] text-red-400 mt-1 text-center">
@@ -451,12 +469,9 @@ export default function GestionAcademicaPage() {
                               <GradoCard
                                 key={grado.id_grado}
                                 grado={gradoConSecciones}
-                                // Se pasan las funciones de SECCIÓN, pero NO las de GRADO (eliminar/editar)
                                 onAddSeccion={() => prepararNuevaSeccion(grado.id_grado)}
                                 onEditSeccion={prepararEditarSeccion}
                                 onDeleteSeccion={handleEliminarSeccion}
-                                // onEditGrado={prepararEditarGrado} <--- ELIMINADO
-                                // onDeleteGrado={handleEliminarGrado} <--- ELIMINADO
                               />
                             );
                         })}
@@ -470,7 +485,56 @@ export default function GestionAcademicaPage() {
         </div>
       </div>
 
-      {/* --- MODAL DE SECCIÓN (SIN AULA) --- */}
+      {/* --- MODAL INSCRIPCIONES (NUEVO) --- */}
+      {isInscripcionModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="p-6 border-b bg-[#093E7A] text-white">
+              <h3 className="font-black text-lg">Configurar Inscripciones</h3>
+              <p className="text-xs opacity-80">Periodo para {anioSeleccionado}</p>
+            </div>
+            <form onSubmit={handleGuardarInscripcion} className="p-6 space-y-4">
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 text-xs text-blue-800 mb-4">
+                <p>Las matrículas automáticas solo se procesarán si la fecha actual está dentro de este rango.</p>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Inicio de Inscripciones</label>
+                <input 
+                    required 
+                    type="date" 
+                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]" 
+                    value={inscripcionData.inicio_inscripcion}
+                    onChange={(e) => setInscripcionData({...inscripcionData, inicio_inscripcion: e.target.value})} 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fin de Inscripciones</label>
+                <input 
+                    required 
+                    type="date" 
+                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]" 
+                    value={inscripcionData.fin_inscripcion}
+                    onChange={(e) => setInscripcionData({...inscripcionData, fin_inscripcion: e.target.value})} 
+                />
+              </div>
+              <div className="pt-4 flex gap-3">
+                <button type="button" onClick={() => setIsInscripcionModalOpen(false)} className="flex-1 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-lg">Cancelar</button>
+                <button 
+                  type="submit" 
+                  disabled={!fechasInscripcionValidas}
+                  className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${
+                    fechasInscripcionValidas ? "bg-[#093E7A] text-white hover:bg-[#072d5a]" : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  Guardar Fechas
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL DE SECCIÓN --- */}
       {isSeccionModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
@@ -494,9 +558,6 @@ export default function GestionAcademicaPage() {
                   <input required type="number" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-[#093E7A] outline-none" value={nuevaSeccion.vacantes} onChange={(e) => setNuevaSeccion({ ...nuevaSeccion, vacantes: parseInt(e.target.value) })} />
                 </div>
               </div>
-              
-              {/* CAMPO AULA ELIMINADO */}
-
               <div className="pt-4 flex gap-3">
                 <button type="button" onClick={() => setIsSeccionModalOpen(false)} className="flex-1 py-2.5 text-sm font-bold text-gray-500 bg-gray-100 rounded-lg">Cancelar</button>
                 <button type="submit" className="flex-1 py-2.5 text-sm font-bold text-white bg-[#093E7A] rounded-lg">{seccionEnEdicion ? "Actualizar" : "Guardar"}</button>

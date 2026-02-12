@@ -2,9 +2,17 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 import { toast } from "sonner";
-import { AnioEscolar, Nivel, Grado, Seccion } from "@/src/interfaces/academic";
+import { Nivel, Grado, Seccion } from "@/src/interfaces/academic";
 
-// Interfaces locales para el manejo de estado
+// Extendemos la interfaz localmente para incluir las fechas de inscripción
+interface AnioEscolar {
+  id_anio_escolar: string;
+  activo: boolean;
+  tipo: string;
+  inicio_inscripcion?: string; // Fechas vienen como string del JSON
+  fin_inscripcion?: string;
+}
+
 interface AlumnoMatriculado {
   id_matricula: number;
   id_alumno: number;
@@ -86,11 +94,10 @@ export default function AsignacionEstudiantesPage() {
       const dataSecciones: Seccion[] = await resSecciones.json();
       setSecciones(dataSecciones);
 
-      // CORRECCIÓN: Mantener estado de edición de otras secciones al recargar
+      // Mantener estado de edición
       setSeccionesEditando(prev => {
         if (mantenerEstadoEdicion) {
             const nuevoEstado = { ...prev };
-            // Aseguramos que las secciones nuevas tengan un estado inicial (false)
             dataSecciones.forEach(s => {
                 if (nuevoEstado[s.id_seccion] === undefined) {
                     nuevoEstado[s.id_seccion] = false;
@@ -98,7 +105,6 @@ export default function AsignacionEstudiantesPage() {
             });
             return nuevoEstado;
         } else {
-            // Reset total solo si cambiamos de grado/año
             const estadoInicial: Record<number, boolean> = {};
             dataSecciones.forEach(s => estadoInicial[s.id_seccion] = false); 
             return estadoInicial;
@@ -107,17 +113,21 @@ export default function AsignacionEstudiantesPage() {
 
       // Cargar Alumnos
       const resMatriculas = await fetch(`${API_URL}/enrollment/matriculas/?anio_id=${selectedAnio}&grado_id=${selectedGrado}`);
+      
       if(resMatriculas.ok){
           const dataMatriculas = await resMatriculas.json();
-          const alumnosMapeados = dataMatriculas.map((m: any) => ({
-            id_matricula: m.id_matricula,
-            id_alumno: m.alumno.id_alumno,
-            nombres: m.alumno.nombres,
-            apellidos: m.alumno.apellidos,
-            dni: m.alumno.dni,
-            id_seccion: m.id_seccion,
-            id_grado: m.id_grado
-          }));
+          // Mapeo seguro verificando que 'alumno' exista
+          const alumnosMapeados = dataMatriculas
+            .filter((m: any) => m.alumno) // Filtrar matrículas corruptas sin alumno
+            .map((m: any) => ({
+                id_matricula: m.id_matricula,
+                id_alumno: m.alumno.id_alumno,
+                nombres: m.alumno.nombres,
+                apellidos: m.alumno.apellidos,
+                dni: m.alumno.dni,
+                id_seccion: m.id_seccion,
+                id_grado: m.id_grado
+            }));
           setAlumnos(alumnosMapeados);
       }
     } catch (error) {
@@ -137,19 +147,31 @@ export default function AsignacionEstudiantesPage() {
     }
   }, [selectedAnio, selectedGrado, cargarDatosOperativos]);
 
-  // --- LÓGICA DE NEGOCIO ---
+  // --- LÓGICA DE NEGOCIO Y FECHAS ---
 
   const anioActualObj = anios.find(a => a.id_anio_escolar === selectedAnio);
 
-  const isPeriodoAsignacionActivo = useMemo(() => {
+  // VALIDACIÓN DE FECHAS DE INSCRIPCIÓN
+  const isPeriodoInscripcionActivo = useMemo(() => {
     if (!anioActualObj) return false;
-    if (anioActualObj.tipo !== 'REGULAR') return true; 
+    
+    // Si no tiene fechas configuradas, asumimos cerrado por seguridad o abierto según prefieras.
+    // Aquí asumimos CERRADO si no hay fechas.
+    if (!anioActualObj.inicio_inscripcion || !anioActualObj.fin_inscripcion) return false;
 
     const hoy = new Date();
-    const anioNumero = parseInt(anioActualObj.id_anio_escolar.split('-')[0]) || hoy.getFullYear();
-    const fechaLimite = new Date(anioNumero, 9, 31); // 31 de Octubre
+    // Ajustar horas para comparar solo fechas (ignorar hora actual)
+    hoy.setHours(0,0,0,0);
     
-    return hoy <= fechaLimite;
+    // Convertir strings YYYY-MM-DD a Date con ajuste de zona horaria local
+    // (Ojo: new Date('2026-01-05') suele ser UTC, mejor usar split)
+    const [yI, mI, dI] = anioActualObj.inicio_inscripcion.split('-').map(Number);
+    const inicio = new Date(yI, mI - 1, dI);
+
+    const [yF, mF, dF] = anioActualObj.fin_inscripcion.split('-').map(Number);
+    const fin = new Date(yF, mF - 1, dF);
+
+    return hoy >= inicio && hoy <= fin;
   }, [anioActualObj]);
 
   const nivelesVisibles = niveles.filter(n => {
@@ -165,8 +187,8 @@ export default function AsignacionEstudiantesPage() {
   // --- DRAG & DROP ---
 
   const handleDragStart = (alumno: AlumnoMatriculado) => {
-    if (!isPeriodoAsignacionActivo) {
-        toast.error("Periodo cerrado.");
+    if (!isPeriodoInscripcionActivo) {
+        toast.error("El periodo de inscripción/asignación está cerrado para este año.");
         return;
     }
     setDraggedStudent(alumno);
@@ -242,12 +264,8 @@ export default function AsignacionEstudiantesPage() {
         );
 
         await Promise.all(promesas);
-
-        // Bloqueamos SOLO la sección actual
         setSeccionesEditando(prev => ({ ...prev, [seccionId]: false }));
         toast.success("Asignación confirmada");
-        
-        // Recargamos manteniendo la edición de otros
         cargarDatosOperativos(true); 
 
     } catch (error) {
@@ -257,8 +275,8 @@ export default function AsignacionEstudiantesPage() {
   };
 
   const handleHabilitarEdicion = (seccionId: number) => {
-    if (!isPeriodoAsignacionActivo) {
-        toast.error("Periodo cerrado.");
+    if (!isPeriodoInscripcionActivo) {
+        toast.error("No se puede editar: Periodo de inscripción cerrado.");
         return;
     }
     setSeccionesEditando(prev => ({ ...prev, [seccionId]: true }));
@@ -307,11 +325,28 @@ export default function AsignacionEstudiantesPage() {
                       </option>
                   ))}
                 </select>
-                {!isPeriodoAsignacionActivo && (
-                    <span className="ml-2 text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded">CERRADO</span>
+                
+                {/* INDICADOR DE ESTADO DE INSCRIPCIÓN */}
+                {isPeriodoInscripcionActivo ? (
+                    <span className="ml-2 flex items-center gap-1 bg-green-50 text-green-700 px-2 py-1 rounded border border-green-200 text-[10px] font-bold uppercase tracking-wide">
+                        <span className="size-2 rounded-full bg-green-500 animate-pulse"></span>
+                        Inscripciones Abiertas
+                    </span>
+                ) : (
+                    <span className="ml-2 flex items-center gap-1 bg-red-50 text-red-700 px-2 py-1 rounded border border-red-200 text-[10px] font-bold uppercase tracking-wide">
+                        <span className="size-2 rounded-full bg-red-500"></span>
+                        Inscripciones Cerradas
+                    </span>
                 )}
               </div>
             </div>
+            {anioActualObj && (
+                <div className="text-xs text-gray-400">
+                    {anioActualObj.inicio_inscripcion ? 
+                        `Del ${anioActualObj.inicio_inscripcion} al ${anioActualObj.fin_inscripcion}` : 
+                        "Fechas no configuradas"}
+                </div>
+            )}
           </div>
 
           <div className="flex-1 flex overflow-hidden p-8 gap-8">
@@ -350,9 +385,9 @@ export default function AsignacionEstudiantesPage() {
                     {alumnosFiltrados.map((alumno) => (
                         <div 
                             key={alumno.id_matricula} 
-                            draggable={isPeriodoAsignacionActivo}
+                            draggable={isPeriodoInscripcionActivo} // Bloquea drag si está cerrado
                             onDragStart={() => handleDragStart(alumno)}
-                            className={`p-4 bg-white hover:bg-gray-50 cursor-grab active:cursor-grabbing group flex items-center gap-4 transition-colors ${!isPeriodoAsignacionActivo ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`p-4 bg-white hover:bg-gray-50 cursor-grab active:cursor-grabbing group flex items-center gap-4 transition-colors ${!isPeriodoInscripcionActivo ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
                         >
                         <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center border border-gray-200">
                             <span className="material-symbols-outlined text-gray-400">person</span>
@@ -366,7 +401,7 @@ export default function AsignacionEstudiantesPage() {
                     ))}
                     {alumnosFiltrados.length === 0 && (
                         <div className="p-10 text-center text-gray-400 text-sm">
-                            No hay alumnos pendientes para este filtro.
+                            {isLoading ? "Cargando estudiantes..." : "No hay alumnos pendientes para este filtro."}
                         </div>
                     )}
                     </div>
@@ -381,7 +416,6 @@ export default function AsignacionEstudiantesPage() {
             {/* --- DERECHA: PASOS --- */}
             <div className="flex-1 flex flex-col gap-6 overflow-y-auto pr-2 pb-10">
               
-              {/* PASO 1 */}
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 shrink-0">
                 <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Paso 1: Seleccionar Nivel</h3>
                 <div className="grid grid-cols-3 gap-4">
@@ -406,14 +440,12 @@ export default function AsignacionEstudiantesPage() {
                 </div>
               </div>
 
-              {/* PASO 2: CONTENEDOR AUTO-AJUSTABLE */}
-              {/* CAMBIOS: h-fit, shrink-0 y pb-6 para asegurar que crezca y no se corte */}
+              {/* SECCIONES */}
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col min-h-[400px] h-fit shrink-0 pb-6">
                 <div className="flex items-center justify-between mb-6 shrink-0">
                   <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Paso 2: Grado y Sección de Destino</h3>
                 </div>
                 
-                {/* Tabs Grados */}
                 <div className="flex gap-4 mb-8 overflow-x-auto pb-2 shrink-0">
                   {grados.map((grado) => (
                     <button 
@@ -431,7 +463,6 @@ export default function AsignacionEstudiantesPage() {
                   {grados.length === 0 && <span className="text-sm text-gray-400">Selecciona un nivel primero</span>}
                 </div>
 
-                {/* Grid Secciones */}
                 {selectedGrado && secciones.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {secciones.map(seccion => {
@@ -484,12 +515,14 @@ export default function AsignacionEstudiantesPage() {
                                         <div className="space-y-1">
                                             {alumnosEnSeccion.map(a => (
                                                 <div key={a.id_matricula} 
-                                                     draggable={estaEditando} 
+                                                     draggable={estaEditando && isPeriodoInscripcionActivo} 
                                                      onDragStart={() => handleDragStart(a)}
-                                                     className="text-xs p-2 bg-gray-50 rounded border border-gray-100 truncate cursor-grab flex justify-between items-center"
+                                                     className={`text-xs p-2 bg-gray-50 rounded border border-gray-100 truncate cursor-grab flex justify-between items-center ${
+                                                         !isPeriodoInscripcionActivo ? 'cursor-not-allowed opacity-60' : ''
+                                                     }`}
                                                 >
                                                     <span>{a.nombres} {a.apellidos}</span>
-                                                    {estaEditando && <span className="material-symbols-outlined text-[10px] text-gray-400">drag_handle</span>}
+                                                    {estaEditando && isPeriodoInscripcionActivo && <span className="material-symbols-outlined text-[10px] text-gray-400">drag_handle</span>}
                                                 </div>
                                             ))}
                                         </div>
@@ -507,7 +540,9 @@ export default function AsignacionEstudiantesPage() {
                                 ) : (
                                     <button 
                                         onClick={() => handleHabilitarEdicion(seccion.id_seccion)}
-                                        className="w-full bg-white border border-gray-300 text-gray-600 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+                                        className={`w-full bg-white border border-gray-300 text-gray-600 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors ${
+                                            !isPeriodoInscripcionActivo ? 'opacity-50 cursor-not-allowed' : ''
+                                        }`}
                                     >
                                         <span className="material-symbols-outlined text-sm">edit</span>
                                         Editar Selección
