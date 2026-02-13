@@ -9,14 +9,15 @@ import {
   GraduationCap, 
   Settings, 
   X, 
-  LayoutDashboard 
+  LayoutDashboard,
+  ClipboardList // <-- Icono nuevo importado
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 export function AsidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const pathname = usePathname();
 
-  // Función para verificar si el link está activo
+  // Función auxiliar para verificar exactitud (usada en la mayoría)
   const isActive = (path: string) => pathname === path;
 
   return (
@@ -64,20 +65,17 @@ export function AsidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
             href="/campus/panel-control/gestion-estudiantes" 
             icon={<Users size={20} />} 
             label="Gestión de Estudiantes" 
+            active={isActive("/campus/panel-control/gestion-estudiantes")}
             onClick={onClose} 
           />
 
+          {/* --- NUEVO APARTADO: TRÁMITES --- */}
+          {/* Usamos 'includes' para que siga activo si entras a editar o ver detalles */}
           <SidebarLink 
-            href="/campus/panel-control/pagina-web" 
-            icon={<Globe size={20} />} 
-            label="Contenido Web" 
-            onClick={onClose} 
-          />
-
-          <SidebarLink 
-            href="/campus/panel-control/chatbot" 
-            icon={<Bot size={20} />} 
-            label="Gestionar Chatbot" 
+            href="/campus/panel-control/tramites/configuracion" 
+            icon={<ClipboardList size={20} />} 
+            label="Trámites" 
+            active={pathname.includes("/panel-control/tramites")}
             onClick={onClose} 
           />
 
@@ -85,6 +83,23 @@ export function AsidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
             href="/campus/panel-control/gestion-academica" 
             icon={<GraduationCap size={20} />} 
             label="Cursos y Materias" 
+            active={isActive("/campus/panel-control/gestion-academica")}
+            onClick={onClose} 
+          />
+
+          <SidebarLink 
+            href="/campus/panel-control/pagina-web" 
+            icon={<Globe size={20} />} 
+            label="Contenido Web" 
+            active={isActive("/campus/panel-control/pagina-web")}
+            onClick={onClose} 
+          />
+
+          <SidebarLink 
+            href="/campus/panel-control/chatbot" 
+            icon={<Bot size={20} />} 
+            label="Gestionar Chatbot" 
+            active={isActive("/campus/panel-control/chatbot")}
             onClick={onClose} 
           />
 
@@ -94,6 +109,7 @@ export function AsidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
               href="/ajustes" 
               icon={<Settings size={20} />} 
               label="Ajustes" 
+              active={isActive("/ajustes")}
               onClick={onClose} 
             />
           </div>

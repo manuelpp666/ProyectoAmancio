@@ -76,15 +76,21 @@ export function AsideCampus({ isOpen, onClose }: { isOpen: boolean; onClose: () 
           </button>
 
           {/* Contenedor de Miniopciones */}
-          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isTramitesOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"}`}>
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isTramitesOpen ? "max-h-56 opacity-100" : "max-h-0 opacity-0"}`}>
             <div className="pl-11 pr-4 py-1 space-y-1">
-              <Link href="/campus/campus-estudiante/inicio-campus/tramites" className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
+              {/* --- NUEVO LINK AGREGADO AQUÍ --- */}
+              <Link href="/campus/campus-estudiante/inicio-campus/tramites/solicitud" onClick={onClose} className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
+                Solicitud de trámite
+              </Link>
+              {/* ------------------------------- */}
+              
+              <Link href="/campus/campus-estudiante/inicio-campus/tramites" onClick={onClose} className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
                 Estado de cuenta
               </Link>
-              <Link href="/campus/campus-estudiante/inicio-campus/tramites/pago" className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
+              <Link href="/campus/campus-estudiante/inicio-campus/tramites/pago" onClick={onClose} className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
                 Pagar pensión
               </Link>
-              <Link href="/campus/campus-estudiante/inicio-campus/tramites/manual" className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
+              <Link href="/campus/campus-estudiante/inicio-campus/tramites/manual" onClick={onClose} className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
                 Manual de pagos
               </Link>
             </div>
