@@ -40,7 +40,7 @@ export default function LoginPage() {
       }
 
       // 6. Guardar en el Contexto Global (y localStorage automáticamente si lo configuraste)
-      setUserData(data.rol, data.username);
+      setUserData(data.rol, data.username,data.id_usuario);
 
       // 7. Redirección basada en el ROL REAL de la base de datos
       if (data.rol === "ADMIN") {

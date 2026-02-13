@@ -9,30 +9,36 @@ import { HeaderCampus as Header } from "@/src/components/Campus/HeaderCampus";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   
-  const { role } = useUser();
+  const { role, loading } = useUser();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+
+  // 2. Estado de carga: Mientras recupera de localStorage, evitamos saltos visuales
+  if (loading) {
+    return <div className="h-screen w-full flex items-center justify-center">Cargando...</div>;
+  }
   // Lógica para elegir el Sidebar
   const renderSidebar = () => {
-    // 1. Determinar el rol basado en la URL primero (Prioridad)
+    // 3. Normalizamos la detección del rol (debe coincidir con "ALUMNO", "DOCENTE", "ADMIN")
     let currentRole = role;
-    if (pathname.includes("/campus-estudiante")) currentRole = "estudiante";
-    if (pathname.includes("/campus-docente")) currentRole = "docente";
-    if (pathname.includes("/panel-control")) currentRole = "admin";
+    
+    // Prioridad por URL si no hay rol en contexto aún
+    if (pathname.includes("/campus-estudiante")) currentRole = "ALUMNO";
+    if (pathname.includes("/campus-docente")) currentRole = "DOCENTE";
+    if (pathname.includes("/panel-control")) currentRole = "ADMIN";
 
-    // 2. Renderizar según el rol detectado o guardado
-    if (currentRole === "estudiante") {
-      return <SidebarEstudiante isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />;
+    // 4. Comparación con los valores correctos definidos en tu Context
+    switch (currentRole) {
+      case "ALUMNO":
+        return <SidebarEstudiante isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />;
+      case "DOCENTE":
+        return <SidebarDocente isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />;
+      case "ADMIN":
+        return <SidebarPanel isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />;
+      default:
+        // Sidebar por defecto en caso de que no se detecte nada
+        return <SidebarEstudiante isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />;
     }
-    if (currentRole === "docente") {
-      return <SidebarDocente isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />;
-    }
-    if (currentRole === "admin") {
-      return <SidebarPanel isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />;
-    }
-
-    // Si no hay rol (ej. recarga de página en perfil), puedes poner uno por defecto
-    return <SidebarEstudiante isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />;
   };
 
   return (
