@@ -57,3 +57,25 @@ export interface NivelConCursos {
   nombre: string;
   grados: GradoConCursos[];
 }
+
+
+export interface MateriaDisponible {
+  id_carga_academica: number;
+  curso_nombre: string;
+  docente_nombre: string;
+}
+
+export interface HorarioAsignado {
+  id_horario: number;
+  id_hora: number;
+  dia_semana: string;
+  curso_nombre: string;
+  docente_nombre: string;
+}
+
+export interface HoraLectiva {
+  id_hora: number;
+  hora_inicio: string;
+  hora_fin: string;
+  tipo: 'lectiva' | 'receso';
+}

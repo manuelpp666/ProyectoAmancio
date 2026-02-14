@@ -2,7 +2,14 @@
 import { useState, useEffect, useRef } from "react";
 import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 import { useReactToPrint } from "react-to-print";
-import { toast } from "sonner"; // Recomiendo instalar react-hot-toast
+import { toast } from "sonner";
+import { 
+  Seccion, 
+  AnioEscolar, 
+  MateriaDisponible, 
+  HorarioAsignado, 
+  HoraLectiva 
+} from "@/src/interfaces/academic";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
 
@@ -10,20 +17,20 @@ export default function ConstructorHorariosPage() {
 
 
   // --- ESTADOS PARA LA DATA ---
-  const [secciones, setSecciones] = useState([]);
-  const [seccionActiva, setSeccionActiva] = useState(null);
-  const [materiasDisponibles, setMateriasDisponibles] = useState([]);
-  const [horasLectivas, setHorasLectivas] = useState([]);
-  const [horarioAsignado, setHorarioAsignado] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [secciones, setSecciones] = useState<Seccion[]>([]);
+const [seccionActiva, setSeccionActiva] = useState<number | null>(null);
+const [materiasDisponibles, setMateriasDisponibles] = useState<MateriaDisponible[]>([]);
+const [horasLectivas, setHorasLectivas] = useState<HoraLectiva[]>([]);
+const [horarioAsignado, setHorarioAsignado] = useState<HorarioAsignado[]>([]);
+const [loading, setLoading] = useState<boolean>(true);
 
   const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
-  const [listaAnios, setListaAnios] = useState([]);
-  const [anioPlanificacion, setAnioPlanificacion] = useState("");
+  const [listaAnios, setListaAnios] = useState<AnioEscolar[]>([]);
+  const [anioPlanificacion, setAnioPlanificacion] = useState<string>("");
 
   // --- REFERENCIA PARA IMPRESIÓN ---
-  const contentRef = useRef(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const exportarPDFDirecto = async () => {
   const element = contentRef.current;
@@ -104,11 +111,11 @@ export default function ConstructorHorariosPage() {
     const cargarAnios = async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/anios/`);
-        const data = await res.json();
+       const data: AnioEscolar[] = await res.json();
         setListaAnios(data);
 
         // Seleccionar el activo o el primero de la lista
-        const activo = data.find((a) => a.estado === "activo") || data[0];
+        const activo = data.find((a) => a.activo === true) || data[0];
         if (activo) setAnioPlanificacion(activo.id_anio_escolar.toString());
       } catch (error) {
         toast.error("Error al cargar años académicos");
@@ -168,7 +175,7 @@ export default function ConstructorHorariosPage() {
   }, [seccionActiva]);
 
   // --- 3. LÓGICA DE ASIGNACIÓN (Drag & Drop simplificado) ---
-  const handleDrop = async (idCargaAcademica, idHora, dia) => {
+  const handleDrop = async (idCargaAcademica: string | number, idHora: number, dia: string) => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/horarios/`, {
         method: "POST",
@@ -260,7 +267,7 @@ export default function ConstructorHorariosPage() {
                 >
                   {listaAnios.map((anio) => (
                     <option key={anio.id_anio_escolar} value={anio.id_anio_escolar}>
-                      {anio.id_anio_escolar} {anio.estado === 'activo' ? ' (Actual)' : ''}
+                      {anio.id_anio_escolar} {anio.activo === true ? ' (Actual)' : ''}
                     </option>
                   ))}
                 </select>
@@ -294,7 +301,7 @@ export default function ConstructorHorariosPage() {
                 className={`py-4 px-2 text-sm font-bold whitespace-nowrap transition-all ${seccionActiva === sec.id_seccion ? "active-tab text-[#093E7A]" : "text-gray-400 border-b-[3px] border-transparent"
                   }`}
               >
-                {sec.grado.nombre} - {sec.nombre}
+                {sec.grado?.nombre} - {sec.nombre}
               </button>
             ))}
           </div>
@@ -311,7 +318,7 @@ export default function ConstructorHorariosPage() {
                   <div
                     key={mat.id_carga_academica}
                     draggable
-                    onDragStart={(e) => e.dataTransfer.setData("id_carga", mat.id_carga_academica)}
+                    onDragStart={(e) => e.dataTransfer.setData("id_carga", mat.id_carga_academica.toString())}
                     className="materia-card p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:border-[#093E7A] transition-all"
                   >
                     <div className="flex justify-between items-start mb-1">
@@ -337,7 +344,7 @@ export default function ConstructorHorariosPage() {
                 <div className="hidden print:block text-center mb-8">
                   <h1 className="text-3xl font-black text-[#093E7A]">HORARIO ESCOLAR {anioPlanificacion}</h1>
                   <p className="text-xl font-bold text-gray-500 uppercase tracking-widest">
-                    Sección: {secciones.find(s => s.id_seccion === seccionActiva)?.grado.nombre} - {secciones.find(s => s.id_seccion === seccionActiva)?.nombre}
+                    Sección: {secciones.find(s => s.id_seccion === seccionActiva)?.grado?.nombre} - {secciones.find(s => s.id_seccion === seccionActiva)?.nombre}
                   </p>
                   <div className="mt-4 border-b-2 border-[#093E7A] w-1/4 mx-auto"></div>
                 </div>
