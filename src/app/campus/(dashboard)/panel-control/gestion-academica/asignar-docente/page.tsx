@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
-import { toast} from "sonner";
+import { toast } from "sonner";
 import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
-import { Seccion,Curso } from "@/src/interfaces/academic";
+import { Seccion, Curso } from "@/src/interfaces/academic";
 
 export default function AsignacionDocentesPage() {
   // --- ESTADOS DE DATOS ---
@@ -13,7 +13,7 @@ export default function AsignacionDocentesPage() {
   const [secciones, setSecciones] = useState<Seccion[]>([]);
   const [cursosDisponibles, setCursosDisponibles] = useState<Curso[]>([]);
   const [anioPlanificacion, setAnioPlanificacion] = useState<string>("");
-
+  const [listaAnios, setListaAnios] = useState<any[]>([]);
   // --- ESTADOS DE UI ---
   const [searchTerm, setSearchTerm] = useState(""); // Buscador tabla
   const [searchDocente, setSearchDocente] = useState(""); // Buscador modal
@@ -25,7 +25,7 @@ export default function AsignacionDocentesPage() {
     id_curso: "",
     id_docente: ""
   });
-// --- ESTADOS PARA MODAL DE CONFIRMACIÓN ---
+  // --- ESTADOS PARA MODAL DE CONFIRMACIÓN ---
   const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; id: number | null }>({
     isOpen: false,
     id: null
@@ -43,20 +43,35 @@ export default function AsignacionDocentesPage() {
   );
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    const cargarAnios = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/anios/`);
+        const data = await res.json();
+        setListaAnios(data);
 
-  const fetchData = async () => {
+        // Seleccionar el año activo por defecto si existe
+        const activo = data.find((a: any) => a.estado === "activo") || data[0];
+        if (activo) setAnioPlanificacion(activo.id_anio_escolar.toString());
+      } catch (error) {
+        toast.error("Error al cargar años académicos");
+      }
+    };
+    cargarAnios();
+  }, []);
+  useEffect(() => {
+    if (anioPlanificacion) {
+      fetchData(anioPlanificacion);
+    }
+  }, [anioPlanificacion]);
+
+  const fetchData = async (idAnioExterno?: string) => {
+    // Usamos el ID que viene por parámetro o el del estado
+    const idAnio = idAnioExterno || anioPlanificacion;
+    if (!idAnio) return;
+
     try {
       setLoading(true);
-      const resAnio = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/anios/ultimo`);
-      const dataAnio = await resAnio.json();
-
-      if (!dataAnio.id_anio_escolar) return;
-
-      const idAnio = dataAnio.id_anio_escolar;
-      setAnioPlanificacion(idAnio);
-
+      // Ya no llamamos a /anios/ultimo porque ya tenemos el ID del Select
       const [resVinculos, resDocentes, resSecciones] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/vínculos-academicos/${idAnio}`),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/docentes-disponibles/`),
@@ -67,7 +82,7 @@ export default function AsignacionDocentesPage() {
       setDocentes(await resDocentes.json());
       setSecciones(await resSecciones.json());
     } catch (error) {
-      toast.error("Error al cargar los datos iniciales");
+      toast.error("Error al actualizar la vista");
     } finally {
       setLoading(false);
     }
@@ -131,7 +146,7 @@ export default function AsignacionDocentesPage() {
   };
 
   const handleEliminar = async (id: number) => {
-    
+
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/carga/${id}`, { method: "DELETE" });
       if (res.ok) {
@@ -155,9 +170,22 @@ export default function AsignacionDocentesPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h3 className="text-2xl font-black text-gray-900">Vínculos Académicos</h3>
-                <p className="text-sm text-gray-500">
-                  Gestión de carga académica: <span className="font-bold text-[#093E7A]">{anioPlanificacion || "Cargando..."}</span>
-                </p>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase">Año de Planificación:</label>
+                  <select
+                    value={anioPlanificacion}
+                    onChange={(e) => setAnioPlanificacion(e.target.value)}
+                    className="bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold text-[#093E7A] focus:ring-[#093E7A] focus:border-[#093E7A] py-1 px-3 outline-none cursor-pointer min-w-[140px]"
+                  >
+                    {listaAnios.length === 0 && <option value="">Cargando...</option>}
+
+                    {listaAnios.map((anio) => (
+                      <option key={anio.id_anio_escolar} value={anio.id_anio_escolar} className="text-gray-800">
+                        {anio.id_anio_escolar} ({anio.tipo})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className="relative w-full max-w-md">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400">search</span>
