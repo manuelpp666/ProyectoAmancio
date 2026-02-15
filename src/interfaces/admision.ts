@@ -3,7 +3,10 @@ export interface AlumnoBase {
   dni: string;
   nombres: string;
   apellidos: string; 
-  grado: string;
+  grado_ingreso?: {
+    id_grado: number;
+    nombre: string;
+  };
   seccion?: string;
   estado_ingreso: "POSTULANTE" | "ADMITIDO" | "ESTUDIANTE" | "RETIRADO"| "RECHAZADO";
   motivo_rechazo?: string;

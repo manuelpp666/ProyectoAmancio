@@ -56,9 +56,8 @@ export function AsideCampus({ isOpen, onClose }: { isOpen: boolean; onClose: () 
 
           <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isAlumnoOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"}`}>
             <div className="pl-11 pr-4 py-1 space-y-1">
-              <Link href="#" className="block py-2 text-sm text-white/60 hover:text-white transition-colors">Mi Perfil</Link>
               <Link href="#" className="block py-2 text-sm text-white/60 hover:text-white transition-colors">Notas</Link>
-              <Link href="#" className="block py-2 text-sm text-white/60 hover:text-white transition-colors">Horario</Link>
+              <Link href="/campus/campus-estudiante/inicio-campus/alumno" className="block py-2 text-sm text-white/60 hover:text-white transition-colors">Horario</Link>
             </div>
           </div>
         </div>
