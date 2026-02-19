@@ -103,16 +103,7 @@ export function AsidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
             onClick={onClose} 
           />
 
-          <div className="pt-8 mb-4">
-            <div className="text-white/30 text-[10px] uppercase font-black tracking-[0.2em] px-4 mb-4">Sistema</div>
-            <SidebarLink 
-              href="/ajustes" 
-              icon={<Settings size={20} />} 
-              label="Ajustes" 
-              active={isActive("/ajustes")}
-              onClick={onClose} 
-            />
-          </div>
+          
         </nav>
 
         {/* Footer del Sidebar */}

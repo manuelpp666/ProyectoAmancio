@@ -56,7 +56,7 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const fetchTiposTramite = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/finance/tramites-tipos/`);
+      const res = await fetch(`${API_URL}/finance/tramites-tipos/alumnos`);
       if (res.ok) {
         const data = await res.json();
         setTiposTramite(data.filter((t: any) => t.activo));

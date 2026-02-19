@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
 import { toast } from "sonner";
 import { Pago, Solicitud } from "@/src/interfaces/finance";
 
@@ -36,10 +36,39 @@ export default function GestionFinancieraPage() {
   const [isDictamenModalOpen, setIsDictamenModalOpen] = useState(false);
   const [selectedSolicitud, setSelectedSolicitud] = useState<Solicitud | null>(null);
 
+  // Estados para el Modal de Confirmación
+const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+const [pagoAConfirmar, setPagoAConfirmar] = useState<number | null>(null);
   const abrirModalDictamen = (solicitud: Solicitud) => {
-  setRespuestaAdmin(""); 
-  setSelectedSolicitud(solicitud);
-  setIsDictamenModalOpen(true);
+    setRespuestaAdmin("");
+    setSelectedSolicitud(solicitud);
+    setIsDictamenModalOpen(true);
+  };
+  const prepararConfirmacionManual = (idPago: number) => {
+    setPagoAConfirmar(idPago);
+    setIsConfirmOpen(true);
+};
+
+// 2. Esta función es la que realmente llama a la API (se pasa al onConfirm del modal)
+const ejecutarConfirmacionManual = async () => {
+    if (!pagoAConfirmar) return;
+
+    try {
+        const res = await fetch(`${API_URL}/finance/pagos/${pagoAConfirmar}/confirmar-manual`, {
+            method: "PATCH",
+        });
+
+        if (res.ok) {
+            toast.success("Pago confirmado y matrícula procesada");
+            fetchPagos(); // Recargar la tabla
+        } else {
+            toast.error("No se pudo confirmar el pago");
+        }
+    } catch (error) {
+        toast.error("Error de conexión con el servidor");
+    } finally {
+        setPagoAConfirmar(null);
+    }
 };
   // Formulario Trámite
   const [formData, setFormData] = useState({
@@ -127,12 +156,20 @@ export default function GestionFinancieraPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-
+const data = await res.json();
     if (res.ok) {
       toast.success(isEditing ? "Actualizado" : "Creado");
       setIsModalOpen(false);
       fetchTramites();
-    }
+    }else {
+        // AQUÍ ESTÁ EL CAMBIO: Capturamos el "detail" que enviamos desde FastAPI
+        // Si el backend envía detail, lo mostramos, si no, un error genérico
+        const mensajeError = data.detail || "Error al procesar la solicitud";
+        toast.error(mensajeError, {
+          duration: 5000, // Le damos más tiempo para que el usuario pueda leer la explicación
+          style: { background: '#FEF2F2', color: '#B91C1C', border: '1px solid #F87171' }
+        });
+      }
   };
 
   const handleDictamen = async (nuevoEstado: "APROBADO" | "RECHAZADO") => {
@@ -146,10 +183,10 @@ export default function GestionFinancieraPage() {
       if (res.ok) {
         toast.success(`Solicitud ${nuevoEstado}`);
         setIsDictamenModalOpen(false);
-      setSelectedSolicitud(null);
-      setRespuestaAdmin("");
-      
-      fetchSolicitudes();
+        setSelectedSolicitud(null);
+        setRespuestaAdmin("");
+
+        fetchSolicitudes();
       }
     } catch (e) { toast.error("Error al procesar"); }
   };
@@ -309,6 +346,19 @@ export default function GestionFinancieraPage() {
                           </span>
                         </td>
                         <td className="p-4 text-xs text-gray-400 font-mono">{p.codigo_operacion_bcp || 'N/A'}</td>
+                        <td className="p-4">
+                          {p.estado === "PENDIENTE" ? (
+                            <button
+                              onClick={() => prepararConfirmacionManual(p.id_pago)}
+                              className="flex items-center gap-1 text-[10px] bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 font-bold uppercase transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-xs">check_circle</span>
+                              Confirmar Pago
+                            </button>
+                          ) : (
+                            <span className="text-xs text-gray-400 font-mono">{p.codigo_operacion_bcp || 'N/A'}</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -438,6 +488,16 @@ export default function GestionFinancieraPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal 
+    isOpen={isConfirmOpen}
+    onClose={() => setIsConfirmOpen(false)}
+    onConfirm={ejecutarConfirmacionManual}
+    title="Confirmar Pago Manual"
+    message="¿Estás seguro de registrar este pago manualmente? Si es un derecho de vacante, se generará la matrícula del alumno de forma automática en el sistema."
+    confirmText="Sí, Confirmar Pago"
+    type="warning" // Usamos warning para que no sea rojo "danger" sino un color de atención
+/>
     </div>
   );
 }
