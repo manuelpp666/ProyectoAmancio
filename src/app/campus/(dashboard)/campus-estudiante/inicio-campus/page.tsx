@@ -1,14 +1,35 @@
 // src/app/campus-estudiante/inicio-campus/page.tsx
 "use client";
 import { useUser } from "@/src/context/userContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Megaphone, Star, Wallet, Clock, Loader2 } from "lucide-react";
+import Link from "next/link";
 
+
+interface Curso {
+    id: number;
+    nombre: string;
+    docente: string;
+}
+
+interface Tarea {
+    id: number;
+    curso: string;
+    titulo: string;
+    fecha: string;
+}
+
+interface DashboardData {
+    nombre_completo: string;
+    cursos: Curso[];
+    tareas_pendientes: Tarea[];
+    anio_actual: string;
+}
 export default function DashboardPage() {
 
     // 1. Extraer datos reales del contexto
-    const { role, username, loading } = useUser();
+    const { id_usuario, role, loading } = useUser();
     const router = useRouter();
 
     // 2. Proteger la ruta: Si no es estudiante, lo expulsamos
@@ -22,6 +43,24 @@ export default function DashboardPage() {
         }
     }, [role, loading, router]);
 
+    const [data, setData] = useState<DashboardData | null>(null);
+    const [loadingData, setLoadingData] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!id_usuario) return;
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/virtual/api/dashboard/estudiante/${id_usuario}`);
+                const json: DashboardData = await res.json();
+                setData(json);
+            } catch (error) {
+                console.error("Error al cargar dashboard", error);
+            } finally {
+                setLoadingData(false);
+            }
+        };
+        fetchData();
+    }, [id_usuario]);
     // 3. Estado de carga mientras se recupera la sesión del localStorage
     if (loading) {
         return (
@@ -39,7 +78,9 @@ export default function DashboardPage() {
 
             {/* 1. HEADER TEXT (Fuera del grid para ancho completo) */}
             <div>
-                <h1 className="text-3xl font-bold text-[#701C32] mb-1">!Hola, Gabriela!</h1>
+                <h1 className="text-3xl font-bold text-[#701C32] mb-1">
+                    ¡Hola, {data?.nombre_completo || "estudiante"}!
+                </h1>
                 <p className="text-gray-500 text-sm">Bienvenido a tu nuevo Campus Virtual.</p>
             </div>
 
@@ -68,95 +109,22 @@ export default function DashboardPage() {
                     </div>
 
                     {/* CURSOS RECIENTES */}
-                    <div>
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-[#701C32] font-bold text-lg uppercase">Cursos Recientes</h3>
-                            <a href="#" className="text-xs font-bold text-[#701C32] hover:underline flex items-center gap-1">
-                                Ver todos <ArrowRight size={14} />
-                            </a>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                            {/* CARD 1: Matemática */}
-                            <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center text-center">
-                                <div className="h-28 w-full flex items-center justify-center mb-2">
-                                    {/* Reemplaza src con tu imagen real: /matematica.png */}
-                                    <img src="https://placehold.co/150x120/png?text=Matemática" alt="Matemática" className="h-full object-contain" />
-                                </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                        {data?.cursos.map((curso) => (
+                            <div key={curso.id} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center text-center">
+                                {/* ... tu imagen ... */}
                                 <div className="w-full text-left">
-                                    <h4 className="font-bold text-gray-800 text-sm">Matemática</h4>
-                                    <p className="text-[11px] text-gray-400 mb-4">Puicon Rivera, José Emmanuel</p>
-                                    <div className="flex justify-end">
-                                        <button className="text-[11px] font-bold text-[#701C32] flex items-center gap-1 hover:gap-2 transition-all">
-                                            Ir al curso <ArrowRight size={12} />
-                                        </button>
-                                    </div>
+                                    <h4 className="font-bold text-gray-800 text-sm">{curso.nombre}</h4>
+                                    <p className="text-[11px] text-gray-400 mb-4">{curso.docente}</p>
+                                    <Link
+                                        href={`/campus/campus-estudiante/inicio-campus/cursos/mis-cursos/${curso.id}?anio=${data?.anio_actual}`}
+                                        className="text-[11px] font-black text-[#701C32] flex items-center gap-1 hover:gap-2 transition-all"
+                                    >
+                                        ENTRAR <ArrowRight size={12} />
+                                    </Link>
                                 </div>
                             </div>
-
-                            {/* CARD 2: Religión */}
-                            <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center text-center">
-                                <div className="h-28 w-full flex items-center justify-center mb-2">
-                                    <img src="https://placehold.co/150x120/png?text=Religión" alt="Religión" className="h-full object-contain" />
-                                </div>
-                                <div className="w-full text-left">
-                                    <h4 className="font-bold text-gray-800 text-sm">Religión</h4>
-                                    <p className="text-[11px] text-gray-400 mb-4">Puicon Rivera, José Emmanuel</p>
-                                    <div className="flex justify-end">
-                                        <button className="text-[11px] font-bold text-[#701C32] flex items-center gap-1 hover:gap-2 transition-all">
-                                            Ir al curso <ArrowRight size={12} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* CARD 3: Ciencias Sociales */}
-                            <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center text-center">
-                                <div className="h-28 w-full flex items-center justify-center mb-2">
-                                    <img src="https://placehold.co/150x120/png?text=Sociales" alt="Sociales" className="h-full object-contain" />
-                                </div>
-                                <div className="w-full text-left">
-                                    <h4 className="font-bold text-gray-800 text-sm">Ciencias Sociales</h4>
-                                    <p className="text-[11px] text-gray-400 mb-4">Puicon Rivera, José Emmanuel</p>
-                                    <div className="flex justify-end">
-                                        <button className="text-[11px] font-bold text-[#701C32] flex items-center gap-1 hover:gap-2 transition-all">
-                                            Ir al curso <ArrowRight size={12} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* CARD 4: Comunicación */}
-                            <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center text-center">
-                                <div className="h-28 w-full flex items-center justify-center mb-2">
-                                    <img src="https://placehold.co/150x120/png?text=Comunicación" alt="Comunicación" className="h-full object-contain" />
-                                </div>
-                                <div className="w-full text-left">
-                                    <h4 className="font-bold text-gray-800 text-sm">Comunicación</h4>
-                                    <p className="text-[11px] text-gray-400 mb-4">Puicon Rivera, José Emmanuel</p>
-                                    <div className="flex justify-end">
-                                        <button className="text-[11px] font-bold text-[#701C32] flex items-center gap-1 hover:gap-2 transition-all">
-                                            Ir al curso <ArrowRight size={12} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            {/* CARD 5: Química */}
-                            <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center text-center">
-                                <div className="h-28 w-full flex items-center justify-center mb-2">
-                                    <img src="https://placehold.co/150x120/png?text=Química" alt="Química" className="h-full object-contain" />
-                                </div>
-                                <div className="w-full text-left">
-                                    <h4 className="font-bold text-gray-800 text-sm">Química</h4>
-                                    <p className="text-[11px] text-gray-400 mb-4">Puicon Rivera, José Emmanuel</p>
-                                    <div className="flex justify-end">
-                                        <button className="text-[11px] font-bold text-[#701C32] flex items-center gap-1 hover:gap-2 transition-all">
-                                            Ir al curso <ArrowRight size={12} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
 
@@ -167,36 +135,19 @@ export default function DashboardPage() {
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
                         <h3 className="text-[#701C32] font-bold text-sm uppercase mb-4 tracking-wide">Tareas Pendientes</h3>
                         <div className="space-y-3">
-
-                            {/* Tarea Item 1 */}
-                            <div className="bg-[#F8F9FA] rounded-lg p-3 border border-gray-100">
-                                <p className="text-[10px] font-bold text-[#701C32] mb-1 uppercase">Matemática</p>
-                                <p className="text-xs text-gray-700 font-medium mb-2 leading-snug">Lista de ejercicios para desarrollar</p>
-                                <div className="flex items-center gap-1 text-[10px] text-gray-400">
-                                    <Clock size={12} />
-                                    Fecha entrega: 20/01/2026
+                            {data?.tareas_pendientes.map((tarea) => (
+                                <div key={tarea.id} className="bg-[#F8F9FA] rounded-lg p-3 border border-gray-100">
+                                    <p className="text-[10px] font-bold text-[#701C32] mb-1 uppercase">{tarea.curso}</p>
+                                    <p className="text-xs text-gray-700 font-medium mb-2 leading-snug">{tarea.titulo}</p>
+                                    <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                                        <Clock size={12} />
+                                        {new Date(tarea.fecha).toLocaleDateString()}
+                                    </div>
                                 </div>
-                            </div>
-
-                            {/* Tarea Item 2 */}
-                            <div className="bg-[#F8F9FA] rounded-lg p-3 border border-gray-100">
-                                <p className="text-[10px] font-bold text-[#701C32] mb-1 uppercase">Ciencias Sociales</p>
-                                <p className="text-xs text-gray-700 font-medium mb-2 leading-snug">Lectura para aprender y exponer en clase</p>
-                                <div className="flex items-center gap-1 text-[10px] text-gray-400">
-                                    <Clock size={12} />
-                                    Fecha entrega: 18/01/2026
-                                </div>
-                            </div>
-
-                            {/* Tarea Item 3 */}
-                            <div className="bg-[#F8F9FA] rounded-lg p-3 border border-gray-100">
-                                <p className="text-[10px] font-bold text-[#701C32] mb-1 uppercase">Religión</p>
-                                <p className="text-xs text-gray-700 font-medium mb-2 leading-snug">Lectura de resumen y cuestionario</p>
-                                <div className="flex items-center gap-1 text-[10px] text-gray-400">
-                                    <Clock size={12} />
-                                    Fecha entrega: 23/01/2026
-                                </div>
-                            </div>
+                            ))}
+                            {data?.tareas_pendientes.length === 0 && (
+                                <p className="text-xs text-gray-500">No tienes tareas pendientes.</p>
+                            )}
                         </div>
                     </div>
 
