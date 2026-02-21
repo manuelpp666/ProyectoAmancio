@@ -15,6 +15,7 @@ interface Tramite {
   alcance: "TODOS" | "GRADOS";
   grados_permitidos: string | null;
   activo: boolean;
+  periodo_academico: "REGULAR" | "VERANO" | "AMBOS";
 }
 
 export default function GestionFinancieraPage() {
@@ -37,8 +38,8 @@ export default function GestionFinancieraPage() {
   const [selectedSolicitud, setSelectedSolicitud] = useState<Solicitud | null>(null);
 
   // Estados para el Modal de Confirmación
-const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-const [pagoAConfirmar, setPagoAConfirmar] = useState<number | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [pagoAConfirmar, setPagoAConfirmar] = useState<number | null>(null);
   const abrirModalDictamen = (solicitud: Solicitud) => {
     setRespuestaAdmin("");
     setSelectedSolicitud(solicitud);
@@ -47,36 +48,37 @@ const [pagoAConfirmar, setPagoAConfirmar] = useState<number | null>(null);
   const prepararConfirmacionManual = (idPago: number) => {
     setPagoAConfirmar(idPago);
     setIsConfirmOpen(true);
-};
+  };
 
-// 2. Esta función es la que realmente llama a la API (se pasa al onConfirm del modal)
-const ejecutarConfirmacionManual = async () => {
+  // 2. Esta función es la que realmente llama a la API (se pasa al onConfirm del modal)
+  const ejecutarConfirmacionManual = async () => {
     if (!pagoAConfirmar) return;
 
     try {
-        const res = await fetch(`${API_URL}/finance/pagos/${pagoAConfirmar}/confirmar-manual`, {
-            method: "PATCH",
-        });
+      const res = await fetch(`${API_URL}/finance/pagos/${pagoAConfirmar}/confirmar-manual`, {
+        method: "PATCH",
+      });
 
-        if (res.ok) {
-            toast.success("Pago confirmado y matrícula procesada");
-            fetchPagos(); // Recargar la tabla
-        } else {
-            toast.error("No se pudo confirmar el pago");
-        }
+      if (res.ok) {
+        toast.success("Pago confirmado y matrícula procesada");
+        fetchPagos(); // Recargar la tabla
+      } else {
+        toast.error("No se pudo confirmar el pago");
+      }
     } catch (error) {
-        toast.error("Error de conexión con el servidor");
+      toast.error("Error de conexión con el servidor");
     } finally {
-        setPagoAConfirmar(null);
+      setPagoAConfirmar(null);
     }
-};
+  };
   // Formulario Trámite
   const [formData, setFormData] = useState({
     nombre: "",
     costo: 0,
     requisitos: "",
     alcance: "TODOS" as "TODOS" | "GRADOS",
-    grados_seleccionados: [] as number[]
+    grados_seleccionados: [] as number[],
+    periodo_academico: "REGULAR" as "REGULAR" | "VERANO" | "AMBOS"
   });
   const [respuestaAdmin, setRespuestaAdmin] = useState("");
 
@@ -112,7 +114,10 @@ const ejecutarConfirmacionManual = async () => {
 
   // --- HANDLERS MODAL TRÁMITE ---
   const openNew = () => {
-    setFormData({ nombre: "", costo: 0, requisitos: "", alcance: "TODOS", grados_seleccionados: [] });
+    setFormData({
+      nombre: "", costo: 0, requisitos: "", alcance: "TODOS", grados_seleccionados: [],
+      periodo_academico: "REGULAR"
+    });
     setIsEditing(false);
     setIsModalOpen(true);
   };
@@ -123,7 +128,8 @@ const ejecutarConfirmacionManual = async () => {
       costo: t.costo,
       requisitos: t.requisitos || "",
       alcance: t.alcance,
-      grados_seleccionados: t.grados_permitidos ? t.grados_permitidos.split(",").map(Number) : []
+      grados_seleccionados: t.grados_permitidos ? t.grados_permitidos.split(",").map(Number) : [],
+      periodo_academico: t.periodo_academico
     });
     setCurrentId(t.id_tipo_tramite);
     setIsEditing(true);
@@ -142,10 +148,7 @@ const ejecutarConfirmacionManual = async () => {
   const handleSubmitTramite = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
-      nombre: formData.nombre,
-      costo: formData.costo,
-      requisitos: formData.requisitos,
-      alcance: formData.alcance,
+      ...formData,
       grados_permitidos: formData.alcance === "GRADOS" ? formData.grados_seleccionados.join(",") : null,
       activo: true
     };
@@ -156,20 +159,20 @@ const ejecutarConfirmacionManual = async () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-const data = await res.json();
+    const data = await res.json();
     if (res.ok) {
       toast.success(isEditing ? "Actualizado" : "Creado");
       setIsModalOpen(false);
       fetchTramites();
-    }else {
-        // AQUÍ ESTÁ EL CAMBIO: Capturamos el "detail" que enviamos desde FastAPI
-        // Si el backend envía detail, lo mostramos, si no, un error genérico
-        const mensajeError = data.detail || "Error al procesar la solicitud";
-        toast.error(mensajeError, {
-          duration: 5000, // Le damos más tiempo para que el usuario pueda leer la explicación
-          style: { background: '#FEF2F2', color: '#B91C1C', border: '1px solid #F87171' }
-        });
-      }
+    } else {
+      // AQUÍ ESTÁ EL CAMBIO: Capturamos el "detail" que enviamos desde FastAPI
+      // Si el backend envía detail, lo mostramos, si no, un error genérico
+      const mensajeError = data.detail || "Error al procesar la solicitud";
+      toast.error(mensajeError, {
+        duration: 5000, // Le damos más tiempo para que el usuario pueda leer la explicación
+        style: { background: '#FEF2F2', color: '#B91C1C', border: '1px solid #F87171' }
+      });
+    }
   };
 
   const handleDictamen = async (nuevoEstado: "APROBADO" | "RECHAZADO") => {
@@ -239,10 +242,16 @@ const data = await res.json();
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {tramites.filter(t => t.nombre.toLowerCase().includes(busqueda.toLowerCase())).map(t => (
+                {tramites.filter(t => t.nombre.toLowerCase().includes(busqueda.toLowerCase())).sort((a, b) => a.periodo_academico.localeCompare(b.periodo_academico)).map(t => (
                   <div key={t.id_tipo_tramite} className="bg-white p-6 rounded-xl border shadow-sm relative">
                     <div className="flex justify-between mb-4">
                       <span className="material-symbols-outlined text-[#093E7A] bg-blue-50 p-2 rounded-full">description</span>
+                      <span className={`text-[9px] font-black px-2 py-1 rounded border ${t.periodo_academico === 'VERANO' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                          t.periodo_academico === 'REGULAR' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                            'bg-gray-50 text-gray-600 border-gray-100'
+                        }`}>
+                        {t.periodo_academico}
+                      </span>
                       <button onClick={() => openEdit(t)} className="text-gray-400 hover:text-blue-600">
                         <span className="material-symbols-outlined text-sm">edit</span>
                       </button>
@@ -402,6 +411,18 @@ const data = await res.json();
                     <option value="GRADOS">Grados específicos</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Periodo Académico</label>
+                  <select
+                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
+                    value={formData.periodo_academico}
+                    onChange={e => setFormData({ ...formData, periodo_academico: e.target.value as any })}
+                  >
+                    <option value="REGULAR">Año Regular</option>
+                    <option value="VERANO">Vacacional / Verano</option>
+                    <option value="AMBOS">Ambos Periodos</option>
+                  </select>
+                </div>
               </div>
 
               {formData.alcance === "GRADOS" && (
@@ -489,15 +510,15 @@ const data = await res.json();
         </div>
       )}
 
-      <ConfirmModal 
-    isOpen={isConfirmOpen}
-    onClose={() => setIsConfirmOpen(false)}
-    onConfirm={ejecutarConfirmacionManual}
-    title="Confirmar Pago Manual"
-    message="¿Estás seguro de registrar este pago manualmente? Si es un derecho de vacante, se generará la matrícula del alumno de forma automática en el sistema."
-    confirmText="Sí, Confirmar Pago"
-    type="warning" // Usamos warning para que no sea rojo "danger" sino un color de atención
-/>
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={ejecutarConfirmacionManual}
+        title="Confirmar Pago Manual"
+        message="¿Estás seguro de registrar este pago manualmente? Si es un derecho de vacante, se generará la matrícula del alumno de forma automática en el sistema."
+        confirmText="Sí, Confirmar Pago"
+        type="warning" // Usamos warning para que no sea rojo "danger" sino un color de atención
+      />
     </div>
   );
 }

@@ -6,20 +6,31 @@ import { NoticiaForm } from "@/src/components/Noticia/FormulatioNoticia";
 import { NoticiaCreate } from "@/src/interfaces/noticia";
 import { toast } from 'sonner';
 import { useRouter } from "next/navigation";
+import { useUser } from "@/src/context/userContext";
 
 export default function CrearNoticiaPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
+  const { id_usuario, loading: userLoading } = useUser();
   const handlePublicar = async (noticiaPayload: NoticiaCreate) => {
+    // 3. Validar que tengamos el ID del autor
+    if (!id_usuario) {
+      toast.error("No se pudo identificar al autor. Por favor, inicia sesión de nuevo.");
+      return;
+    }
     setLoading(true);
     const toastId = toast.loading("Enviando noticia al servidor...");
 
     try {
+      
+      const payloadConAutor = {
+        ...noticiaPayload,
+        id_autor: id_usuario 
+      };
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/noticias/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(noticiaPayload),
+        body: JSON.stringify(payloadConAutor),
       });
 
       if (!response.ok) {
@@ -35,7 +46,7 @@ export default function CrearNoticiaPage() {
       setLoading(false);
     }
   };
-
+if (userLoading) return <div className="p-10 text-center">Cargando sesión...</div>;
   return (
     <div className="min-h-screen bg-[#F6F7F8] flex flex-col">
       {/* Header Superior */}

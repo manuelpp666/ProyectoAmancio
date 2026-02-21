@@ -42,23 +42,23 @@ export default function DashboardPage() {
   }, [role, loading, router]);
   useEffect(() => {
     if (role?.toUpperCase() === "ADMIN") {
-// Llamada a la API para obtener el número de pendientes
-    const fetchPostulantes = async () => {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/alumnos/solicitudes-pendientes`);
-        if (res.ok) {
-          const data = await res.json();
-          setPostulantesCount(data.length);
+      // Llamada a la API para obtener el número de pendientes
+      const fetchPostulantes = async () => {
+        try {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/alumnos/solicitudes-pendientes`);
+          if (res.ok) {
+            const data = await res.json();
+            setPostulantesCount(data.length);
+          }
+        } catch (error) {
+          console.error("Error cargando conteo de postulantes:", error);
         }
-      } catch (error) {
-        console.error("Error cargando conteo de postulantes:", error);
-      }
-    };
+      };
 
-    fetchPostulantes();
+      fetchPostulantes();
 
     }
-    
+
   }, [role]);
 
   // 4. Pantalla de carga
@@ -94,7 +94,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard icon={<Users className="text-blue-600" />} bg="bg-blue-50" label="Total Estudiantes" value="1,250" growth="+5.2%" />
             <StatCard icon={<BadgeCheck className="text-purple-600" />} bg="bg-purple-50" label="Docentes Activos" value="84" growth="+2.1%" />
-            <StatCard icon={<Calendar className="text-orange-600" />} bg="bg-orange-50" label="Próximos Eventos" value="12" growth="Semana" />
+            
             <StatCard icon={<Newspaper className="text-emerald-600" />} bg="bg-emerald-50" label="Noticias" value="45" growth="+12.5%" />
           </div>
 
@@ -171,37 +171,37 @@ export default function DashboardPage() {
           <div className="bg-white border border-gray-200 rounded-3xl p-8 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group">
             {/* Elemento decorativo */}
             <div className="absolute right-0 top-0 w-32 h-32 bg-orange-500/5 rounded-bl-full group-hover:scale-110 transition-transform"></div>
-            
+
             <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
-                <UserPlus className="w-8 h-8 text-orange-600" />
+              <UserPlus className="w-8 h-8 text-orange-600" />
             </div>
 
             <div className="flex-1">
               <div className="flex items-center gap-3">
                 <h3 className="text-xl font-black text-gray-900">Solicitudes de Admisión</h3>
                 {postulantesCount > 0 && (
-                    <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-black animate-pulse">
-                        PENDIENTE
-                    </span>
+                  <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-black animate-pulse">
+                    PENDIENTE
+                  </span>
                 )}
               </div>
-              
+
               <p className="text-gray-500 mt-2 leading-relaxed max-w-2xl">
-                Actualmente hay <span className="text-orange-600 font-black text-lg">{postulantesCount}</span> estudiantes postulando al colegio. 
+                Actualmente hay <span className="text-orange-600 font-black text-lg">{postulantesCount}</span> estudiantes postulando al colegio.
                 Revisa sus perfiles y completa el proceso de admisión para generar sus accesos.
               </p>
-              
+
               <div className="mt-6 flex flex-col sm:flex-row sm:items-center gap-4">
                 <Link href="/campus/panel-control/gestion-estudiantes" className="w-full sm:w-auto">
-                    <button className="w-full bg-[#09397c] text-white px-8 py-4 rounded-xl text-sm font-black hover:bg-[#062d59] transition-all flex items-center justify-center gap-3 shadow-lg shadow-[#09397c]/20 hover:-translate-y-0.5 active:scale-95">
-                      IR A GESTIÓN DE ADMISIÓN
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
+                  <button className="w-full bg-[#09397c] text-white px-8 py-4 rounded-xl text-sm font-black hover:bg-[#062d59] transition-all flex items-center justify-center gap-3 shadow-lg shadow-[#09397c]/20 hover:-translate-y-0.5 active:scale-95">
+                    IR A GESTIÓN DE ADMISIÓN
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
                 </Link>
-                
+
                 <div className="flex items-center gap-2 text-xs font-bold text-gray-400 px-2">
-                    <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
-                    Actualizado en tiempo real
+                  <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
+                  Actualizado en tiempo real
                 </div>
               </div>
             </div>

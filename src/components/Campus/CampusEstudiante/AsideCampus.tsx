@@ -86,9 +86,6 @@ export function AsideCampus({ isOpen, onClose }: { isOpen: boolean; onClose: () 
               <Link href="/campus/campus-estudiante/inicio-campus/tramites" onClick={onClose} className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
                 Estado de cuenta
               </Link>
-              <Link href="/campus/campus-estudiante/inicio-campus/tramites/pago" onClick={onClose} className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
-                Pagar pensión
-              </Link>
               <Link href="/campus/campus-estudiante/inicio-campus/tramites/manual" onClick={onClose} className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
                 Manual de pagos
               </Link>

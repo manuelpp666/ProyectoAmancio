@@ -87,7 +87,7 @@ export function NoticiaForm({ initialData, onSubmit, loading }: NoticiaFormProps
 
             const noticiaPayload: NoticiaCreate = {
                 titulo: titulo,
-                id_autor: 1, 
+                id_autor: initialData?.id_autor || 0,
                 categoria: tipoContenido,
                 contenido: editor?.getHTML() || "",
                 imagen_portada_url: urlFinal,

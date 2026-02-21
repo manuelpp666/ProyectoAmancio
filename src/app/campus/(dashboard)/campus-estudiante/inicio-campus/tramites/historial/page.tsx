@@ -1,189 +1,99 @@
-import Link from 'next/link';
+"use client";
+import { useState, useEffect } from "react";
+import { useUser } from "@/src/context/userContext";
+import {
 
-export default function HistorialPagos() {
+  BookOpen
+
+} from "lucide-react";
+import { toast } from "sonner";
+
+
+export default function HistorialPage() {
+  const { id_usuario } = useUser();
+  const [historial, setHistorial] = useState<any[]>([]);
+  const [busqueda, setBusqueda] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    if (!id_usuario) return;
+
+    const cargarDatos = async () => {
+      try {
+        // 1. Primero, obtenemos el alumno para tener su ID real
+        const resAlumno = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/alumnos/alumnos/usuario/${id_usuario}`);
+        const alumno = await resAlumno.json();
+
+        // Aseguramos que tenemos el ID antes de hacer la segunda llamada
+        if (alumno && alumno.id_alumno) {
+          // 2. Usamos el ID real obtenido (alumno.id_alumno)
+          const resHistorial = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/finance/pagos/historial/${alumno.id_alumno}`);
+
+          if (!resHistorial.ok) throw new Error("Error al obtener historial");
+
+          const data = await resHistorial.json();
+          setHistorial(Array.isArray(data) ? data : []);
+        }
+      } catch (e) {
+        console.error("Error al cargar los datos:", e);
+        toast.error("No se pudo cargar el historial completo");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    cargarDatos();
+  }, [id_usuario]);
+
+  // Lógica de filtrado
+  const historialFiltrado = (historial || []).filter((pago) =>
+    pago.concepto?.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
   return (
-    <div className="bg-[#F8FAFC] text-slate-800 min-h-screen flex">
+    <div className="p-8 max-w-5xl mx-auto">
+      <h1 className="text-2xl font-black mb-6">Historial Completo de Pagos</h1>
 
+      {/* Filtros */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Buscar por concepto..."
+          className="w-full p-3 border rounded-xl"
+          onChange={(e) => setBusqueda(e.target.value)}
+        />
+      </div>
 
-      <div className="max-w-[1600px] mx-auto space-y-6 pb-8">
-
-
-        <div className="p-8 max-w-7xl mx-auto">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-black text-primary mb-1">Historial de Pagos Completo</h1>
-              <p className="text-slate-500">Consulta el detalle de todas tus transacciones realizadas.</p>
-            </div>
-            <Link href="/campus/campus-estudiante/inicio-campus/tramites" className="w-full">
-              <button className="flex items-center gap-2 text-sm font-bold text-secondary hover:underline">
-                <span className="material-symbols-outlined text-lg">arrow_back</span>
-                Volver a Trámites
-              </button>
-            </Link>
-
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mb-8">
-            <div className="p-6 border-b border-slate-100">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Desde</label>
-                  <input className="w-full border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary" type="date" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Hasta</label>
-                  <input className="w-full border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary" type="date" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Concepto de Pago</label>
-                  <select className="w-full border-slate-200 rounded-lg text-sm focus:ring-primary focus:border-primary">
-                    <option>Todos los conceptos</option>
-                    <option>Pensión Mensual</option>
-                    <option>Matrícula</option>
-                    <option>Reserva de Vacante</option>
-                    <option>Derecho de Examen</option>
-                    <option>Materiales</option>
-                  </select>
-                </div>
-                <div>
-                  <button className="w-full bg-primary text-white py-2 px-4 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
-                    <span className="material-symbols-outlined text-lg">filter_alt</span>
-                    Aplicar Filtros
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="text-slate-400 font-bold uppercase text-[10px] tracking-widest border-b border-slate-100 bg-slate-50/50">
-                    <th className="px-6 py-4">Fecha de Pago</th>
-                    <th className="px-6 py-4">Concepto</th>
-                    <th className="px-6 py-4">Nro. de Operación</th>
-                    <th className="px-6 py-4">Método de Pago</th>
-                    <th className="px-6 py-4 text-right">Importe (S/)</th>
-                    <th className="px-6 py-4 text-center">Recibo</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  <tr className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-slate-600 font-medium">15/01/2026</td>
-                    <td className="px-6 py-4 font-bold text-slate-800">Matrícula Escolar 2026</td>
-                    <td className="px-6 py-4 font-mono text-xs text-slate-500">TR-9982312</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-blue-500 text-lg">credit_card</span>
-                        Tarjeta Visa
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right font-black">450.00</td>
-                    <td className="px-6 py-4 text-center">
-                      <button className="p-2 hover:bg-red-50 rounded-full transition-colors group">
-                        <span className="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">picture_as_pdf</span>
-                      </button>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-slate-600 font-medium">12/12/2025</td>
-                    <td className="px-6 py-4 font-bold text-slate-800">Reserva de Vacante 2026</td>
-                    <td className="px-6 py-4 font-mono text-xs text-slate-500">TR-9972100</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-green-500 text-lg">qr_code_2</span>
-                        Yape
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right font-black">250.00</td>
-                    <td className="px-6 py-4 text-center">
-                      <button className="p-2 hover:bg-red-50 rounded-full transition-colors group">
-                        <span className="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">picture_as_pdf</span>
-                      </button>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-slate-600 font-medium">01/11/2025</td>
-                    <td className="px-6 py-4 font-bold text-slate-800">Cuota APAFA 2026</td>
-                    <td className="px-6 py-4 font-mono text-xs text-slate-500">TR-9965401</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-slate-400 text-lg">account_balance</span>
-                        Transferencia BCP
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right font-black">50.00</td>
-                    <td className="px-6 py-4 text-center">
-                      <button className="p-2 hover:bg-red-50 rounded-full transition-colors group">
-                        <span className="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">picture_as_pdf</span>
-                      </button>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-slate-600 font-medium">05/10/2025</td>
-                    <td className="px-6 py-4 font-bold text-slate-800">Pensión Mensual 09 - 2025</td>
-                    <td className="px-6 py-4 font-mono text-xs text-slate-500">TR-9954322</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-blue-500 text-lg">credit_card</span>
-                        Tarjeta Visa
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right font-black">300.00</td>
-                    <td className="px-6 py-4 text-center">
-                      <button className="p-2 hover:bg-red-50 rounded-full transition-colors group">
-                        <span className="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">picture_as_pdf</span>
-                      </button>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-slate-600 font-medium">05/09/2025</td>
-                    <td className="px-6 py-4 font-bold text-slate-800">Pensión Mensual 08 - 2025</td>
-                    <td className="px-6 py-4 font-mono text-xs text-slate-500">TR-9941098</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-blue-400 text-lg">payments</span>
-                        Efectivo (Agente)
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right font-black">300.00</td>
-                    <td className="px-6 py-4 text-center">
-                      <button className="p-2 hover:bg-red-50 rounded-full transition-colors group">
-                        <span className="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">picture_as_pdf</span>
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div className="p-6 border-t border-slate-100 flex items-center justify-between bg-slate-50/30">
-              <p className="text-xs text-slate-500 font-medium">Mostrando 5 de 42 transacciones</p>
-              <div className="flex items-center gap-2">
-                <button className="p-2 border border-slate-200 rounded hover:bg-white transition-colors disabled:opacity-50" disabled>
-                  <span className="material-symbols-outlined text-lg leading-none">chevron_left</span>
-                </button>
-                <button className="px-3 py-1 bg-primary text-white text-xs font-bold rounded">1</button>
-                <button className="px-3 py-1 text-slate-600 hover:bg-white text-xs font-bold rounded">2</button>
-                <button className="px-3 py-1 text-slate-600 hover:bg-white text-xs font-bold rounded">3</button>
-                <span className="text-slate-400 text-xs">...</span>
-                <button className="px-3 py-1 text-slate-600 hover:bg-white text-xs font-bold rounded">9</button>
-                <button className="p-2 border border-slate-200 rounded hover:bg-white transition-colors">
-                  <span className="material-symbols-outlined text-lg leading-none">chevron_right</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-4">
-            <button className="bg-white border border-slate-200 text-slate-700 px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-slate-50 transition-colors flex items-center gap-2">
-              <span className="material-symbols-outlined text-lg">print</span>
-              Imprimir Reporte
-            </button>
-            <button className="bg-secondary text-white px-6 py-2.5 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity flex items-center gap-2">
-              <span className="material-symbols-outlined text-lg">download</span>
-              Descargar Historial (Excel)
-            </button>
-          </div>
+      {/* Tabla completa */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="bg-slate-50/50 text-slate-400 font-bold uppercase text-[10px] tracking-widest border-b border-slate-100">
+                <th className="px-6 py-4">Fecha Pago</th>
+                <th className="px-6 py-4">Concepto</th>
+                <th className="px-6 py-4">Nro Operación</th>
+                <th className="px-6 py-4 text-right">Importe</th>
+                <th className="px-6 py-4 text-center">Recibo</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {historialFiltrado.map((pago) => (
+                <tr key={pago.id_pago} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-6 py-4 text-slate-500 font-medium">
+                    {new Date(pago.fecha_pago).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 font-semibold text-slate-700">{pago.concepto}</td>
+                  <td className="px-6 py-4 font-mono text-xs text-slate-500">{pago.codigo_operacion_bcp}</td>
+                  <td className="px-6 py-4 text-right font-black text-slate-800">S/ {Number(pago.monto_total).toFixed(2)}</td>
+                  <td className="px-6 py-4 text-center">
+                    <button className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                      <BookOpen className="text-[#093E7A] w-5 h-5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
