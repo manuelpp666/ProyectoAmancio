@@ -70,27 +70,10 @@ export default function NotificacionesPage() {
           <p className="text-gray-500 text-sm mt-1">Mantente al día con lo que sucede en tu colegio.</p>
         </div>
         
-        <div className="flex gap-2">
-            <button className="text-xs font-bold px-4 py-2 bg-white border border-gray-200 rounded-full hover:bg-gray-50 text-gray-600 transition-colors">
-                Marcar todas como leídas
-            </button>
-            <button className="text-xs font-bold px-4 py-2 bg-[#701C32] text-white rounded-full hover:bg-[#8a223d] transition-colors shadow-sm">
-                Configuración
-            </button>
-        </div>
+
       </div>
 
-      {/* FILTROS RÁPIDOS */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {['Todas', 'No leídas', 'Académico', 'Pagos', 'Institucional'].map((filtro, i) => (
-            <button 
-                key={i}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${i === 0 ? 'bg-[#701C32]/10 text-[#701C32]' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
-            >
-                {filtro}
-            </button>
-        ))}
-      </div>
+      
 
       {/* LISTA DE NOTIFICACIONES */}
       <div className="space-y-4">

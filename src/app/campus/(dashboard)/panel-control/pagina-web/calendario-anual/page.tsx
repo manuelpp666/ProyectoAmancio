@@ -1,39 +1,80 @@
 "use client";
-import React from 'react';
+import { useState } from 'react';
 import HeaderPanel from "@/src/components/Campus/PanelControl/Header";
-import { 
-  FileUp, 
-  FileText, 
-  Download, 
-  Eye, 
-  Calendar, 
-  Plus, 
-  Filter, 
-  MoreHorizontal, 
-  Edit3, 
-  Trash2, 
-  Globe, 
-  Lock,
+import {
+  FileUp,
+  FileText,
+  Download,
+  Eye,
+  Plus,
   ChevronRight
 } from "lucide-react";
+import { toast } from "sonner";
+import EventForm from '@/src/components/Evento/EventForm';
+import { useEventos } from '@/src/hooks/useEvento';
+import { Evento } from '@/src/interfaces/evento';
+import { ConfirmModal } from '@/src/components/utils/ConfirmModal';
+import { useRouter } from 'next/navigation';
+import { EventRow } from '@/src/components/Evento/EventRow';
 
 export default function CalendarioPage() {
+  const router = useRouter();
+  // Llamamos al endpoint "actual" solamente
+  const { eventos, loading, refetch } = useEventos('actual');
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [eventoActivo, setEventoActivo] = useState<Evento | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [idToDelete, setIdToDelete] = useState<number | null>(null);
+  const handleDelete = (id: number) => {
+    setIdToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+  const confirmDelete = async () => {
+    if (!idToDelete) return;
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/eventos/${idToDelete}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        toast.success("Evento eliminado correctamente");
+        refetch();
+      } else {
+        toast.error("Error al eliminar el evento");
+      }
+    } catch (error) {
+      toast.error("Ocurrió un error al conectar con el servidor");
+    } finally {
+      setIdToDelete(null);
+    }
+  };
+  const [filtro, setFiltro] = useState("");
+
+  // Lógica de filtrado
+  const eventosFiltrados = eventos.filter(ev =>
+    ev.titulo.toLowerCase().includes(filtro.toLowerCase()) ||
+    ev.tipo_evento?.toLowerCase().includes(filtro.toLowerCase())
+  );
+  // Limitamos a los primeros 5 directamente en el renderizado
+  const eventosRecientes = eventosFiltrados.slice(0, 5);
   return (
     <div className="flex h-screen overflow-hidden bg-[#F8FAFC] antialiased">
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
-        
+
         <HeaderPanel />
 
         <div className="flex-1 overflow-y-auto p-8 space-y-12 custom-scrollbar">
-          
+
           {/* SECCIÓN 01: CARGA DE PDF */}
           <section className="max-w-6xl mx-auto w-full">
             <div className="mb-6">
               <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Carga de Calendario (PDF)</h3>
               <p className="text-sm text-gray-500 font-medium">Actualiza el documento oficial del calendario escolar para descarga pública.</p>
             </div>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Dropzone Area */}
               <div className="lg:col-span-2 group relative border-2 border-dashed border-gray-200 rounded-[2rem] p-12 flex flex-col items-center justify-center bg-white hover:border-[#093E7A]/40 hover:bg-[#093E7A]/[0.02] transition-all cursor-pointer">
@@ -56,7 +97,7 @@ export default function CalendarioPage() {
                       Archivo Activo
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center gap-5 p-4 bg-gray-50 rounded-2xl border border-gray-100 mb-6">
                     <div className="w-14 h-14 bg-red-50 text-red-500 rounded-xl flex items-center justify-center shrink-0">
                       <FileText size={28} />
@@ -91,13 +132,17 @@ export default function CalendarioPage() {
                 <p className="text-sm text-gray-500 font-medium mt-1">Administra fechas clave, exámenes y ceremonias institucionales.</p>
               </div>
               <div className="flex gap-3">
-                <button className="flex items-center gap-2 px-5 py-2.5 border border-gray-200 bg-white rounded-xl hover:bg-gray-50 transition-all text-gray-600 font-black text-[11px] uppercase tracking-widest">
-                  <Filter size={16} />
-                  Filtrar
-                </button>
-                <button className="flex items-center gap-2 px-6 py-2.5 bg-[#093E7A] text-white rounded-xl hover:bg-[#062d59] shadow-lg shadow-[#093E7A]/10 transition-all font-black text-[11px] uppercase tracking-widest">
-                  <Plus size={18} strokeWidth={3} />
-                  Agregar Evento
+                <input
+                  type="text"
+                  placeholder="Buscar evento o categoría..."
+                  className="px-4 py-2 border rounded-xl text-sm"
+                  onChange={(e) => setFiltro(e.target.value)}
+                />
+                <button
+                  onClick={() => { setEventoActivo(null); setIsModalOpen(true); }}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-[#093E7A] text-white rounded-xl"
+                >
+                  <Plus size={18} /> Agregar Evento
                 </button>
               </div>
             </div>
@@ -110,40 +155,23 @@ export default function CalendarioPage() {
                       <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">Evento / Actividad</th>
                       <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">Fecha</th>
                       <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">Categoría</th>
-                      <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">Visibilidad</th>
                       <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] text-right">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    <EventRow 
-                      title="Exámenes Bimestrales - I Periodo"
-                      subtitle="Evaluaciones integrales para todos los niveles"
-                      date="15 Abr - 19 Abr, 2024"
-                      category="Académico"
-                      categoryColor="bg-blue-50 text-blue-600"
-                      isPublic={true}
-                    />
-                    <EventRow 
-                      title="Día del Trabajador"
-                      subtitle="Suspensión de labores académicas"
-                      date="01 May, 2024"
-                      category="Feriado"
-                      categoryColor="bg-orange-50 text-orange-600"
-                      isPublic={true}
-                    />
-                    <EventRow 
-                      title="Ceremonia de Entrega de Diplomas"
-                      subtitle="Evento protocolar en el auditorio principal"
-                      date="22 May, 2024"
-                      category="Ceremonia"
-                      categoryColor="bg-purple-50 text-purple-600"
-                      isPublic={false}
-                    />
+                  <tbody>
+                    {eventosRecientes.map((evento) => (
+                      <EventRow
+                        key={evento.id_evento}
+                        evento={evento}
+                        onEdit={() => { setEventoActivo(evento); setIsModalOpen(true); }}
+                        onDelete={() => handleDelete(evento.id_evento)}
+                      />
+                    ))}
                   </tbody>
                 </table>
               </div>
               <div className="p-5 bg-gray-50/50 flex justify-center">
-                <button className="flex items-center gap-2 text-[11px] font-black text-[#093E7A] uppercase tracking-widest hover:gap-4 transition-all">
+                <button onClick={() => router.push('/campus/panel-control/pagina-web/calendario-anual/todos')} className="flex items-center gap-2 text-[11px] font-black text-[#093E7A] uppercase tracking-widest hover:gap-4 transition-all">
                   Ver todos los eventos del año
                   <ChevronRight size={14} strokeWidth={3} />
                 </button>
@@ -152,51 +180,33 @@ export default function CalendarioPage() {
           </section>
         </div>
       </div>
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-2xl w-96">
+            <h2 className="mb-4 font-black">{eventoActivo ? "Editar Evento" : "Nuevo Evento"}</h2>
+            <EventForm
+              evento={eventoActivo}
+              onClose={() => setIsModalOpen(false)}
+              onSuccess={() => {
+                toast.success(eventoActivo ? "Evento actualizado" : "Evento creado con éxito");
+                refetch();
+                setIsModalOpen(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Eliminar evento"
+        message="¿Estás seguro de que deseas eliminar este evento? Esta acción no se puede deshacer."
+        confirmText="Eliminar"
+        type="danger"
+      />
     </div>
+
   );
 }
 
-function EventRow({ title, subtitle, date, category, categoryColor, isPublic }) {
-  return (
-    <tr className="group hover:bg-gray-50/50 transition-colors">
-      <td className="px-8 py-6">
-        <div className="flex flex-col gap-0.5">
-          <span className="font-black text-gray-900 text-sm tracking-tight">{title}</span>
-          <span className="text-[11px] text-gray-400 font-medium">{subtitle}</span>
-        </div>
-      </td>
-      <td className="px-8 py-6">
-        <div className="flex items-center gap-2.5 text-gray-600">
-          <Calendar size={14} className="text-gray-400" />
-          <span className="text-[12px] font-bold">{date}</span>
-        </div>
-      </td>
-      <td className="px-8 py-6">
-        <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${categoryColor}`}>
-          {category}
-        </span>
-      </td>
-      <td className="px-8 py-6">
-        {isPublic ? (
-          <span className="flex items-center gap-1.5 text-emerald-600 font-black text-[10px] uppercase tracking-wider">
-            <Globe size={14} strokeWidth={2.5} /> Público
-          </span>
-        ) : (
-          <span className="flex items-center gap-1.5 text-gray-400 font-black text-[10px] uppercase tracking-wider">
-            <Lock size={14} strokeWidth={2.5} /> Privado
-          </span>
-        )}
-      </td>
-      <td className="px-8 py-6 text-right">
-        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button className="p-2 text-gray-400 hover:text-[#093E7A] hover:bg-white rounded-lg shadow-sm transition-all border border-transparent hover:border-gray-100">
-            <Edit3 size={16} />
-          </button>
-          <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded-lg shadow-sm transition-all border border-transparent hover:border-gray-100">
-            <Trash2 size={16} />
-          </button>
-        </div>
-      </td>
-    </tr>
-  );
-}
