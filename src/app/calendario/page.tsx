@@ -45,9 +45,9 @@ export default function Page() {
     }, [eventos]);
 
     const calendarDays: (number | null)[] = [
-    ...Array.from({ length: firstDayOfMonth }, () => null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1)
-];
+        ...Array.from({ length: firstDayOfMonth }, () => null),
+        ...Array.from({ length: daysInMonth }, (_, i) => i + 1)
+    ];
 
     return (
         <div className="bg-white text-slate-800">
@@ -69,7 +69,7 @@ export default function Page() {
                                     <button onClick={nextMonth} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400"><span className="material-symbols-outlined">chevron_right</span></button>
                                 </div>
                             </div>
-                            
+
                             <div className="grid grid-cols-7 bg-slate-50/50 border-b border-slate-100 py-4 text-center">
                                 {["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"].map(d => <div key={d} className="text-xs font-black uppercase text-slate-400">{d}</div>)}
                             </div>

@@ -3,7 +3,7 @@
 import { useUser } from "@/src/context/userContext";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Megaphone, Star, Wallet, Clock, Loader2 } from "lucide-react";
+import { ArrowRight, Megaphone, Star, Wallet, Clock, Loader2, Calendar, CheckCheck } from "lucide-react";
 import Link from "next/link";
 
 
@@ -26,11 +26,26 @@ interface DashboardData {
     tareas_pendientes: Tarea[];
     anio_actual: string;
 }
+
+// Función helper para seleccionar iconos
+const getIcon = (tipo: string) => {
+    switch (tipo) {
+        case "entrega": return CheckCheck;
+        case "nota": return Star;
+        case "pago": return Wallet;
+        case "evento": return Calendar;
+        default: return Megaphone;
+    }
+};
 export default function DashboardPage() {
 
     // 1. Extraer datos reales del contexto
     const { id_usuario, role, loading } = useUser();
     const router = useRouter();
+    const [resumenEventos, setResumenEventos] = useState<any>(null);
+    const [data, setData] = useState<DashboardData | null>(null);
+    const [loadingData, setLoadingData] = useState(true);
+    const [notificaciones, setNotificaciones] = useState<any[]>([]);
 
     // 2. Proteger la ruta: Si no es estudiante, lo expulsamos
     useEffect(() => {
@@ -43,8 +58,44 @@ export default function DashboardPage() {
         }
     }, [role, loading, router]);
 
-    const [data, setData] = useState<DashboardData | null>(null);
-    const [loadingData, setLoadingData] = useState(true);
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            if (!id_usuario) return;
+            try {
+                // Cargar dashboard general
+                const resData = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/virtual/api/dashboard/estudiante/${id_usuario}`);
+                const json: DashboardData = await resData.json();
+                setData(json);
+
+                // Cargar resumen de eventos
+                const resEventos = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/eventos/resumen`);
+                const jsonEventos = await resEventos.json();
+                setResumenEventos(jsonEventos);
+
+            } catch (error) {
+                console.error("Error al cargar datos", error);
+            } finally {
+                setLoadingData(false);
+            }
+        };
+        if (!loading && id_usuario) fetchDashboardData();
+    }, [id_usuario, loading]);
+
+    // Efecto para cargar notificaciones (Limitado a 4)
+    useEffect(() => {
+        const fetchNotificaciones = async () => {
+            if (!id_usuario) return;
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/notificaciones/${id_usuario}`);
+                const json = await res.json();
+                // Tomamos solo las 4 primeras
+                setNotificaciones(json.notificaciones.slice(0, 4));
+            } catch (error) {
+                console.error("Error al cargar notificaciones", error);
+            }
+        };
+        if (!loading && id_usuario) fetchNotificaciones();
+    }, [id_usuario, loading]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -61,6 +112,8 @@ export default function DashboardPage() {
         };
         fetchData();
     }, [id_usuario]);
+
+
     // 3. Estado de carga mientras se recupera la sesión del localStorage
     if (loading) {
         return (
@@ -92,19 +145,29 @@ export default function DashboardPage() {
 
                     {/* BANNER ROJO */}
                     <div className="w-full bg-[#701C32] rounded-2xl p-8 md:p-10 text-white relative overflow-hidden shadow-lg">
-                        <div className="relative z-10 max-w-2xl">
-                            <div className="inline-block px-4 py-1.5 bg-white/20 rounded-full text-[10px] font-bold tracking-wide mb-4 backdrop-blur-sm">
-                                PRÓXIMO EVENTO: 3 DÍAS
+                        {resumenEventos?.proximo_evento ? (
+                            <div className="relative z-10 max-w-2xl">
+                                <div className="inline-block px-4 py-1.5 bg-white/20 rounded-full text-[10px] font-bold tracking-wide mb-4 backdrop-blur-sm">
+                                    PRÓXIMO EVENTO: {resumenEventos.dias_faltantes_proximo === 0
+                                        ? "¡ES HOY!"
+                                        : `${resumenEventos.dias_faltantes_proximo} DÍAS`}
+                                </div>
+                                <h2 className="text-4xl font-bold mb-3">
+                                    {resumenEventos.proximo_evento.titulo}
+                                </h2>
+                                <p className="text-sm md:text-base text-white/90 mb-8 max-w-lg">
+                                    {resumenEventos.proximo_evento.descripcion || "Evento académico importante."}
+                                </p>
+
                             </div>
-                            <h2 className="text-4xl font-bold mb-3">Inicio de clases</h2>
-                            <p className="text-sm md:text-base text-white/90 mb-8 max-w-lg">
-                                Prepárate para la llegada del año 2026 con esmero y dedicación.
-                            </p>
-                            <button className="px-6 py-2.5 border border-white/40 text-white rounded-lg hover:bg-white hover:text-[#701C32] transition-all font-medium text-sm">
-                                Ver próximos eventos
-                            </button>
-                        </div>
-                        {/* Decoración de fondo opcional */}
+                        ) : (
+                            <div className="relative z-10">
+                                <h2 className="text-2xl font-bold">¡Bienvenido al Campus!</h2>
+                                <p className="text-white/80">No hay eventos próximos programados por el momento.</p>
+                            </div>
+                        )}
+
+                        {/* Decoración de fondo */}
                         <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-black/10 to-transparent pointer-events-none"></div>
                     </div>
 
@@ -153,71 +216,38 @@ export default function DashboardPage() {
 
                     {/* WIDGET: NOTIFICACIONES */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-                        <h3 className="text-[#701C32] font-bold text-sm uppercase mb-4 tracking-wide">Notificaciones</h3>
+                        <h3 className="text-[#701C32] font-bold text-sm uppercase mb-4 tracking-wide">
+                            Notificaciones
+                        </h3>
                         <div className="space-y-5">
-
-                            {/* Notif 1 */}
-                            <div className="flex gap-3 items-start">
-                                <div className="w-8 h-8 rounded-full bg-[#701C32]/10 text-[#701C32] flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    <Megaphone size={14} />
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-800 leading-tight mb-1">
-                                        <span className="font-bold">Comunicado:</span> Suspensión de clases el día lunes por feriado nacional.
-                                    </p>
-                                    <span className="text-[10px] text-gray-400">Hace 2 horas</span>
-                                </div>
-                            </div>
-
-                            {/* Notif 2 */}
-                            <div className="flex gap-3 items-start">
-                                <div className="w-8 h-8 rounded-full bg-[#701C32]/10 text-[#701C32] flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    <Star size={14} />
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-800 leading-tight mb-1">
-                                        <span className="font-bold">Calificación:</span> Haz recibido 18 en Examen Parcial de Química.
-                                    </p>
-                                    <span className="text-[10px] text-gray-400">Hace 4 horas</span>
-                                </div>
-                            </div>
-
-                            {/* Notif 3 */}
-                            <div className="flex gap-3 items-start">
-                                <div className="w-8 h-8 rounded-full bg-[#701C32]/10 text-[#701C32] flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    <Star size={14} />
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-800 leading-tight mb-1">
-                                        <span className="font-bold">Calificación:</span> Haz recibido 19 en Lectura y Cuestionario de Ciencias Sociales.
-                                    </p>
-                                    <span className="text-[10px] text-gray-400">Hace 1 día</span>
-                                </div>
-                            </div>
-
-                            {/* Notif 4 */}
-                            <div className="flex gap-3 items-start">
-                                <div className="w-8 h-8 rounded-full bg-[#701C32]/10 text-[#701C32] flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    <Wallet size={14} />
-                                </div>
-                                <div>
-                                    <p className="text-xs text-gray-800 leading-tight mb-1">
-                                        <span className="font-bold">Pagos:</span> Pago pendiente de 240 soles para Pensión mes de Marzo.
-                                    </p>
-                                    <span className="text-[10px] text-gray-400">Hace 1 día</span>
-                                </div>
-                            </div>
-
+                            {notificaciones.length > 0 ? (
+                                notificaciones.map((notif, index) => {
+                                    const Icon = getIcon(notif.tipo);
+                                    return (
+                                        <div key={index} className="flex gap-3 items-start">
+                                            <div className="w-8 h-8 rounded-full bg-[#701C32]/10 text-[#701C32] flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                <Icon size={14} />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-800 leading-tight mb-1">
+                                                    <span className="font-bold capitalize">{notif.tipo}: </span>
+                                                    {notif.mensaje}
+                                                </p>
+                                                <span className="text-[10px] text-gray-400">
+                                                    {new Date(notif.fecha).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            ) : (
+                                <p className="text-xs text-gray-400 italic">No tienes notificaciones recientes.</p>
+                            )}
                         </div>
+
                     </div>
-
                 </div>
-
             </div>
         </div>
-
-
-
-
     );
 }
