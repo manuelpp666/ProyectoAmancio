@@ -68,61 +68,7 @@ export default function CalendarioPage() {
 
         <div className="flex-1 overflow-y-auto p-8 space-y-12 custom-scrollbar">
 
-          {/* SECCIÓN 01: CARGA DE PDF */}
-          <section className="max-w-6xl mx-auto w-full">
-            <div className="mb-6">
-              <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Carga de Calendario (PDF)</h3>
-              <p className="text-sm text-gray-500 font-medium">Actualiza el documento oficial del calendario escolar para descarga pública.</p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Dropzone Area */}
-              <div className="lg:col-span-2 group relative border-2 border-dashed border-gray-200 rounded-[2rem] p-12 flex flex-col items-center justify-center bg-white hover:border-[#093E7A]/40 hover:bg-[#093E7A]/[0.02] transition-all cursor-pointer">
-                <div className="bg-[#093E7A]/5 p-6 rounded-3xl mb-4 group-hover:scale-110 transition-transform duration-500">
-                  <FileUp size={48} className="text-[#093E7A]" strokeWidth={1.5} />
-                </div>
-                <h4 className="text-lg font-black text-gray-900 tracking-tight">Arrastra el nuevo calendario aquí</h4>
-                <p className="text-sm text-gray-400 mt-2 font-medium">O haz clic para seleccionar un archivo de tu computadora</p>
-                <div className="mt-6 flex gap-3">
-                  <span className="px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-500 uppercase tracking-widest">PDF Permitido</span>
-                  <span className="px-3 py-1 bg-gray-100 rounded-full text-[10px] font-black text-gray-500 uppercase tracking-widest">Máx 15MB</span>
-                </div>
-              </div>
-
-              {/* Status Card */}
-              <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-start mb-6">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-wider border border-emerald-100">
-                      Archivo Activo
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-5 p-4 bg-gray-50 rounded-2xl border border-gray-100 mb-6">
-                    <div className="w-14 h-14 bg-red-50 text-red-500 rounded-xl flex items-center justify-center shrink-0">
-                      <FileText size={28} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-black text-gray-900 truncate">Calendario_2024.pdf</p>
-                      <p className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-tighter">Subido: 15 Dic, 2023</p>
-                      <p className="text-[10px] text-[#093E7A] font-black mt-0.5">3.2 MB</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <button className="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-[#093E7A] text-white rounded-xl hover:bg-[#062d59] shadow-lg shadow-[#093E7A]/20 transition-all font-black text-[11px] uppercase tracking-widest active:scale-[0.98]">
-                    <Download size={16} strokeWidth={2.5} />
-                    Descargar Actual
-                  </button>
-                  <button className="w-full flex items-center justify-center gap-3 px-6 py-3.5 border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 transition-all font-black text-[11px] uppercase tracking-widest">
-                    <Eye size={16} strokeWidth={2.5} />
-                    Previsualizar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
+          
 
           {/* SECCIÓN 02: GESTIÓN DE EVENTOS */}
           <section className="max-w-6xl mx-auto w-full">
