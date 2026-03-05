@@ -2,13 +2,12 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@/src/context/userContext"; 
 import { 
-  User, BadgeCheck, Globe, MapPin, Info, 
-  CalendarDays, Loader2, HeartPulse, Phone, Mail
+  User, BadgeCheck, Loader2, HeartPulse, Phone, Mail, Wallet
 } from 'lucide-react';
 
 export default function MisDatos() {
   // 1. Estados y Contexto
-  const { username, role } = useUser();
+  const { username } = useUser();
   const [perfil, setPerfil] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("PERSONALES");
@@ -42,6 +41,10 @@ export default function MisDatos() {
 
   const { datos, rol, familiares } = perfil;
 
+  // Helpers para identificar grupos de roles
+  const esPersonal = ["DOCENTE", "ADMIN", "AUXILIAR"].includes(rol);
+  const esAlumno = rol === "ALUMNO";
+
   return (
     <div className="bg-[#F3F4F6] min-h-screen text-slate-800 font-['Lato']">
       <style dangerouslySetInnerHTML={{ __html: `
@@ -64,12 +67,12 @@ export default function MisDatos() {
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-5xl mx-auto space-y-6">
             
-            {/* Banner Dinámico con Color Institucional */}
+            {/* Banner Dinámico */}
             <div className="bg-[#701C32] rounded-2xl p-8 text-white relative overflow-hidden shadow-lg">
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20"></div>
               <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
                 <div className="w-32 h-32 rounded-full border-4 border-white shadow-xl bg-amber-500 flex items-center justify-center text-5xl font-bold uppercase">
-                  {datos.nombres[0]}
+                  {datos.nombres?.[0] || "?"}
                 </div>
                 <div className="text-center md:text-left">
                   <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight">
@@ -77,18 +80,23 @@ export default function MisDatos() {
                   </h1>
                   <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-2">
                     <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">Rol: {rol}</span>
-                    {rol === "ALUMNO" && (
+                    {esAlumno && (
                       <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">Estado: {datos.estado_ingreso}</span>
                     )}
                     <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">DNI: {datos.dni}</span>
+                    {esPersonal && (
+                      <span className="bg-emerald-500/40 px-3 py-1 rounded-full text-sm font-bold backdrop-blur-sm border border-emerald-400">
+                        Sueldo: S/ {datos.sueldo}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Contenedor Principal de Información */}
+            {/* Contenedor Principal */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-              {/* Tabs Dinámicos según Rol */}
+              {/* Tabs Dinámicos */}
               <div className="flex border-b border-slate-200 bg-slate-50/50 overflow-x-auto">
                 <button 
                   onClick={() => setActiveTab("PERSONALES")}
@@ -96,7 +104,7 @@ export default function MisDatos() {
                 >
                   DATOS PERSONALES
                 </button>
-                {rol === "ALUMNO" && (
+                {esAlumno && (
                   <>
                     <button 
                       onClick={() => setActiveTab("MEDICOS")}
@@ -121,7 +129,7 @@ export default function MisDatos() {
                   <div className="animate-in fade-in duration-500">
                     <section>
                       <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                        <BadgeCheck size={16} className="text-[#093E7A]" /> Identidad y Contacto
+                        <BadgeCheck size={16} className="text-[#093E7A]" /> Identidad y Laboral
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-12">
                         <div className="flex flex-col">
@@ -137,15 +145,19 @@ export default function MisDatos() {
                           <input className="custom-input text-slate-800 font-medium" readOnly value={datos.dni} />
                         </div>
 
-                        {/* Género solo para Alumnos */}
-                        {rol === "ALUMNO" && (
-                          <div className="flex flex-col">
-                            <label className="text-xs font-bold text-slate-500 uppercase mb-1">Género</label>
-                            <input className="custom-input text-slate-800 font-medium" readOnly value={datos.genero === 'M' ? 'Masculino' : 'Femenino'} />
-                          </div>
+                        {esAlumno && (
+                          <>
+                            <div className="flex flex-col">
+                              <label className="text-xs font-bold text-slate-500 uppercase mb-1">Género</label>
+                              <input className="custom-input text-slate-800 font-medium" readOnly value={datos.genero === 'M' ? 'Masculino' : 'Femenino'} />
+                            </div>
+                            <div className="flex flex-col lg:col-span-2">
+                              <label className="text-xs font-bold text-slate-500 uppercase mb-1">Dirección</label>
+                              <input className="custom-input text-slate-800 font-medium" readOnly value={datos.direccion || "No registrada"} />
+                            </div>
+                          </>
                         )}
 
-                        {/* Especialidad solo para Docentes */}
                         {rol === "DOCENTE" && (
                           <div className="flex flex-col">
                             <label className="text-xs font-bold text-slate-500 uppercase mb-1">Especialidad</label>
@@ -153,16 +165,7 @@ export default function MisDatos() {
                           </div>
                         )}
 
-                        {/* Dirección solo para Alumnos */}
-                        {rol === "ALUMNO" && (
-                          <div className="flex flex-col lg:col-span-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase mb-1">Dirección de Residencia</label>
-                            <input className="custom-input text-slate-800 font-medium" readOnly value={datos.direccion || "No registrada"} />
-                          </div>
-                        )}
-
-                        {/* Email y Teléfono (Disponibles en Docente) */}
-                        {rol === "DOCENTE" && (
+                        {esPersonal && (
                           <>
                             <div className="flex flex-col">
                               <label className="text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
@@ -172,7 +175,7 @@ export default function MisDatos() {
                               </div>
                             </div>
                             <div className="flex flex-col">
-                              <label className="text-xs font-bold text-slate-500 uppercase mb-1">Correo Institucional</label>
+                              <label className="text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
                               <div className="flex items-center gap-2 custom-input">
                                 <span className="text-slate-800 font-medium">{datos.email || "Sin registrar"}</span>
                                 <Mail size={14} className="text-slate-300 ml-auto" />
@@ -186,7 +189,7 @@ export default function MisDatos() {
                 )}
 
                 {/* TAB: DATOS MÉDICOS (Solo Alumnos) */}
-                {activeTab === "MEDICOS" && rol === "ALUMNO" && (
+                {activeTab === "MEDICOS" && esAlumno && (
                   <div className="animate-in slide-in-from-bottom-4 duration-500">
                     <section>
                       <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
@@ -203,17 +206,17 @@ export default function MisDatos() {
                 )}
 
                 {/* TAB: FAMILIARES (Solo Alumnos) */}
-                {activeTab === "FAMILIARES" && rol === "ALUMNO" && (
+                {activeTab === "FAMILIARES" && esAlumno && (
                   <div className="animate-in fade-in duration-500">
                     <section>
                       <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                        <User size={16} className="text-[#093E7A]" /> Contactos de Emergencia y Familiares
+                        <User size={16} className="text-[#093E7A]" /> Familiares
                       </h3>
                       <div className="grid grid-cols-1 gap-4">
                         {familiares && familiares.length > 0 ? familiares.map((fam: any, idx: number) => (
-                          <div key={idx} className="p-6 border border-slate-100 rounded-xl bg-slate-50 flex flex-col md:flex-row justify-between items-center hover:bg-slate-100 transition-colors">
+                          <div key={idx} className="p-6 border border-slate-100 rounded-xl bg-slate-50 flex flex-col md:flex-row justify-between items-center">
                             <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold">
+                              <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold uppercase">
                                 {fam.nombre[0]}
                               </div>
                               <div>
@@ -228,13 +231,13 @@ export default function MisDatos() {
                               </div>
                               <div>
                                 <p className="text-[10px] font-black text-slate-400 uppercase">Contacto</p>
-                                <p className="text-sm font-medium text-slate-700">{fam.telefono || 'Sin número'}</p>
+                                <p className="text-sm font-medium text-slate-700">{fam.telefono || '---'}</p>
                               </div>
                             </div>
                           </div>
                         )) : (
-                          <div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                            <p className="text-slate-400 italic">No hay familiares registrados en el sistema.</p>
+                          <div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-400 italic">
+                            No hay familiares registrados.
                           </div>
                         )}
                       </div>
