@@ -5,7 +5,8 @@ import { useConfiguracion } from '@/src/hooks/useConfiguracion';
 import ImageUpload from '@/src/components/utils/ImageUpload';
 import { uploadToCloudinary } from "@/src/components/utils/cloudinary";
 import * as LucideIcons from "lucide-react";
-import { Save, Home, Users, Footprints, Loader2} from 'lucide-react';
+import HeaderPanel from '@/src/components/Campus/PanelControl/Header';
+import { Save, Home, Users, Footprints, Loader2,ChevronRight} from 'lucide-react';
 import { toast } from "sonner";
 
 
@@ -75,81 +76,114 @@ export default function GestionWebPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar de Tabs */}
-      <div className="w-64 bg-white border-r p-6 space-y-2">
-        <h2 className="font-black text-xl mb-8 text-[#701C32]">Editor Web</h2>
-        {SECCIONES.map(s => (
-          <button
-            key={s.id}
-            onClick={() => setTab(s.id)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${tab === s.id ? 'bg-[#701C32] text-white shadow-lg' : 'text-gray-500 hover:bg-gray-100'}`}
-          >
-            <s.icon size={20} /> {s.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Formulario Dinámico */}
-      <div className="flex-1 p-10 overflow-y-auto">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-black">Editando: {SECCIONES.find(s => s.id === tab)?.label}</h1>
-            <button onClick={handleSave} className="flex items-center gap-2 bg-[#093E7A] text-white px-8 py-3 rounded-2xl font-black hover:scale-105 transition-all">
-              <Save size={20} /> GUARDAR TODO
-            </button>
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
+      <HeaderPanel />
+      {/* BARRA SUPERIOR (HEADER) */}
+      <div className="bg-white px-8">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-10">
+            <div className="text-2xl font-black text-[#701C32] tracking-tighter uppercase">
+              Editor Web
+            </div>
+            
+            {/* NAVEGACIÓN ESTILO TABS */}
+            <div className="hidden md:flex bg-slate-100 p-1 rounded-2xl">
+              {SECCIONES.map(s => (
+                <div
+                  key={s.id}
+                  onClick={() => setTab(s.id)}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm cursor-pointer transition-all ${
+                    tab === s.id 
+                    ? 'bg-white text-[#701C32] shadow-sm scale-100' 
+                    : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <s.icon size={16} /> {s.label}
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="space-y-6 bg-white p-8 rounded-[2rem] shadow-sm border">
+          <div 
+            onClick={handleSave}
+            className="flex items-center gap-2 bg-[#093E7A] text-white px-6 py-3 rounded-xl font-bold cursor-pointer hover:bg-[#072d59] transition-all shadow-lg shadow-blue-900/10 active:scale-95"
+          >
+            <Save size={18} /> GUARDAR CAMBIOS
+          </div>
+        </div>
+      </div>
+
+      {/* CUERPO DEL EDITOR */}
+      <div className="flex-1 p-6 md:p-12">
+        <div className="max-w-5xl mx-auto">
+          
+          {/* TÍTULO DE SECCIÓN */}
+          <div className="mb-10 flex items-center gap-3">
+            <div className="text-slate-400 font-medium">Panel de Control</div>
+            <ChevronRight size={16} className="text-slate-300" />
+            <div className="text-[#701C32] font-bold uppercase tracking-widest text-sm">
+              {SECCIONES.find(s => s.id === tab)?.label}
+            </div>
+          </div>
+
+          {/* LISTADO DE CAMPOS EN CARDS */}
+          <div className="space-y-8">
             {SECCIONES.find(s => s.id === tab)?.campos.map(campo => (
-              <div key={campo.clave}>
+              <div key={campo.clave} className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-8 transition-all hover:shadow-md">
+                
                 {campo.tipo === 'enfoques' || campo.tipo === 'niveles' ? (
-  <EditorListaDinamica
-    tipo={campo.tipo}
-    data={getJsonVal(campo.clave, [])}
-    onChange={(newData) => updateField(campo.clave, JSON.stringify(newData))}
-  />
-) :
-                  campo.tipo === 'image' ? (
-                    <div className="relative">
-                      <ImageUpload
-                        label={campo.label}
-                        initialImage={getVal(campo.clave)}
-                        onImageChange={async (file) => {
-                          if (file) {
-                            setUploadingField(campo.clave); // Bloqueamos el guardado
-                            try {
-                              const url = await uploadToCloudinary(file);
-                              if (url) {
-                                updateField(campo.clave, url); // Guardamos la URL de Cloudinary en el estado
-                                toast.success("Imagen lista para guardar");
-                              }
-                            } catch (err) {
-                              toast.error("Error al subir imagen");
-                            } finally {
-                              setUploadingField(null);
+                  <EditorListaDinamica
+                    tipo={campo.tipo}
+                    data={getJsonVal(campo.clave, [])}
+                    onChange={(newData) => updateField(campo.clave, JSON.stringify(newData))}
+                  />
+                ) : campo.tipo === 'image' ? (
+                  <div className="relative">
+                    <ImageUpload
+                      label={campo.label}
+                      initialImage={getVal(campo.clave)}
+                      onImageChange={async (file) => {
+                        if (file) {
+                          setUploadingField(campo.clave);
+                          try {
+                            const url = await uploadToCloudinary(file);
+                            if (url) {
+                              updateField(campo.clave, url);
+                              toast.success("Imagen lista para guardar");
                             }
+                          } catch (err) {
+                            toast.error("Error al subir imagen");
+                          } finally {
+                            setUploadingField(null);
                           }
-                        }}
-                      />
-                      {uploadingField === campo.clave && (
-                        <div className="absolute inset-0 bg-white/50 flex items-center justify-center rounded-3xl">
-                          <Loader2 className="animate-spin text-[#093E7A]" />
-                        </div>
-                      )}
+                        }
+                      }}
+                    />
+                    {uploadingField === campo.clave && (
+                      <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-3xl backdrop-blur-[2px]">
+                        <Loader2 className="animate-spin text-[#093E7A]" size={32} />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between px-1">
+                      <div className="text-sm font-black text-slate-800 uppercase tracking-tight">
+                        {campo.label}
+                      </div>
+                      <div className="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded-lg font-bold">
+                        CAMPO DE TEXTO
+                      </div>
                     </div>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest px-1">{campo.label}</label>
-                      <textarea
-                        className="w-full border-gray-100 bg-gray-50 rounded-xl p-4 text-sm font-medium focus:bg-white focus:ring-2 focus:ring-[#093E7A]/10 transition-all"
-                        rows={campo.tipo === 'textarea' ? 4 : 1}
-                        value={getVal(campo.clave)}
-                        onChange={(e) => updateField(campo.clave, e.target.value)}
-                      />
-                    </div>
-                  )
-                }
+                    <textarea
+                      className="w-full border-2 border-slate-100 bg-slate-50/50 rounded-2xl p-5 text-base font-medium focus:bg-white focus:border-[#093E7A] focus:ring-4 focus:ring-[#093E7A]/5 outline-none transition-all placeholder:text-slate-400"
+                      rows={campo.tipo === 'textarea' ? 5 : 1}
+                      placeholder={`Escribe aquí el contenido para ${campo.label.toLowerCase()}...`}
+                      value={getVal(campo.clave)}
+                      onChange={(e) => updateField(campo.clave, e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -160,8 +194,8 @@ export default function GestionWebPage() {
 }
 
 const ICONOS_SUGERIDOS = [
-  "Beaker", "Book", "BookOpen", "GraduationCap", "Trophy", "Music", "Palette", 
-  "Dribbble", "Baby", "Award", "Lightbulb", "Library", "Microscope", "Globe", 
+  "Beaker", "Book", "BookOpen", "GraduationCap", "Trophy", "Music", "Palette",
+  "Dribbble", "Baby", "Award", "Lightbulb", "Library", "Microscope", "Globe",
   "Calculator", "Languages", "Users", "Star", "Heart", "Rocket"
 ];
 
@@ -169,7 +203,7 @@ function EditorListaDinamica({ data, onChange, tipo }: { data: any[], onChange: 
   const [selectorAbierto, setSelectorAbierto] = useState<{ index: number, campo: string } | null>(null);
 
   const agregar = () => {
-    const nuevoItem = tipo === 'enfoques' 
+    const nuevoItem = tipo === 'enfoques'
       ? { titulo: "", descripcion: "", icon: "Beaker", badge: "Lightbulb" }
       : { titulo: "", descripcion: "", icon: "BookOpen" };
     onChange([...data, nuevoItem]);
@@ -195,7 +229,7 @@ function EditorListaDinamica({ data, onChange, tipo }: { data: any[], onChange: 
       <div className="grid gap-4">
         {data.map((item, i) => (
           <div key={i} className="relative group bg-white p-6 rounded-[1.5rem] border border-gray-200 shadow-sm hover:shadow-md transition-all">
-            <button 
+            <button
               onClick={() => onChange(data.filter((_, idx) => idx !== i))}
               className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 hover:text-white"
             >
@@ -207,7 +241,7 @@ function EditorListaDinamica({ data, onChange, tipo }: { data: any[], onChange: 
               <div className="md:col-span-3 flex flex-row md:flex-col gap-4 justify-center items-center bg-gray-50 p-4 rounded-2xl border border-dashed border-gray-300">
                 <div className="text-center">
                   <p className="text-[9px] font-black text-gray-400 uppercase mb-2">Icono Principal</p>
-                  <button 
+                  <button
                     onClick={() => setSelectorAbierto({ index: i, campo: 'icon' })}
                     className="w-16 h-16 bg-white rounded-2xl border-2 border-[#093E7A]/20 flex items-center justify-center text-[#093E7A] hover:border-[#093E7A] hover:bg-[#093E7A]/5 transition-all"
                   >
@@ -221,7 +255,7 @@ function EditorListaDinamica({ data, onChange, tipo }: { data: any[], onChange: 
                 {tipo === 'enfoques' && (
                   <div className="text-center">
                     <p className="text-[9px] font-black text-gray-400 uppercase mb-2">Badge</p>
-                    <button 
+                    <button
                       onClick={() => setSelectorAbierto({ index: i, campo: 'badge' })}
                       className="w-12 h-12 bg-white rounded-xl border-2 border-[#701C32]/20 flex items-center justify-center text-[#701C32] hover:border-[#701C32] hover:bg-[#701C32]/5 transition-all"
                     >
@@ -236,13 +270,13 @@ function EditorListaDinamica({ data, onChange, tipo }: { data: any[], onChange: 
 
               {/* TEXTOS */}
               <div className="md:col-span-9 space-y-4">
-                <input 
+                <input
                   className="w-full text-lg font-black text-[#093E7A] border-b border-gray-100 focus:border-[#093E7A] outline-none transition-all"
                   placeholder="Título del enfoque..."
                   value={item.titulo}
                   onChange={e => actualizar(i, 'titulo', e.target.value)}
                 />
-                <textarea 
+                <textarea
                   className="w-full text-sm text-gray-600 bg-gray-50 p-3 rounded-xl border-none focus:ring-2 focus:ring-[#093E7A]/10 outline-none resize-none"
                   rows={3}
                   placeholder="Escribe la descripción aquí..."

@@ -1,98 +1,149 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import HeaderPanel from "@/src/components/Campus/PanelControl/Header";
-import {
-  FileUp,
-  FileText,
-  Download,
-  Eye,
-  Plus,
-  ChevronRight
-} from "lucide-react";
+import { Plus, ChevronRight, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import EventForm from '@/src/components/Evento/EventForm';
-import { useEventos } from '@/src/hooks/useEvento';
 import { Evento } from '@/src/interfaces/evento';
+import { AnioEscolar } from "@/src/interfaces/academic"; // Asegúrate de que esta interfaz exista
 import { ConfirmModal } from '@/src/components/utils/ConfirmModal';
 import { useRouter } from 'next/navigation';
 import { EventRow } from '@/src/components/Evento/EventRow';
 
 export default function CalendarioPage() {
   const router = useRouter();
-  // Llamamos al endpoint "actual" solamente
-  const { eventos, loading, refetch } = useEventos('actual');
-
+  
+  // --- ESTADOS PARA AÑOS ACADÉMICOS ---
+  const [anios, setAnios] = useState<AnioEscolar[]>([]);
+  const [anioSeleccionado, setAnioSeleccionado] = useState<string>("");
+  
+  // --- ESTADOS PARA EVENTOS ---
+  const [eventos, setEventos] = useState<Evento[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filtro, setFiltro] = useState("");
+  
+  // Modales
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [eventoActivo, setEventoActivo] = useState<Evento | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [idToDelete, setIdToDelete] = useState<number | null>(null);
-  const handleDelete = (id: number) => {
-    setIdToDelete(id);
-    setIsDeleteModalOpen(true);
-  };
+
+  // 1. Cargar Años Académicos
+  useEffect(() => {
+    const fetchAnios = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/anios/`);
+        if (!res.ok) throw new Error("Error al obtener años");
+        const data: AnioEscolar[] = await res.json();
+        setAnios(data);
+
+        const actual = data.find(a => a.activo);
+        if (actual) {
+          setAnioSeleccionado(String(actual.id_anio_escolar));
+        } else if (data.length > 0) {
+          setAnioSeleccionado(String(data[0].id_anio_escolar));
+        }
+      } catch (error) {
+        toast.error("No se pudieron cargar los periodos académicos");
+      }
+    };
+    fetchAnios();
+  }, []);
+
+  // 2. Cargar Eventos por Año (Memorizado)
+  const fetchEventos = useCallback(async (anioId: string) => {
+    if (!anioId) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/eventos/por-anio/${anioId}`);
+      if (!res.ok) throw new Error("Error al cargar eventos");
+      const data = await res.json();
+      setEventos(data);
+    } catch (error) {
+      toast.error("Error al obtener eventos del periodo");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // 3. Disparar carga cuando cambie el año
+  useEffect(() => {
+    fetchEventos(anioSeleccionado);
+  }, [anioSeleccionado, fetchEventos]);
+
   const confirmDelete = async () => {
     if (!idToDelete) return;
-
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/eventos/${idToDelete}`, {
         method: 'DELETE'
       });
-
       if (response.ok) {
-        toast.success("Evento eliminado correctamente");
-        refetch();
-      } else {
-        toast.error("Error al eliminar el evento");
+        toast.success("Evento eliminado");
+        fetchEventos(anioSeleccionado); // Refetch manual
       }
     } catch (error) {
-      toast.error("Ocurrió un error al conectar con el servidor");
+      toast.error("Error al conectar con el servidor");
     } finally {
+      setIsDeleteModalOpen(false);
       setIdToDelete(null);
     }
   };
-  const [filtro, setFiltro] = useState("");
 
-  // Lógica de filtrado
   const eventosFiltrados = eventos.filter(ev =>
     ev.titulo.toLowerCase().includes(filtro.toLowerCase()) ||
     ev.tipo_evento?.toLowerCase().includes(filtro.toLowerCase())
   );
-  // Limitamos a los primeros 5 directamente en el renderizado
-  const eventosRecientes = eventosFiltrados.slice(0, 5);
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#F8FAFC] antialiased">
-      {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
-
         <HeaderPanel />
 
         <div className="flex-1 overflow-y-auto p-8 space-y-12 custom-scrollbar">
-
-          
-
-          {/* SECCIÓN 02: GESTIÓN DE EVENTOS */}
           <section className="max-w-6xl mx-auto w-full">
+            
+            {/* HEADER DE SECCIÓN CON SELECTOR */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
               <div>
-                <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Gestión de Eventos del Año</h3>
-                <p className="text-sm text-gray-500 font-medium mt-1">Administra fechas clave, exámenes y ceremonias institucionales.</p>
+                <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">
+                  Gestión de Eventos
+                </h3>
+                <div className="flex items-center gap-3 mt-2">
+                  <span className="text-sm font-bold text-gray-500">Periodo:</span>
+                  <div className="relative">
+                    <select
+                      value={anioSeleccionado}
+                      onChange={(e) => setAnioSeleccionado(e.target.value)}
+                      className="appearance-none bg-white border border-gray-200 text-[#093E7A] text-xs py-1.5 pl-3 pr-8 rounded-lg focus:outline-none font-black uppercase tracking-wider cursor-pointer"
+                    >
+                      {anios.map(a => (
+                        <option key={a.id_anio_escolar} value={a.id_anio_escolar}>
+                          Año {a.id_anio_escolar}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
               </div>
+
               <div className="flex gap-3">
                 <input
                   type="text"
-                  placeholder="Buscar evento o categoría..."
-                  className="px-4 py-2 border rounded-xl text-sm"
+                  placeholder="Buscar evento..."
+                  className="px-4 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-[#093E7A]/20 outline-none"
                   onChange={(e) => setFiltro(e.target.value)}
                 />
                 <button
                   onClick={() => { setEventoActivo(null); setIsModalOpen(true); }}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-[#093E7A] text-white rounded-xl"
+                  className="flex items-center gap-2 px-6 py-2.5 bg-[#093E7A] text-white rounded-xl hover:bg-[#072d5a] transition-colors"
                 >
                   <Plus size={18} /> Agregar Evento
                 </button>
               </div>
             </div>
 
+            {/* TABLA DE EVENTOS */}
             <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
@@ -105,20 +156,39 @@ export default function CalendarioPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {eventosRecientes.map((evento) => (
-                      <EventRow
-                        key={evento.id_evento}
-                        evento={evento}
-                        onEdit={() => { setEventoActivo(evento); setIsModalOpen(true); }}
-                        onDelete={() => handleDelete(evento.id_evento)}
-                      />
-                    ))}
+                    {loading ? (
+                      <tr>
+                        <td colSpan={4} className="py-20 text-center">
+                          <Loader2 className="animate-spin mx-auto text-[#093E7A]" size={32} />
+                          <p className="text-xs text-gray-400 font-bold mt-2 uppercase tracking-widest">Cargando eventos...</p>
+                        </td>
+                      </tr>
+                    ) : eventosFiltrados.length > 0 ? (
+                      eventosFiltrados.slice(0, 10).map((evento) => (
+                        <EventRow
+                          key={evento.id_evento}
+                          evento={evento}
+                          onEdit={() => { setEventoActivo(evento); setIsModalOpen(true); }}
+                          onDelete={() => { setIdToDelete(evento.id_evento); setIsDeleteModalOpen(true); }}
+                        />
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="py-20 text-center text-gray-400 text-sm">
+                          No se encontraron eventos para el año {anioSeleccionado}
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
+              
               <div className="p-5 bg-gray-50/50 flex justify-center">
-                <button onClick={() => router.push('/campus/panel-control/pagina-web/calendario-anual/todos')} className="flex items-center gap-2 text-[11px] font-black text-[#093E7A] uppercase tracking-widest hover:gap-4 transition-all">
-                  Ver todos los eventos del año
+                <button 
+                  onClick={() => router.push(`/campus/panel-control/pagina-web/calendario-anual/todos?anio=${anioSeleccionado}`)} 
+                  className="flex items-center gap-2 text-[11px] font-black text-[#093E7A] uppercase tracking-widest hover:gap-4 transition-all"
+                >
+                  Ver todos los eventos de este periodo
                   <ChevronRight size={14} strokeWidth={3} />
                 </button>
               </div>
@@ -126,33 +196,38 @@ export default function CalendarioPage() {
           </section>
         </div>
       </div>
+
+      {/* MODAL DE CREACIÓN/EDICIÓN */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-2xl w-96">
-            <h2 className="mb-4 font-black">{eventoActivo ? "Editar Evento" : "Nuevo Evento"}</h2>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl">
+            <h2 className="mb-6 text-lg font-black text-[#093E7A] uppercase">
+              {eventoActivo ? "Editar Evento" : "Nuevo Evento"}
+            </h2>
             <EventForm
               evento={eventoActivo}
+              // IMPORTANTE: Pasar el año seleccionado al formulario para que se guarde correctamente
+              defaultAnio={anioSeleccionado} 
               onClose={() => setIsModalOpen(false)}
               onSuccess={() => {
-                toast.success(eventoActivo ? "Evento actualizado" : "Evento creado con éxito");
-                refetch();
+                toast.success(eventoActivo ? "Evento actualizado" : "Evento creado");
+                fetchEventos(anioSeleccionado);
                 setIsModalOpen(false);
               }}
             />
           </div>
         </div>
       )}
+
       <ConfirmModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={confirmDelete}
         title="Eliminar evento"
-        message="¿Estás seguro de que deseas eliminar este evento? Esta acción no se puede deshacer."
+        message="¿Estás seguro? Esta acción no se puede deshacer."
         confirmText="Eliminar"
         type="danger"
       />
     </div>
-
   );
 }
-
