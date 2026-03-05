@@ -10,14 +10,15 @@ import {
   Settings, 
   X, 
   LayoutDashboard,
-  ClipboardList // <-- Icono nuevo importado
+  ClipboardList,
+  UserCog // <-- Icono nuevo importado para Gestión de Personal
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 export function AsidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const pathname = usePathname();
 
-  // Función auxiliar para verificar exactitud (usada en la mayoría)
+  // Función para verificar si el link está activo
   const isActive = (path: string) => pathname === path;
 
   return (
@@ -65,12 +66,19 @@ export function AsidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
             href="/campus/panel-control/gestion-estudiantes" 
             icon={<Users size={20} />} 
             label="Gestión de Estudiantes" 
-            active={isActive("/campus/panel-control/gestion-estudiantes")}
+            active={isActive("/campus/panel-control/gestion-estudiantes") || pathname.includes("/gestion-estudiantes/")}
             onClick={onClose} 
           />
 
-          {/* --- NUEVO APARTADO: TRÁMITES --- */}
-          {/* Usamos 'includes' para que siga activo si entras a editar o ver detalles */}
+          {/* --- NUEVO APARTADO: GESTIÓN DE PERSONAL --- */}
+          <SidebarLink 
+            href="/campus/panel-control/gestion-personal" 
+            icon={<UserCog size={20} />} 
+            label="Gestión de Personal" 
+            active={pathname.includes("/panel-control/gestion-personal")}
+            onClick={onClose} 
+          />
+
           <SidebarLink 
             href="/campus/panel-control/tramites/configuracion" 
             icon={<ClipboardList size={20} />} 
@@ -103,7 +111,16 @@ export function AsidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
             onClick={onClose} 
           />
 
-          
+          <div className="pt-8 mb-4">
+            <div className="text-white/30 text-[10px] uppercase font-black tracking-[0.2em] px-4 mb-4">Sistema</div>
+            <SidebarLink 
+              href="/ajustes" 
+              icon={<Settings size={20} />} 
+              label="Ajustes" 
+              active={isActive("/ajustes")}
+              onClick={onClose} 
+            />
+          </div>
         </nav>
 
         {/* Footer del Sidebar */}
