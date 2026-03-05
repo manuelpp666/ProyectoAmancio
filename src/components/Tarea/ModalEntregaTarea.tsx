@@ -91,6 +91,25 @@ export default function ModalEntregaTarea({ tarea, idUsuario, onClose, onRefresh
             <p className="text-gray-700 leading-relaxed text-sm">
               {tarea.descripcion || "Sin descripción adicional proporcionada por el docente."}
             </p>
+            {tarea.archivo_adjunto_url && (
+    <div className="mt-4 pt-4 border-t border-gray-200">
+      <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Material de apoyo:</p>
+      <a 
+        href={`${process.env.NEXT_PUBLIC_API_URL}${tarea.archivo_adjunto_url}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-3 p-3 bg-white border border-[#701C32]/20 rounded-xl hover:bg-[#701C32]/5 transition-all group"
+      >
+        <div className="bg-[#701C32] text-white p-2 rounded-lg group-hover:scale-110 transition-transform">
+          <ExternalLink size={18} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-[#701C32] truncate">Descargar Documento Adjunto</p>
+          <p className="text-[10px] text-gray-500 truncate">Material necesario para la actividad</p>
+        </div>
+      </a>
+    </div>
+  )}
           </div>
 
           {/* --- VISTA SI LA TAREA YA FUE ENTREGADA --- */}

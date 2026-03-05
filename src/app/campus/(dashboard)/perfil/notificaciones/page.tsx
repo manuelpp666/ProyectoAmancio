@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useUser } from "@/src/context/userContext";
-import { Megaphone, Star, Wallet, Calendar, CheckCheck, Clock, Loader2 } from "lucide-react";
+import { Megaphone, Star, Wallet, Calendar, CheckCheck, Clock, Loader2, HeartPulse } from "lucide-react";
 
 // Helper para definir estilos e iconos según el tipo de notificación
 const getNotifStyle = (tipo: string) => {
@@ -11,6 +11,7 @@ const getNotifStyle = (tipo: string) => {
     case "nota": return { icono: Star, color: "text-yellow-600", bg: "bg-yellow-50" };
     case "pago": return { icono: Wallet, color: "text-red-600", bg: "bg-red-50" };
     case "evento": return { icono: Calendar, color: "text-purple-600", bg: "bg-purple-50" };
+    case "cita": return { icono: HeartPulse, color: "text-blue-600", bg: "bg-blue-50" };
     default: return { icono: Megaphone, color: "text-blue-600", bg: "bg-blue-50" };
   }
 };

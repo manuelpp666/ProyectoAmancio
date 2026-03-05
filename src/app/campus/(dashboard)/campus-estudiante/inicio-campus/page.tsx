@@ -3,7 +3,7 @@
 import { useUser } from "@/src/context/userContext";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Megaphone, Star, Wallet, Clock, Loader2, Calendar, CheckCheck } from "lucide-react";
+import { ArrowRight, Megaphone, Star, Wallet, Clock, Loader2, Calendar, CheckCheck, HeartPulse } from "lucide-react";
 import Link from "next/link";
 
 
@@ -34,6 +34,7 @@ const getIcon = (tipo: string) => {
         case "nota": return Star;
         case "pago": return Wallet;
         case "evento": return Calendar;
+        case "cita": return HeartPulse;
         default: return Megaphone;
     }
 };

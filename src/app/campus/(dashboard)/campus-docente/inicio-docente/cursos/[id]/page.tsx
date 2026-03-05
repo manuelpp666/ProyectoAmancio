@@ -95,31 +95,7 @@ export default function DetalleCursoDocente() {
   }, [idCarga, bimestre]);
 
   // Función para borrar tarea
-  const handleDeleteTarea = async (tarea: any) => {
-    // Verificamos en el front antes de intentar
-    if (tarea.total_entregas > 0) {
-      toast.error("No se puede eliminar: Ya hay alumnos que subieron archivos.");
-      return;
-    }
 
-    if (!confirm(`¿Estás seguro de eliminar "${tarea.titulo}"?`)) return;
-
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/virtual/tareas/${tarea.id_tarea}`, {
-        method: 'DELETE'
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.detail || "Error al eliminar");
-      }
-
-      toast.success("Tarea eliminada correctamente");
-      fetchSabana();
-    } catch (error: any) {
-      toast.error(error.message);
-    }
-  };
   // 1. Esta función se llama al hacer clic en el icono de basurero
   const openDeleteConfirm = (tarea: any) => {
     // Verificación de seguridad (Archivos existentes)
@@ -261,9 +237,9 @@ export default function DetalleCursoDocente() {
                   <th className="px-6 py-4 min-w-[250px]">Apellidos y Nombres</th>
                   {datos?.evaluaciones.map((evalu: any) => (
                     <th key={evalu.id_tarea} className="px-4 py-4 text-center w-24 border-x border-gray-100">
-    <div className="text-blue-800 font-bold">{evalu.titulo}</div>
-    <div className="text-[10px] text-gray-400 font-normal">{evalu.peso}% del total</div>
-  </th>
+                      <div className="text-blue-800 font-bold">{evalu.titulo}</div>
+                      <div className="text-[10px] text-gray-400 font-normal">{evalu.peso}% del total</div>
+                    </th>
                   ))}
                   <th className="px-6 py-4 text-center w-24 font-bold text-gray-900 bg-gray-50">Promedio</th>
                 </tr>
@@ -311,12 +287,12 @@ export default function DetalleCursoDocente() {
                 </div>
                 <div className="flex gap-1">
                   <div className="bg-red-50 p-3 rounded-xl text-[#701C32] relative">
-      <FileText size={24} />
-      {/* Badge de peso */}
-      <span className="absolute -top-2 -right-2 bg-[#701C32] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-        {tarea.peso}%
-      </span>
-    </div>
+                    <FileText size={24} />
+                    {/* Badge de peso */}
+                    <span className="absolute -top-2 -right-2 bg-[#701C32] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                      {tarea.peso}%
+                    </span>
+                  </div>
                   <button
                     onClick={() => {
                       setTareaAEditar(tarea);

@@ -16,6 +16,7 @@ interface Tarea {
   entregado: boolean;
   descripcion?: string;
   nota?: number;
+  archivo_adjunto_url?: string;
   retroalimentacion_docente?: string; // Nuevo campo
   bimestre: number; // Nuevo campo
   peso: number;
