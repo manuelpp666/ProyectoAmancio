@@ -4,11 +4,11 @@ export interface Area {
 }
 
 export interface Seccion {
-  id_seccion: number;
+  id_seccion?: number;
   id_grado: number;
-  id_anio_escolar: string;
+  id_anio_escolar?: string;
   nombre: string;
-  vacantes: number;
+  vacantes?: number;
   grado?: Grado;
 }
 
@@ -27,16 +27,59 @@ export interface Nivel {
 
 export interface AnioEscolar {
   id_anio_escolar: string;
-  fecha_inicio: string;
-  fecha_fin: string;
+  fecha_inicio?: string;
+  fecha_fin?: string;
   activo: boolean;
-  tipo: 'REGULAR' | 'VERANO'; // Nuevo
+  tipo: 'REGULAR' | 'VERANO';
+  inicio_inscripcion?: string; 
+  fin_inscripcion?: string; 
 }
+
+export interface CursoDocente {
+  id_carga: number;
+  curso_nombre: string;
+  // Propiedades opcionales: no causarán error si el JSON no las trae
+  grado_nombre?: string;
+  seccion_nombre?: string;
+  alumnos?: number;
+  img?: string; 
+}
+
+export interface Tarea {
+  id_tarea: number;
+  titulo: string;
+  fecha_entrega: string;
+  curso?: string;
+  entregado: boolean;
+  descripcion?: string;
+  nota?: number;
+  archivo_adjunto_url?: string;
+  retroalimentacion_docente?: string; // Nuevo campo
+  bimestre: number; // Nuevo campo
+  peso: number;
+}
+
+export interface ResumenNotas {
+  nota_bimestre1?: number;
+  nota_bimestre2?: number;
+  nota_bimestre3?: number;
+  nota_bimestre4?: number;
+  promedio_final?: number;
+}
+
+export interface DetalleCurso {
+  curso_nombre: string;
+  docente_nombre: string;
+  tareas: Tarea[];
+  notas: ResumenNotas;
+}
+
 
 export interface Curso {
   id_curso: number;
   nombre: string;
   id_area: number;
+  docente?: string;
 }
 
 export interface PlanEstudio {

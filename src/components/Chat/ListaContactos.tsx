@@ -1,16 +1,6 @@
 import { Search, Loader2 } from "lucide-react";
-import { Contacto } from "@/src/interfaces/mensajeria";
+import { ListaProps } from "@/src/interfaces/mensajeria";
 
-interface ListaProps {
-  contactos: Contacto[];
-  chatActivoID: number | null;
-  setChatActivoID: (id: number | null) => void;
-  query: string;
-  setQuery: (q: string) => void;
-  resultadosBusqueda: any[];
-  estaBuscando: boolean;
-  seleccionarContacto: (contacto: any) => void;
-}
 
 export default function ListaContactos({
   contactos, chatActivoID, setChatActivoID, query, 

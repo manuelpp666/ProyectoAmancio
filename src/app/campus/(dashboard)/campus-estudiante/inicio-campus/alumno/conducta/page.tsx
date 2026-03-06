@@ -2,11 +2,11 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useUser } from "@/src/context/userContext";
+import { EstadoConducta } from "@/src/interfaces/datos_alumno";
 import { 
   ShieldCheck, 
   AlertTriangle, 
   History, 
-  TrendingDown, 
   Loader2, 
   Info,
   CheckCircle2,
@@ -15,22 +15,6 @@ import {
 
 } from "lucide-react";
 
-interface HistorialConducta {
-  fecha: string;
-  motivo: string;
-  puntos_restados: number;
-  nota_reglamento: string;
-}
-
-interface EstadoConducta {
-  id_usuario: number;
-  id_alumno: number;
-  puntaje_actual: number;
-  porcentaje_progreso: string;
-  estado_color: "Verde" | "Amarillo" | "Rojo";
-  total_reportes: number;
-  historial: HistorialConducta[];
-}
 
 export default function ConductaAlumnoPage() {
   const { id_usuario, loading: userLoading } = useUser();

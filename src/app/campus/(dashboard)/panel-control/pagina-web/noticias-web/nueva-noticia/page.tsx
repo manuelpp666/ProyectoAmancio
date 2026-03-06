@@ -22,10 +22,10 @@ export default function CrearNoticiaPage() {
     const toastId = toast.loading("Enviando noticia al servidor...");
 
     try {
-      
+
       const payloadConAutor = {
         ...noticiaPayload,
-        id_autor: id_usuario 
+        id_autor: id_usuario
       };
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/noticias/`, {
         method: "POST",
@@ -46,7 +46,7 @@ export default function CrearNoticiaPage() {
       setLoading(false);
     }
   };
-if (userLoading) return <div className="p-10 text-center">Cargando sesión...</div>;
+  if (userLoading) return <div className="p-10 text-center">Cargando sesión...</div>;
   return (
     <div className="min-h-screen bg-[#F6F7F8] flex flex-col">
       {/* Header Superior */}

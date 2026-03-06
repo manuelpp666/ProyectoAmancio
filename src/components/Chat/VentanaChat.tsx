@@ -1,14 +1,6 @@
 import { ArrowLeft, MoreVertical, Paperclip, Send, MessageSquare } from "lucide-react";
-import { Contacto } from "@/src/interfaces/mensajeria";
+import { ChatProps } from "@/src/interfaces/mensajeria";
 
-interface ChatProps {
-  contacto: Contacto | undefined;
-  setChatActivoID: (id: number | null) => void;
-  scrollRef: React.RefObject<HTMLDivElement | null>;
-  textoMensaje: string;
-  setTextoMensaje: (t: string) => void;
-  onEnviar: () => void;
-}
 
 export default function VentanaChat({ 
   contacto, setChatActivoID, scrollRef, textoMensaje, setTextoMensaje, onEnviar 

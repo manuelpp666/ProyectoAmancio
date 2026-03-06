@@ -5,27 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Megaphone, Star, Wallet, Clock, Loader2, Calendar, CheckCheck, HeartPulse } from "lucide-react";
 import Link from "next/link";
-
-
-interface Curso {
-    id: number;
-    nombre: string;
-    docente: string;
-}
-
-interface Tarea {
-    id: number;
-    curso: string;
-    titulo: string;
-    fecha: string;
-}
-
-interface DashboardData {
-    nombre_completo: string;
-    cursos: Curso[];
-    tareas_pendientes: Tarea[];
-    anio_actual: string;
-}
+import { DashboardData } from "@/src/interfaces/alumno";
 
 // Función helper para seleccionar iconos
 const getIcon = (tipo: string) => {
@@ -60,63 +40,43 @@ export default function DashboardPage() {
     }, [role, loading, router]);
 
     useEffect(() => {
-        const fetchDashboardData = async () => {
+        const fetchAllData = async () => {
             if (!id_usuario) return;
-            try {
-                // Cargar dashboard general
-                const resData = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/virtual/api/dashboard/estudiante/${id_usuario}`);
-                const json: DashboardData = await resData.json();
-                setData(json);
 
-                // Cargar resumen de eventos
-                const resEventos = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/eventos/resumen`);
-                const jsonEventos = await resEventos.json();
+            setLoadingData(true);
+            try {
+                // Ejecutamos las peticiones en paralelo para mayor velocidad
+                const [resDash, resEventos, resNotif] = await Promise.all([
+                    fetch(`${process.env.NEXT_PUBLIC_API_URL}/virtual/api/dashboard/estudiante/${id_usuario}`),
+                    fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/eventos/resumen`),
+                    fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/notificaciones/${id_usuario}`)
+                ]);
+
+                const [jsonDash, jsonEventos, jsonNotif] = await Promise.all([
+                    resDash.json(),
+                    resEventos.json(),
+                    resNotif.json()
+                ]);
+
+                setData(jsonDash);
                 setResumenEventos(jsonEventos);
+                setNotificaciones(jsonNotif.notificaciones?.slice(0, 4) || []);
 
             } catch (error) {
-                console.error("Error al cargar datos", error);
+                console.error("Error al cargar la información del dashboard:", error);
             } finally {
                 setLoadingData(false);
             }
         };
-        if (!loading && id_usuario) fetchDashboardData();
-    }, [id_usuario, loading]);
 
-    // Efecto para cargar notificaciones (Limitado a 4)
-    useEffect(() => {
-        const fetchNotificaciones = async () => {
-            if (!id_usuario) return;
-            try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/notificaciones/${id_usuario}`);
-                const json = await res.json();
-                // Tomamos solo las 4 primeras
-                setNotificaciones(json.notificaciones.slice(0, 4));
-            } catch (error) {
-                console.error("Error al cargar notificaciones", error);
-            }
-        };
-        if (!loading && id_usuario) fetchNotificaciones();
+        if (!loading && id_usuario) {
+            fetchAllData();
+        }
     }, [id_usuario, loading]);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            if (!id_usuario) return;
-            try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/virtual/api/dashboard/estudiante/${id_usuario}`);
-                const json: DashboardData = await res.json();
-                setData(json);
-            } catch (error) {
-                console.error("Error al cargar dashboard", error);
-            } finally {
-                setLoadingData(false);
-            }
-        };
-        fetchData();
-    }, [id_usuario]);
 
 
     // 3. Estado de carga mientras se recupera la sesión del localStorage
-    if (loading) {
+    if (loading || loadingData) {
         return (
             <div className="flex h-screen items-center justify-center">
                 <Loader2 className="animate-spin text-[#701C32]" size={48} />
@@ -124,7 +84,6 @@ export default function DashboardPage() {
         );
     }
 
-    // Si no hay rol (y ya terminó de cargar), no renderizamos nada para evitar parpadeos
     if (!role) return null;
 
     return (
@@ -175,13 +134,13 @@ export default function DashboardPage() {
                     {/* CURSOS RECIENTES */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                         {data?.cursos.map((curso) => (
-                            <div key={curso.id} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center text-center">
+                            <div key={curso.id_curso} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col items-center text-center">
                                 {/* ... tu imagen ... */}
                                 <div className="w-full text-left">
                                     <h4 className="font-bold text-gray-800 text-sm">{curso.nombre}</h4>
                                     <p className="text-[11px] text-gray-400 mb-4">{curso.docente}</p>
                                     <Link
-                                        href={`/campus/campus-estudiante/inicio-campus/cursos/mis-cursos/${curso.id}?anio=${data?.anio_actual}`}
+                                        href={`/campus/campus-estudiante/inicio-campus/cursos/mis-cursos/${curso.id_curso}?anio=${data?.anio_actual}`}
                                         className="text-[11px] font-black text-[#701C32] flex items-center gap-1 hover:gap-2 transition-all"
                                     >
                                         ENTRAR <ArrowRight size={12} />
@@ -200,12 +159,12 @@ export default function DashboardPage() {
                         <h3 className="text-[#701C32] font-bold text-sm uppercase mb-4 tracking-wide">Tareas Pendientes</h3>
                         <div className="space-y-3">
                             {data?.tareas_pendientes.map((tarea) => (
-                                <div key={tarea.id} className="bg-[#F8F9FA] rounded-lg p-3 border border-gray-100">
+                                <div key={tarea.id_tarea} className="bg-[#F8F9FA] rounded-lg p-3 border border-gray-100">
                                     <p className="text-[10px] font-bold text-[#701C32] mb-1 uppercase">{tarea.curso}</p>
                                     <p className="text-xs text-gray-700 font-medium mb-2 leading-snug">{tarea.titulo}</p>
                                     <div className="flex items-center gap-1 text-[10px] text-gray-400">
                                         <Clock size={12} />
-                                        {new Date(tarea.fecha).toLocaleDateString()}
+                                        {new Date(tarea.fecha_entrega).toLocaleDateString()}
                                     </div>
                                 </div>
                             ))}

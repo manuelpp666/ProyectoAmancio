@@ -3,20 +3,9 @@ import { useState, useEffect } from "react";
 import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
 import { toast } from "sonner";
 import { Pago, Solicitud } from "@/src/interfaces/finance";
-
+import { Grado } from "@/src/interfaces/academic";
+import { Tramite } from "@/src/interfaces/tramite";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-interface Grado { id_grado: number; nombre: string; }
-interface Tramite {
-  id_tipo_tramite: number;
-  nombre: string;
-  costo: number;
-  requisitos: string;
-  alcance: "TODOS" | "GRADOS";
-  grados_permitidos: string | null;
-  activo: boolean;
-  periodo_academico: "REGULAR" | "VERANO" | "AMBOS";
-}
 
 export default function GestionFinancieraPage() {
   // --- ESTADOS ---
@@ -480,7 +469,7 @@ export default function GestionFinancieraPage() {
 
                           <td className="p-4">
                             <span className={`px-2 py-1 rounded-full text-[10px] font-black ${p.estado === 'PAGADO' ? 'bg-green-100 text-green-700' :
-                                estaVencido ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                              estaVencido ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
                               }`}>
                               {estaVencido ? 'VENCIDO' : p.estado}
                             </span>

@@ -1,4 +1,4 @@
-import { Landmark, Building2, Banknote, Clock, FileText, Download } from "lucide-react";
+import { Landmark, Clock, FileText } from "lucide-react";
 
 export default function Page() {
   return (

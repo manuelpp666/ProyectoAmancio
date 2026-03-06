@@ -5,11 +5,8 @@ import Link from "next/link";
 import { BookOpen, Users, Clock, ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation"
 import { useState } from "react";
-interface CursoDocente {
-  id_carga: number;
-  nombre: string;
-  grado_seccion: string;
-}
+import { CursoDocente } from "@/src/interfaces/academic";
+
 
 export default function InicioDocentePage() {
 
@@ -18,31 +15,31 @@ export default function InicioDocentePage() {
   const router = useRouter();
   const { id_usuario, role, loading } = useUser();
   const [cursos, setCursos] = useState<CursoDocente[]>([]);
-const [resumenData, setResumenData] = useState({ cursos: 0, alumnos: 0, pendientes: 0 });
+  const [resumenData, setResumenData] = useState({ cursos: 0, alumnos: 0, pendientes: 0 });
   useEffect(() => {
-  const fetchData = async () => {
-    if (!id_usuario) return;
-    try {
-      // Llamadas en paralelo para mayor velocidad
-      const [resResumen, resCursos] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/resumen-docente/${id_usuario}`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/mis-cursos-docente-dashboard/${id_usuario}`)
-      ]);
-      
-      const dataResumen = await resResumen.json();
-      const dataCursos = await resCursos.json();
-      
-      setResumenData(dataResumen);
-      setCursos(dataCursos);
-    } catch (error) {
-      console.error("Error al cargar dashboard:", error);
-    }
-  };
+    const fetchData = async () => {
+      if (!id_usuario) return;
+      try {
+        // Llamadas en paralelo para mayor velocidad
+        const [resResumen, resCursos] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/resumen-docente/${id_usuario}`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/mis-cursos-docente-dashboard/${id_usuario}`)
+        ]);
 
-  if (!loading && role === "DOCENTE") {
-    fetchData();
-  }
-}, [id_usuario, loading, role]);
+        const dataResumen = await resResumen.json();
+        const dataCursos = await resCursos.json();
+
+        setResumenData(dataResumen);
+        setCursos(dataCursos);
+      } catch (error) {
+        console.error("Error al cargar dashboard:", error);
+      }
+    };
+
+    if (!loading && role === "DOCENTE") {
+      fetchData();
+    }
+  }, [id_usuario, loading, role]);
   // 2. Proteger la ruta: Si no es estudiante, lo expulsamos
   useEffect(() => {
     if (!loading) {
@@ -68,10 +65,10 @@ const [resumenData, setResumenData] = useState({ cursos: 0, alumnos: 0, pendient
 
 
   const tarjetas = [
-  { label: "Cursos Asignados", val: resumenData.cursos.toString(), icon: BookOpen, color: "bg-blue-50 text-blue-600" },
-  { label: "Alumnos Totales", val: resumenData.alumnos.toString(), icon: Users, color: "bg-green-50 text-green-600" },
-  { label: "Pendientes de Calificar", val: resumenData.pendientes.toString(), icon: Clock, color: "bg-orange-50 text-orange-600" },
-];
+    { label: "Cursos Asignados", val: resumenData.cursos.toString(), icon: BookOpen, color: "bg-blue-50 text-blue-600" },
+    { label: "Alumnos Totales", val: resumenData.alumnos.toString(), icon: Users, color: "bg-green-50 text-green-600" },
+    { label: "Pendientes de Calificar", val: resumenData.pendientes.toString(), icon: Clock, color: "bg-orange-50 text-orange-600" },
+  ];
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -83,16 +80,16 @@ const [resumenData, setResumenData] = useState({ cursos: 0, alumnos: 0, pendient
       {/* TARJETAS RESUMEN */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {tarjetas.map((item, i) => (
-  <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${item.color}`}>
-      <item.icon size={24} />
-    </div>
-    <div>
-      <p className="text-2xl font-bold text-gray-800">{item.val}</p>
-      <p className="text-sm text-gray-500">{item.label}</p>
-    </div>
-  </div>
-))}
+          <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${item.color}`}>
+              <item.icon size={24} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">{item.val}</p>
+              <p className="text-sm text-gray-500">{item.label}</p>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* ACCIONES RÁPIDAS */}
@@ -114,9 +111,9 @@ const [resumenData, setResumenData] = useState({ cursos: 0, alumnos: 0, pendient
               >
                 <div className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow bg-white">
                   <span className="bg-[#701C32]/10 text-[#701C32] text-xs font-bold px-2 py-1 rounded">
-                    {c.grado_seccion}
+                    {c.grado_nombre}
                   </span>
-                  <h3 className="font-bold text-gray-900 mt-2 group-hover:text-[#701C32]">{c.nombre}</h3>
+                  <h3 className="font-bold text-gray-900 mt-2 group-hover:text-[#701C32]">{c.curso_nombre}</h3>
                 </div>
               </Link>
             ))

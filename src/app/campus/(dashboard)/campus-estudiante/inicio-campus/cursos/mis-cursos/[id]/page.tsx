@@ -8,34 +8,9 @@ import {
 import { useUser } from "@/src/context/userContext";
 import ModalEntregaTarea from "@/src/components/Tarea/ModalEntregaTarea";
 import { toast } from "sonner";
-// Interfaces para tipar la respuesta
-interface Tarea {
-  id_tarea: number;
-  titulo: string;
-  fecha_entrega: string;
-  entregado: boolean;
-  descripcion?: string;
-  nota?: number;
-  archivo_adjunto_url?: string;
-  retroalimentacion_docente?: string; // Nuevo campo
-  bimestre: number; // Nuevo campo
-  peso: number;
-}
+import { DetalleCurso,Tarea,ResumenNotas } from "@/src/interfaces/academic";
 
-interface ResumenNotas {
-  nota_bimestre1?: number;
-  nota_bimestre2?: number;
-  nota_bimestre3?: number;
-  nota_bimestre4?: number;
-  promedio_final?: number;
-}
 
-interface DetalleCurso {
-  curso_nombre: string;
-  docente_nombre: string;
-  tareas: Tarea[];
-  notas: ResumenNotas;
-}
 
 export default function DetalleCursoPage() {
   const { id } = useParams();

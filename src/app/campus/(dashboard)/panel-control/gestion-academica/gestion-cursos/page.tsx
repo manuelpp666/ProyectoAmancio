@@ -41,31 +41,31 @@ export default function GestionCursosPage() {
   };
 
   const handleEliminarCurso = async (cursoId: number, nombre: string, gradosIds: number[]) => {
-  toast(`¿Estás seguro de quitar ${nombre} de este nivel?`, {
-    action: {
-      label: "Eliminar",
-      onClick: async () => {
-        try {
-          // Construimos la URL con los IDs de los grados como parámetros: ?grados_ids=1&grados_ids=2...
-          const params = new URLSearchParams();
-          gradosIds.forEach(id => params.append('grados_ids', id.toString()));
+    toast(`¿Estás seguro de quitar ${nombre} de este nivel?`, {
+      action: {
+        label: "Eliminar",
+        onClick: async () => {
+          try {
+            // Construimos la URL con los IDs de los grados como parámetros: ?grados_ids=1&grados_ids=2...
+            const params = new URLSearchParams();
+            gradosIds.forEach(id => params.append('grados_ids', id.toString()));
 
-          const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/academic/cursos/${cursoId}?${params.toString()}`, 
-            { method: "DELETE" }
-          );
+            const res = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/academic/cursos/${cursoId}?${params.toString()}`,
+              { method: "DELETE" }
+            );
 
-          if (res.ok) {
-            toast.success("Curso quitado de este nivel");
-            fetchData();
+            if (res.ok) {
+              toast.success("Curso quitado de este nivel");
+              fetchData();
+            }
+          } catch (error) {
+            toast.error("No se pudo procesar la solicitud");
           }
-        } catch (error) {
-          toast.error("No se pudo procesar la solicitud");
-        }
+        },
       },
-    },
-  });
-};
+    });
+  };
 
   const fetchData = async () => {
     try {

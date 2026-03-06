@@ -4,13 +4,13 @@ import Link from "next/link";
 import { NoticiaResponse } from "@/src/interfaces/noticia";
 import { NoticiaRow } from "@/src/components/Noticia/TablaNoticia";
 import { useEffect, useState } from 'react';
-import { Search, Newspaper, Video, Globe,Plus} from "lucide-react";
+import { Search, Newspaper, Video, Globe, Plus } from "lucide-react";
 
 export default function GestionContenidoPage() {
 
   const [noticias, setNoticias] = useState<NoticiaResponse[]>([]);
   const [loading, setLoading] = useState(true);
-const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   useEffect(() => {
     const fetchNoticias = async () => {
       // Opcional: solo poner loading true si es la primera carga
@@ -39,13 +39,13 @@ const [searchTerm, setSearchTerm] = useState("");
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  
+
 
   const stats = {
     total: noticias.length,
     articulos: noticias.filter(n => n.categoria === 'texto').length,
     videos: noticias.filter(n => n.categoria === 'video').length,
-    
+
   };
 
   if (loading) return <p className="p-8">Cargando noticias...</p>;
@@ -114,7 +114,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 color="text-red-600"
                 bg="bg-red-50"
               />
-              
+
             </div>
 
             {/* TABLA */}

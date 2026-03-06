@@ -6,16 +6,8 @@ import { BookOpen, ChevronRight, Loader2, ChevronDown, AlertCircle } from "lucid
 import { BarChart, Bar, ResponsiveContainer, Cell } from "recharts";
 import Link from "next/link";
 import { AnioEscolar } from "@/src/interfaces/academic";
-
-interface ResumenNota {
-  id_curso: number;
-  curso_nombre: string;
-  promedio_final: number;
-  nota_bimestre1: number;
-  nota_bimestre2: number;
-  nota_bimestre3: number;
-  nota_bimestre4: number;
-}
+import { ResumenNota } from "@/src/interfaces/datos_alumno";
+import { toast } from "sonner";
 
 export default function MisCalificacionesPage() {
   const { id_usuario, loading: userLoading } = useUser();
@@ -34,6 +26,7 @@ export default function MisCalificacionesPage() {
         const actual = data.find(a => a.activo) || data[0];
         if (actual) setAnioSeleccionado(String(actual.id_anio_escolar));
       } catch (err) {
+        toast.error("No se pudieron cargar los años escolares");
         console.error("Error cargando años:", err);
       }
     };
@@ -48,7 +41,12 @@ export default function MisCalificacionesPage() {
       if (!res.ok) throw new Error("Error al cargar notas");
       const data = await res.json();
       setResumen(data);
+      toast.success(`Notas actualizadas para el año ${anio}`);
     } catch (err) {
+      toast.error("Error al obtener tus calificaciones", {
+        description: "Por favor, intenta recargar la página.",
+        icon: <AlertCircle className="text-red-500" size={16} />,
+      });
       console.error(err);
     } finally {
       setLoading(false);
@@ -97,19 +95,19 @@ export default function MisCalificacionesPage() {
                 <div className="p-3 bg-[#701C32]/5 text-[#701C32] rounded-2xl"><BookOpen size={24} /></div>
                 <span className="text-3xl font-black text-gray-800">{curso.promedio_final?.toFixed(1) || "0.0"}</span>
               </div>
-              
+
               <h3 className="font-bold text-gray-700 mb-4 h-12 line-clamp-2">{curso.curso_nombre}</h3>
-              
+
               <div className="h-20 w-full mb-4">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={[{val: curso.nota_bimestre1}, {val: curso.nota_bimestre2}, {val: curso.nota_bimestre3}, {val: curso.nota_bimestre4}]}>
+                  <BarChart data={[{ val: curso.nota_bimestre1 }, { val: curso.nota_bimestre2 }, { val: curso.nota_bimestre3 }, { val: curso.nota_bimestre4 }]}>
                     <Bar dataKey="val" radius={[4, 4, 0, 0]}>
                       <Cell fill={curso.promedio_final >= 11 ? "#22c55e" : "#ef4444"} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              
+
               <Link
                 href={`/campus/campus-estudiante/inicio-campus/cursos/mis-cursos/${curso.id_curso}?anio=${anioSeleccionado}`}
                 className="mt-auto w-full flex items-center justify-center gap-2 text-sm font-black text-[#701C32] bg-gray-50 hover:bg-[#701C32] hover:text-white py-3 rounded-xl transition-all"

@@ -3,12 +3,12 @@ import { useState, useEffect, useRef } from "react";
 import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 import { useReactToPrint } from "react-to-print";
 import { toast } from "sonner";
-import { 
-  Seccion, 
-  AnioEscolar, 
-  MateriaDisponible, 
-  HorarioAsignado, 
-  HoraLectiva 
+import {
+  Seccion,
+  AnioEscolar,
+  MateriaDisponible,
+  HorarioAsignado,
+  HoraLectiva
 } from "@/src/interfaces/academic";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
@@ -18,11 +18,11 @@ export default function ConstructorHorariosPage() {
 
   // --- ESTADOS PARA LA DATA ---
   const [secciones, setSecciones] = useState<Seccion[]>([]);
-const [seccionActiva, setSeccionActiva] = useState<number | null>(null);
-const [materiasDisponibles, setMateriasDisponibles] = useState<MateriaDisponible[]>([]);
-const [horasLectivas, setHorasLectivas] = useState<HoraLectiva[]>([]);
-const [horarioAsignado, setHorarioAsignado] = useState<HorarioAsignado[]>([]);
-const [loading, setLoading] = useState<boolean>(true);
+  const [seccionActiva, setSeccionActiva] = useState<number | null>(null);
+  const [materiasDisponibles, setMateriasDisponibles] = useState<MateriaDisponible[]>([]);
+  const [horasLectivas, setHorasLectivas] = useState<HoraLectiva[]>([]);
+  const [horarioAsignado, setHorarioAsignado] = useState<HorarioAsignado[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
@@ -33,74 +33,74 @@ const [loading, setLoading] = useState<boolean>(true);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const exportarPDFDirecto = async () => {
-  const element = contentRef.current;
-  if (!element) return;
+    const element = contentRef.current;
+    if (!element) return;
 
-  const toastId = toast.loading("Generando PDF completo...");
+    const toastId = toast.loading("Generando PDF completo...");
 
-  try {
-    // === Muy importante estas 3 líneas ===
-    const originalWidth = element.scrollWidth;
-    const originalHeight = element.scrollHeight;
+    try {
+      // === Muy importante estas 3 líneas ===
+      const originalWidth = element.scrollWidth;
+      const originalHeight = element.scrollHeight;
 
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: "#ffffff",
-      width: originalWidth,          // ← clave
-      height: originalHeight,        // ← clave
-      windowWidth: originalWidth,
-      windowHeight: originalHeight,
-      x: 0,
-      y: 0,
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+        width: originalWidth,          // ← clave
+        height: originalHeight,        // ← clave
+        windowWidth: originalWidth,
+        windowHeight: originalHeight,
+        x: 0,
+        y: 0,
 
-      onclone: (clonedDoc) => {
-        // tu código de limpieza...
-        // puedes mantenerlo
-      },
-    });
+        onclone: (clonedDoc) => {
+          // tu código de limpieza...
+          // puedes mantenerlo
+        },
+      });
 
-    const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
 
-    const pdf = new jsPDF({
-      orientation: "landscape",
-      unit: "mm",
-      format: "a4",
-    });
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "mm",
+        format: "a4",
+      });
 
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
 
-    const margin = 10; // mm
-    const maxImgWidth = pageWidth - margin * 2;
-    const maxImgHeight = pageHeight - margin * 2;
+      const margin = 10; // mm
+      const maxImgWidth = pageWidth - margin * 2;
+      const maxImgHeight = pageHeight - margin * 2;
 
-    const imgWidth = maxImgWidth;
-    let imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const imgWidth = maxImgWidth;
+      let imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    // Si es muy largo → hacemos varias páginas
-    let positionY = margin;
+      // Si es muy largo → hacemos varias páginas
+      let positionY = margin;
 
-    pdf.addImage(imgData, "JPEG", margin, positionY, imgWidth, imgHeight);
-
-    // Si la imagen es más alta que la página → agregamos páginas
-    while (imgHeight > maxImgHeight) {
-      positionY = - (pageHeight - margin * 2); // siguiente página
-      pdf.addPage();
       pdf.addImage(imgData, "JPEG", margin, positionY, imgWidth, imgHeight);
-      imgHeight -= (pageHeight - margin * 2);
-      positionY -= (pageHeight - margin * 2);
+
+      // Si la imagen es más alta que la página → agregamos páginas
+      while (imgHeight > maxImgHeight) {
+        positionY = - (pageHeight - margin * 2); // siguiente página
+        pdf.addPage();
+        pdf.addImage(imgData, "JPEG", margin, positionY, imgWidth, imgHeight);
+        imgHeight -= (pageHeight - margin * 2);
+        positionY -= (pageHeight - margin * 2);
+      }
+
+      pdf.save(`Horario_${anioPlanificacion || "completo"}.pdf`);
+
+      toast.success("PDF generado completo ✓", { id: toastId });
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Error al generar PDF completo", { id: toastId });
     }
-
-    pdf.save(`Horario_${anioPlanificacion || "completo"}.pdf`);
-
-    toast.success("PDF generado completo ✓", { id: toastId });
-  } catch (error) {
-    console.error("Error:", error);
-    toast.error("Error al generar PDF completo", { id: toastId });
-  }
-};
+  };
   // --- CONFIGURACIÓN DE IMPRESIÓN ---
   const handlePrint = useReactToPrint({
     contentRef,
@@ -111,7 +111,7 @@ const [loading, setLoading] = useState<boolean>(true);
     const cargarAnios = async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/anios/`);
-       const data: AnioEscolar[] = await res.json();
+        const data: AnioEscolar[] = await res.json();
         setListaAnios(data);
 
         // Seleccionar el activo o el primero de la lista

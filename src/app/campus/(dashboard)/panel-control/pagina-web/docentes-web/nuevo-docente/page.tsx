@@ -1,5 +1,5 @@
 "use client";
-import { toast} from 'sonner';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -33,7 +33,7 @@ export default function RegistrarDocentePage() {
       }
 
       toast.success("¡Docente registrado correctamente!", { id: toastId });
-      
+
       // Si quieres limpiar el formulario después de éxito, 
       // podrías necesitar pasar resetForm desde el componente hijo o 
       // simplemente redireccionar al listado.

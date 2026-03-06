@@ -5,23 +5,12 @@ import { useUser } from "@/src/context/userContext";
 import { 
   Calendar, 
   Clock, 
-  Video, 
   MapPin, 
   ArrowRight, 
   Loader2, 
-  Stethoscope,
-  CheckCircle2,
-  AlertCircle
+  Stethoscope
 } from "lucide-react";
-
-interface Cita {
-  id_cita: number;
-  motivo: string;
-  fecha: string;
-  hora: string;
-  estado: "PROGRAMADA" | "COMPLETADA" | "CANCELADA";
-  es_hoy: boolean;
-}
+import { Cita } from "@/src/interfaces/datos_alumno";
 
 export default function ResumenCitasPage() {
   const { id_usuario, loading: userLoading } = useUser();

@@ -13,7 +13,7 @@ export default function GestionDocentesPage() {
 
     const [docentes, setDocentes] = useState<Docente[]>([]);
     const [loading, setLoading] = useState(true);
-const [searchTerm, setSearchTerm] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
     useEffect(() => {
         const fetchDocentes = async () => {
             try {
@@ -84,7 +84,7 @@ const [searchTerm, setSearchTerm] = useState("");
                             </div>
                         </div>
 
-                        
+
 
                         {/* Table Container */}
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -104,7 +104,7 @@ const [searchTerm, setSearchTerm] = useState("");
                                             <TeacherRow
                                                 key={d.id_docente}
                                                 docente={d}
-                            
+
                                             />
                                         ))}
                                     </tbody>

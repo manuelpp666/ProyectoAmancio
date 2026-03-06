@@ -87,10 +87,10 @@ export default function EditarNoticiaPage() {
       </header>
 
       {/* Formulario con datos iniciales */}
-      <NoticiaForm 
-        initialData={noticia} 
-        onSubmit={handleUpdate} 
-        loading={isUpdating} 
+      <NoticiaForm
+        initialData={noticia}
+        onSubmit={handleUpdate}
+        loading={isUpdating}
       />
     </div>
   );

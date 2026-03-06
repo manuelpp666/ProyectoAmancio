@@ -2,22 +2,9 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Users, UserPlus, Edit, ShieldCheck, BookOpen, Briefcase, Power, PowerOff, X } from "lucide-react";
-
+import { Personal } from "@/src/interfaces/personal";
+import { TipoPersonal } from "@/src/interfaces/personal";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-type TipoPersonal = "admin" | "docente" | "auxiliar";
-
-interface Personal {
-  id: number; // Corregido: int -> number
-  id_usuario: number; // Corregido: int -> number
-  dni: string;
-  nombres: string;
-  apellidos: string;
-  telefono: string;
-  email: string;
-  sueldo: number;
-  usuario: { activo: boolean; username: string };
-}
 
 export default function GestionPersonalPage() {
   const [activeTab, setActiveTab] = useState<TipoPersonal>("admin");

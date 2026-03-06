@@ -4,16 +4,12 @@ import axios from 'axios';
 import { toast } from 'sonner'
 import { ConfirmModal } from '@/src/components/utils/ConfirmModal';
 import { 
-  CloudUpload, FileText, Search, RefreshCw, Trash2, 
-  Settings2, PlayCircle, CheckCircle2, Loader2, FileImage, X, Send, Bot, MessageSquare 
+   FileText, Trash2, 
+   PlayCircle, CheckCircle2, Loader2,  X, Send, Bot, MessageSquare 
 } from "lucide-react";
 import { Chatbot } from '@/src/interfaces/chatbot';
+import { ChatMessage } from '@/src/interfaces/chatbot';
 
-// Interfaz interna para los mensajes
-interface ChatMessage {
-  role: 'user' | 'bot';
-  text: string;
-}
 
 export default function ChatbotKnowledgePage() {
   const [documents, setDocuments] = useState<Chatbot[]>([]);

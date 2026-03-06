@@ -8,11 +8,7 @@ import {
   LayoutDashboard,
   Users,
   Globe,
-  UserPlus, // Cambiamos Bot por UserPlus
-  BookOpen,
-  Settings,
-  LogOut,
-  Bell,
+  UserPlus, 
   Loader2,
   BadgeCheck,
   Calendar,

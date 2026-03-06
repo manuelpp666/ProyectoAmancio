@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Nivel, Seccion, AnioEscolar, Grado } from "@/src/interfaces/academic"; 
-import GradoCard from "@/src/components/Academic/GradoCard"; 
+import { Nivel, Seccion, AnioEscolar, Grado } from "@/src/interfaces/academic";
+import GradoCard from "@/src/components/Academic/GradoCard";
 import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 import { toast } from "sonner";
 
@@ -23,7 +23,7 @@ export default function GestionAcademicaPage() {
   // --- MODAL APERTURA AÑO ---
   const [isAperturaModalOpen, setIsAperturaModalOpen] = useState(false);
   const [nuevoAnioData, setNuevoAnioData] = useState({
-    id_anio_escolar: "", 
+    id_anio_escolar: "",
     fecha_inicio: "",
     fecha_fin: "",
     tipo: "REGULAR"
@@ -50,8 +50,8 @@ export default function GestionAcademicaPage() {
   const [anioOrigenCopiar, setAnioOrigenCopiar] = useState("");
 
   // Validaciones
-  const fechasValidas = nuevoAnioData.fecha_inicio && nuevoAnioData.fecha_fin 
-    ? new Date(nuevoAnioData.fecha_fin) > new Date(nuevoAnioData.fecha_inicio) 
+  const fechasValidas = nuevoAnioData.fecha_inicio && nuevoAnioData.fecha_fin
+    ? new Date(nuevoAnioData.fecha_fin) > new Date(nuevoAnioData.fecha_inicio)
     : false;
 
   const fechasInscripcionValidas = inscripcionData.inicio_inscripcion && inscripcionData.fin_inscripcion
@@ -61,7 +61,7 @@ export default function GestionAcademicaPage() {
   // =========================================================
   // 1. CARGA DE DATOS
   // =========================================================
-  
+
   const fetchDatosMaestros = async () => {
     try {
       setIsLoading(true);
@@ -110,15 +110,15 @@ export default function GestionAcademicaPage() {
       const obj = anios.find(a => a.id_anio_escolar === anioSeleccionado) || null;
       setAnioObj(obj);
       fetchSeccionesDelAnio(anioSeleccionado);
-      
+
       // Cargar fechas de inscripción actuales si existen
       if (obj) {
         // @ts-ignore (Si TS se queja de las propiedades nuevas)
         setInscripcionData({
-            // @ts-ignore
-            inicio_inscripcion: obj.inicio_inscripcion || "",
-            // @ts-ignore
-            fin_inscripcion: obj.fin_inscripcion || ""
+          // @ts-ignore
+          inicio_inscripcion: obj.inicio_inscripcion || "",
+          // @ts-ignore
+          fin_inscripcion: obj.fin_inscripcion || ""
         });
       }
     } else {
@@ -136,17 +136,17 @@ export default function GestionAcademicaPage() {
     if (!anioObj) return false;
     const hoy = new Date();
     const fechaInicio = new Date(anioObj.fecha_inicio);
-    return hoy < fechaInicio; 
+    return hoy < fechaInicio;
   };
 
   const getNivelesVisibles = () => {
     if (!anioObj) return [];
     const esVerano = anioObj.tipo === "VERANO";
-    
+
     return niveles.filter(n => {
       const nombre = n.nombre.toLowerCase();
       if (esVerano) {
-        return true; 
+        return true;
       } else {
         return !nombre.includes("pre") && !nombre.includes("academia");
       }
@@ -161,9 +161,9 @@ export default function GestionAcademicaPage() {
     const nombreNivel = nivel?.nombre.toLowerCase() || "";
 
     if (nombreNivel.includes("primaria")) {
-        return ["Azul", "Amarillo", "Rojo", "Verde", "Naranja"];
+      return ["Azul", "Amarillo", "Rojo", "Verde", "Naranja"];
     } else {
-        return ["A", "B", "C", "D", "E", "F"];
+      return ["A", "B", "C", "D", "E", "F"];
     }
   };
 
@@ -177,14 +177,14 @@ export default function GestionAcademicaPage() {
       const res = await fetch(`${API_URL}/academic/anios/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...nuevoAnioData }), 
+        body: JSON.stringify({ ...nuevoAnioData }),
       });
 
       if (res.ok) {
         toast.success(`Año Académico ${nuevoAnioData.id_anio_escolar} configurado`);
         setIsAperturaModalOpen(false);
         setNuevoAnioData({ id_anio_escolar: "", fecha_inicio: "", fecha_fin: "", tipo: "REGULAR" });
-        fetchDatosMaestros(); 
+        fetchDatosMaestros();
       } else {
         const err = await res.json();
         toast.error(err.detail || "Error al abrir el año");
@@ -200,22 +200,22 @@ export default function GestionAcademicaPage() {
     if (!anioSeleccionado) return;
 
     try {
-        const res = await fetch(`${API_URL}/academic/anios/${anioSeleccionado}/inscripciones`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(inscripcionData)
-        });
+      const res = await fetch(`${API_URL}/academic/anios/${anioSeleccionado}/inscripciones`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(inscripcionData)
+      });
 
-        if (res.ok) {
-            toast.success("Fechas de inscripción actualizadas");
-            setIsInscripcionModalOpen(false);
-            fetchDatosMaestros(); // Recargar para tener los datos frescos
-        } else {
-            const err = await res.json();
-            toast.error(err.detail || "Error al guardar fechas");
-        }
+      if (res.ok) {
+        toast.success("Fechas de inscripción actualizadas");
+        setIsInscripcionModalOpen(false);
+        fetchDatosMaestros(); // Recargar para tener los datos frescos
+      } else {
+        const err = await res.json();
+        toast.error(err.detail || "Error al guardar fechas");
+      }
     } catch (error) {
-        toast.error("Error de conexión");
+      toast.error("Error de conexión");
     }
   };
 
@@ -271,29 +271,29 @@ export default function GestionAcademicaPage() {
   };
 
   const handleCopiarEstructura = async () => {
-    if(!anioOrigenCopiar) return toast.error("Selecciona un año origen");
-    if(!anioSeleccionado) return toast.error("Selecciona un año destino");
-    
-    try {
-        const res = await fetch(`${API_URL}/academic/anios/copiar-estructura`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                anio_origen: anioOrigenCopiar,
-                anio_destino: anioSeleccionado
-            })
-        });
+    if (!anioOrigenCopiar) return toast.error("Selecciona un año origen");
+    if (!anioSeleccionado) return toast.error("Selecciona un año destino");
 
-        if (res.ok) {
-            const data = await res.json();
-            toast.success(data.message);
-            setIsCopiarModalOpen(false);
-            fetchSeccionesDelAnio(anioSeleccionado);
-        } else {
-            toast.error("Error al copiar estructura");
-        }
+    try {
+      const res = await fetch(`${API_URL}/academic/anios/copiar-estructura`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          anio_origen: anioOrigenCopiar,
+          anio_destino: anioSeleccionado
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(data.message);
+        setIsCopiarModalOpen(false);
+        fetchSeccionesDelAnio(anioSeleccionado);
+      } else {
+        toast.error("Error al copiar estructura");
+      }
     } catch (error) {
-        toast.error("Error de conexión");
+      toast.error("Error de conexión");
     }
   };
 
@@ -326,7 +326,7 @@ export default function GestionAcademicaPage() {
 
       <div className="flex h-screen overflow-hidden">
         <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
-          
+
           <HeaderPanel />
 
           {/* BARRA SUPERIOR */}
@@ -339,44 +339,44 @@ export default function GestionAcademicaPage() {
               <div className="h-6 w-px bg-gray-200 mx-2"></div>
               <div className="flex items-center gap-2">
                 <label className="text-xs font-bold text-gray-400 uppercase">Año Académico:</label>
-                <select 
+                <select
                   value={anioSeleccionado}
                   onChange={(e) => setAnioSeleccionado(e.target.value)}
                   className="bg-gray-50 border-gray-200 rounded-lg text-sm font-bold text-[#093E7A] focus:ring-[#093E7A] focus:border-[#093E7A] py-1 pr-8"
                 >
                   {anios.map(a => (
                     <option key={a.id_anio_escolar} value={a.id_anio_escolar}>
-                        {a.id_anio_escolar} ({a.tipo})
+                      {a.id_anio_escolar} ({a.tipo})
                     </option>
                   ))}
                   {anios.length === 0 && <option>Cargando...</option>}
                 </select>
                 {anioObj && (
-  <div className="flex items-center gap-2 ml-4 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg">
-    <div className="flex flex-col">
-      <span className="text-[10px] uppercase font-bold text-blue-400 leading-none">Vigencia</span>
-      <div className="flex items-center gap-2 text-sm font-semibold text-[#093E7A]">
-        <span className="flex items-center gap-1">
-          <span className="material-symbols-outlined text-xs">calendar_today</span>
-          {new Date(anioObj.fecha_inicio).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
-        </span>
-        <span className="text-blue-300">→</span>
-        <span className="flex items-center gap-1">
-          <span className="material-symbols-outlined text-xs">event</span>
-          {new Date(anioObj.fecha_fin).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
-        </span>
-      </div>
-    </div>
-  </div>
-)}
+                  <div className="flex items-center gap-2 ml-4 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] uppercase font-bold text-blue-400 leading-none">Vigencia</span>
+                      <div className="flex items-center gap-2 text-sm font-semibold text-[#093E7A]">
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-xs">calendar_today</span>
+                          {new Date(anioObj.fecha_inicio).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </span>
+                        <span className="text-blue-300">→</span>
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-xs">event</span>
+                          {new Date(anioObj.fecha_fin).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-            
+
             <div className="flex items-center gap-6">
               {anioObj && (
                 <div className={`flex items-center gap-3 text-sm font-medium ${anioObj.activo ? 'text-green-600' : 'text-red-500'}`}>
                   <span className={`flex items-center gap-1`}>
-                    <span className={`size-2 rounded-full ${anioObj.activo ? 'bg-green-500' : 'bg-red-500'}`}></span> 
+                    <span className={`size-2 rounded-full ${anioObj.activo ? 'bg-green-500' : 'bg-red-500'}`}></span>
                     {anioObj.activo ? "Año en Curso (Vigente)" : "Año Finalizado / Inactivo"}
                   </span>
                 </div>
@@ -386,7 +386,7 @@ export default function GestionAcademicaPage() {
 
           {/* CONTENIDO PRINCIPAL SCROLLABLE */}
           <div className="flex-1 overflow-y-auto p-8 space-y-8">
-            
+
             {/* Gestión Año */}
             <section className="space-y-4">
               <div>
@@ -394,7 +394,7 @@ export default function GestionAcademicaPage() {
                 <p className="text-sm text-gray-500">Administre el estado del periodo lectivo y las fechas de admisión.</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
+
                 {/* Apertura */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between">
                   <div className="mb-4">
@@ -419,7 +419,7 @@ export default function GestionAcademicaPage() {
                     </h4>
                     <p className="text-xs text-gray-400 mt-1">Defina el periodo habilitado para nuevas matrículas.</p>
                   </div>
-                  <button 
+                  <button
                     onClick={() => setIsInscripcionModalOpen(true)}
                     disabled={!anioSeleccionado}
                     className="w-full py-2.5 bg-white border-2 border-[#093E7A] text-[#093E7A] font-bold rounded-lg text-sm hover:bg-[#093E7A] hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -438,18 +438,18 @@ export default function GestionAcademicaPage() {
                     </h4>
                     <p className="text-xs text-gray-400 mt-1">Clone la estructura de grados y secciones del año anterior.</p>
                   </div>
-                  <button 
+                  <button
                     onClick={() => setIsCopiarModalOpen(true)}
-                    disabled={!isAnioSinComenzar()} 
+                    disabled={!isAnioSinComenzar()}
                     className="w-full py-2.5 bg-gray-100 text-gray-700 border border-gray-200 font-bold rounded-lg text-sm hover:bg-gray-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span className="material-symbols-outlined text-sm text-gray-500">auto_awesome_motion</span>
                     Copiar Estructura
                   </button>
                   {!isAnioSinComenzar() && anioObj && (
-                      <p className="text-[10px] text-red-400 mt-1 text-center">
-                          Solo disponible antes del inicio de clases ({anioObj.fecha_inicio})
-                      </p>
+                    <p className="text-[10px] text-red-400 mt-1 text-center">
+                      Solo disponible antes del inicio de clases ({anioObj.fecha_inicio})
+                    </p>
                   )}
                 </div>
               </div>
@@ -480,18 +480,18 @@ export default function GestionAcademicaPage() {
                     <div className="p-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {grados.filter(g => g.id_nivel === nivel.id_nivel).map((grado) => {
-                            const seccionesDelGrado = secciones.filter(s => s.id_grado === grado.id_grado);
-                            const gradoConSecciones = { ...grado, secciones: seccionesDelGrado };
+                          const seccionesDelGrado = secciones.filter(s => s.id_grado === grado.id_grado);
+                          const gradoConSecciones = { ...grado, secciones: seccionesDelGrado };
 
-                            return (
-                              <GradoCard
-                                key={grado.id_grado}
-                                grado={gradoConSecciones}
-                                onAddSeccion={() => prepararNuevaSeccion(grado.id_grado)}
-                                onEditSeccion={prepararEditarSeccion}
-                                onDeleteSeccion={handleEliminarSeccion}
-                              />
-                            );
+                          return (
+                            <GradoCard
+                              key={grado.id_grado}
+                              grado={gradoConSecciones}
+                              onAddSeccion={() => prepararNuevaSeccion(grado.id_grado)}
+                              onEditSeccion={prepararEditarSeccion}
+                              onDeleteSeccion={handleEliminarSeccion}
+                            />
+                          );
                         })}
                       </div>
                     </div>
@@ -517,32 +517,31 @@ export default function GestionAcademicaPage() {
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Inicio de Inscripciones</label>
-                <input 
-                    required 
-                    type="date" 
-                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]" 
-                    value={inscripcionData.inicio_inscripcion}
-                    onChange={(e) => setInscripcionData({...inscripcionData, inicio_inscripcion: e.target.value})} 
+                <input
+                  required
+                  type="date"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
+                  value={inscripcionData.inicio_inscripcion}
+                  onChange={(e) => setInscripcionData({ ...inscripcionData, inicio_inscripcion: e.target.value })}
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fin de Inscripciones</label>
-                <input 
-                    required 
-                    type="date" 
-                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]" 
-                    value={inscripcionData.fin_inscripcion}
-                    onChange={(e) => setInscripcionData({...inscripcionData, fin_inscripcion: e.target.value})} 
+                <input
+                  required
+                  type="date"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
+                  value={inscripcionData.fin_inscripcion}
+                  onChange={(e) => setInscripcionData({ ...inscripcionData, fin_inscripcion: e.target.value })}
                 />
               </div>
               <div className="pt-4 flex gap-3">
                 <button type="button" onClick={() => setIsInscripcionModalOpen(false)} className="flex-1 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-lg">Cancelar</button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={!fechasInscripcionValidas}
-                  className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${
-                    fechasInscripcionValidas ? "bg-[#093E7A] text-white hover:bg-[#072d5a]" : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  }`}
+                  className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${fechasInscripcionValidas ? "bg-[#093E7A] text-white hover:bg-[#072d5a]" : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    }`}
                 >
                   Guardar Fechas
                 </button>
@@ -567,7 +566,7 @@ export default function GestionAcademicaPage() {
                   <select required className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-[#093E7A] outline-none" value={nuevaSeccion.nombre} onChange={(e) => setNuevaSeccion({ ...nuevaSeccion, nombre: e.target.value })}>
                     <option value="">Seleccione...</option>
                     {selectedGradoId && getOpcionesSeccion(selectedGradoId).map(opt => (
-                        <option key={opt} value={opt}>{opt}</option>
+                      <option key={opt} value={opt}>{opt}</option>
                     ))}
                   </select>
                 </div>
@@ -596,39 +595,38 @@ export default function GestionAcademicaPage() {
             <form onSubmit={handleAperturaAnio} className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Identificador del Año</label>
-                <input required maxLength={6} placeholder="Ej: 2026-1" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]" onChange={(e) => setNuevoAnioData({...nuevoAnioData, id_anio_escolar: e.target.value})} />
+                <input required maxLength={6} placeholder="Ej: 2026-1" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]" onChange={(e) => setNuevoAnioData({ ...nuevoAnioData, id_anio_escolar: e.target.value })} />
               </div>
-              
+
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tipo de Ciclo</label>
-                <select 
-                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
-                    value={nuevoAnioData.tipo}
-                    onChange={(e) => setNuevoAnioData({...nuevoAnioData, tipo: e.target.value})}
+                <select
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
+                  value={nuevoAnioData.tipo}
+                  onChange={(e) => setNuevoAnioData({ ...nuevoAnioData, tipo: e.target.value })}
                 >
-                    <option value="REGULAR">Año Regular (Marzo-Dic)</option>
-                    <option value="VERANO">Ciclo Verano (Ene-Feb)</option>
+                  <option value="REGULAR">Año Regular (Marzo-Dic)</option>
+                  <option value="VERANO">Ciclo Verano (Ene-Feb)</option>
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Inicio</label>
-                  <input required type="date" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" onChange={(e) => setNuevoAnioData({...nuevoAnioData, fecha_inicio: e.target.value})} />
+                  <input required type="date" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" onChange={(e) => setNuevoAnioData({ ...nuevoAnioData, fecha_inicio: e.target.value })} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fin</label>
-                  <input required type="date" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" onChange={(e) => setNuevoAnioData({...nuevoAnioData, fecha_fin: e.target.value})} />
+                  <input required type="date" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" onChange={(e) => setNuevoAnioData({ ...nuevoAnioData, fecha_fin: e.target.value })} />
                 </div>
               </div>
               <div className="pt-4 flex gap-3">
                 <button type="button" onClick={() => setIsAperturaModalOpen(false)} className="flex-1 py-2 text-sm font-bold text-gray-500">Cancelar</button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={!fechasValidas}
-                  className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${
-                    fechasValidas ? "bg-[#093E7A] text-white hover:bg-[#072d5a]" : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  }`}
+                  className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${fechasValidas ? "bg-[#093E7A] text-white hover:bg-[#072d5a]" : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    }`}
                 >
                   Iniciar Año
                 </button>
@@ -641,34 +639,34 @@ export default function GestionAcademicaPage() {
       {/* --- MODAL COPIAR --- */}
       {isCopiarModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-                <div className="p-6 border-b">
-                    <h3 className="font-black text-lg text-gray-800">Copiar Estructura</h3>
-                    <p className="text-xs text-gray-500">Replica secciones de un año anterior.</p>
-                </div>
-                <div className="p-6 space-y-4">
-                    <div className="bg-yellow-50 text-yellow-800 p-3 rounded-lg text-xs border border-yellow-100">
-                        Se copiarán todas las secciones al año actual <strong>{anioSeleccionado}</strong>.
-                    </div>
-                    <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Año Origen</label>
-                        <select 
-                            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
-                            value={anioOrigenCopiar}
-                            onChange={(e) => setAnioOrigenCopiar(e.target.value)}
-                        >
-                            <option value="">Selecciona...</option>
-                            {anios.filter(a => a.id_anio_escolar !== anioSeleccionado).map(a => (
-                                <option key={a.id_anio_escolar} value={a.id_anio_escolar}>{a.id_anio_escolar}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="pt-4 flex gap-3">
-                        <button onClick={() => setIsCopiarModalOpen(false)} className="flex-1 py-2 text-sm font-bold text-gray-500">Cancelar</button>
-                        <button onClick={handleCopiarEstructura} className="flex-1 py-2 bg-amber-500 text-white rounded-lg font-bold text-sm">Copiar Todo</button>
-                    </div>
-                </div>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="p-6 border-b">
+              <h3 className="font-black text-lg text-gray-800">Copiar Estructura</h3>
+              <p className="text-xs text-gray-500">Replica secciones de un año anterior.</p>
             </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-yellow-50 text-yellow-800 p-3 rounded-lg text-xs border border-yellow-100">
+                Se copiarán todas las secciones al año actual <strong>{anioSeleccionado}</strong>.
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Año Origen</label>
+                <select
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
+                  value={anioOrigenCopiar}
+                  onChange={(e) => setAnioOrigenCopiar(e.target.value)}
+                >
+                  <option value="">Selecciona...</option>
+                  {anios.filter(a => a.id_anio_escolar !== anioSeleccionado).map(a => (
+                    <option key={a.id_anio_escolar} value={a.id_anio_escolar}>{a.id_anio_escolar}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="pt-4 flex gap-3">
+                <button onClick={() => setIsCopiarModalOpen(false)} className="flex-1 py-2 text-sm font-bold text-gray-500">Cancelar</button>
+                <button onClick={handleCopiarEstructura} className="flex-1 py-2 bg-amber-500 text-white rounded-lg font-bold text-sm">Copiar Todo</button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </>

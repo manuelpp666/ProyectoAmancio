@@ -47,10 +47,10 @@ export default function EditarDocentePage({ params }: { params: Promise<{ id: st
       if (!response.ok) throw new Error("Error al actualizar");
 
       toast.success("¡Docente actualizado correctamente!", { id: toastId });
-      
+
       // Opcional: Redirigir después de 1.5 segundos
       setTimeout(() => router.push("/campus/panel-control/pagina-web/docentes-web"), 1500);
-      
+
     } catch (error: any) {
       toast.error(error.message, { id: toastId });
     } finally {
@@ -65,7 +65,7 @@ export default function EditarDocentePage({ params }: { params: Promise<{ id: st
       <Toaster position="top-right" richColors />
       <div className="flex h-screen overflow-hidden">
         <div className="flex-1 flex flex-col overflow-hidden">
-          
+
           {/* Header idéntico al de registro pero con título de edición */}
           <header className="h-20 border-b bg-white flex items-center justify-between px-8 shrink-0">
             <div className="flex items-center gap-6">
@@ -85,10 +85,10 @@ export default function EditarDocentePage({ params }: { params: Promise<{ id: st
             <div className="max-w-4xl mx-auto py-12 px-6">
               {/* Usamos el MISMO formulario, pero pasando initialData */}
               {docente && (
-                <DocenteForm 
-                  initialData={docente} 
-                  onSubmit={handleUpdate} 
-                  loading={loading} 
+                <DocenteForm
+                  initialData={docente}
+                  onSubmit={handleUpdate}
+                  loading={loading}
                 />
               )}
             </div>

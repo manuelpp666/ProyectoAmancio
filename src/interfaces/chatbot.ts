@@ -10,5 +10,5 @@ export interface Chatbot {
 export interface ChatMessage {
   role: 'user' | 'bot';
   text: string;
-  timestamp: Date;
+  timestamp?: Date;
 }

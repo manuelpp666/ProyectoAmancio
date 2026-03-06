@@ -4,15 +4,8 @@ import { ArrowRight, Users, Loader2, BookOpen, AlertCircle, ChevronDown } from "
 import { useUser } from "@/src/context/userContext";
 import { AnioEscolar } from "@/src/interfaces/academic";
 import Link from "next/link";
+import { CursoDocente } from "@/src/interfaces/academic";
 
-interface CursoDocente {
-  id_carga: number;
-  curso_nombre: string;
-  grado_nombre: string;
-  seccion_nombre: string;
-  alumnos: number;
-  img: string;
-}
 
 export default function MisCursosDocente() {
   const { id_usuario, loading: userLoading } = useUser();

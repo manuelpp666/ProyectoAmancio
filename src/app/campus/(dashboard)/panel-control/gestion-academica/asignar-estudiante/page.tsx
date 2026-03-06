@@ -3,25 +3,8 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 import { toast } from "sonner";
 import { Nivel, Grado, Seccion } from "@/src/interfaces/academic";
-
-// Extendemos la interfaz localmente para incluir las fechas de inscripción
-interface AnioEscolar {
-  id_anio_escolar: string;
-  activo: boolean;
-  tipo: string;
-  inicio_inscripcion?: string; // Fechas vienen como string del JSON
-  fin_inscripcion?: string;
-}
-
-interface AlumnoMatriculado {
-  id_matricula: number;
-  id_alumno: number;
-  nombres: string;
-  apellidos: string;
-  dni: string;
-  id_seccion: number | null;
-  id_grado: number;
-}
+import { AnioEscolar } from "@/src/interfaces/academic";
+import { AlumnoMatriculado } from "@/src/interfaces/matricula";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -429,8 +412,8 @@ export default function AsignacionEstudiantesPage() {
                       key={nivel.id_nivel}
                       onClick={() => setSelectedNivel(nivel.id_nivel)}
                       className={`flex flex-col items-center gap-2 p-4 border-2 rounded-xl transition-all ${selectedNivel === nivel.id_nivel
-                          ? 'border-[#093E7A] bg-[#093E7A]/5'
-                          : 'border-gray-100 hover:border-[#093E7A]/30'
+                        ? 'border-[#093E7A] bg-[#093E7A]/5'
+                        : 'border-gray-100 hover:border-[#093E7A]/30'
                         }`}
                     >
                       <span className={`material-symbols-outlined text-3xl ${selectedNivel === nivel.id_nivel ? 'text-[#093E7A]' : 'text-gray-400'}`}>
@@ -456,8 +439,8 @@ export default function AsignacionEstudiantesPage() {
                       key={grado.id_grado}
                       onClick={() => setSelectedGrado(grado.id_grado)}
                       className={`px-6 py-2 rounded-lg font-bold text-sm whitespace-nowrap transition-colors ${selectedGrado === grado.id_grado
-                          ? 'bg-[#093E7A] text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-[#093E7A] text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                     >
                       {grado.nombre}
@@ -484,8 +467,8 @@ export default function AsignacionEstudiantesPage() {
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center gap-3">
                               <div className={`size-10 rounded-lg flex items-center justify-center text-white font-black ${seccion.nombre === 'Rojo' ? 'bg-red-600' :
-                                  seccion.nombre === 'Azul' ? 'bg-blue-600' :
-                                    seccion.nombre === 'Amarillo' ? 'bg-yellow-500' : 'bg-gray-800'
+                                seccion.nombre === 'Azul' ? 'bg-blue-600' :
+                                  seccion.nombre === 'Amarillo' ? 'bg-yellow-500' : 'bg-gray-800'
                                 }`}>
                                 {seccion.nombre.charAt(0)}
                               </div>
@@ -503,12 +486,12 @@ export default function AsignacionEstudiantesPage() {
                               <p className="text-[10px] font-bold text-gray-400 uppercase leading-none">Vacantes</p>
                             </div>
                           </div>
-{!isPeriodoInscripcionActivo && (
-  <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded text-[10px] text-amber-700 flex items-center gap-2">
-    <span className="material-symbols-outlined text-sm">warning</span>
-    Edición deshabilitada por fecha académica.
-  </div>
-)}
+                          {!isPeriodoInscripcionActivo && (
+                            <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded text-[10px] text-amber-700 flex items-center gap-2">
+                              <span className="material-symbols-outlined text-sm">warning</span>
+                              Edición deshabilitada por fecha académica.
+                            </div>
+                          )}
                           <div className="flex-1 bg-white border border-gray-100 rounded-lg p-2 mb-4 overflow-y-auto max-h-48 min-h-[100px]">
                             {alumnosEnSeccion.length === 0 ? (
                               <div className="h-full flex flex-col items-center justify-center text-gray-300">
