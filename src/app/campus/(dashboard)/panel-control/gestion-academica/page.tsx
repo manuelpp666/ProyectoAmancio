@@ -351,6 +351,24 @@ export default function GestionAcademicaPage() {
                   ))}
                   {anios.length === 0 && <option>Cargando...</option>}
                 </select>
+                {anioObj && (
+  <div className="flex items-center gap-2 ml-4 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg">
+    <div className="flex flex-col">
+      <span className="text-[10px] uppercase font-bold text-blue-400 leading-none">Vigencia</span>
+      <div className="flex items-center gap-2 text-sm font-semibold text-[#093E7A]">
+        <span className="flex items-center gap-1">
+          <span className="material-symbols-outlined text-xs">calendar_today</span>
+          {new Date(anioObj.fecha_inicio).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+        </span>
+        <span className="text-blue-300">→</span>
+        <span className="flex items-center gap-1">
+          <span className="material-symbols-outlined text-xs">event</span>
+          {new Date(anioObj.fecha_fin).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+        </span>
+      </div>
+    </div>
+  </div>
+)}
               </div>
             </div>
             
