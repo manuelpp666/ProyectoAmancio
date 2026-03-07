@@ -3,20 +3,27 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 import { toast } from "sonner";
 import { Nivel, Grado, Seccion } from "@/src/interfaces/academic";
-import { AnioEscolar } from "@/src/interfaces/academic";
 import { AlumnoMatriculado } from "@/src/interfaces/matricula";
+import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
+import { AnioSelector } from "@/src/components/utils/AnioSelector";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function AsignacionEstudiantesPage() {
+  
+  const { 
+    anioPlanificacion: selectedAnio, 
+    setAnioPlanificacion: setSelectedAnio, 
+    listaAnios: anios, 
+    loadingAnios 
+  } = useAnioAcademico();
   // --- ESTADOS DE DATOS MAESTROS ---
-  const [anios, setAnios] = useState<AnioEscolar[]>([]);
+
   const [niveles, setNiveles] = useState<Nivel[]>([]);
   const [grados, setGrados] = useState<Grado[]>([]);
   const [secciones, setSecciones] = useState<Seccion[]>([]);
 
   // --- ESTADOS DE SELECCIÓN ---
-  const [selectedAnio, setSelectedAnio] = useState<string>("");
   const [selectedNivel, setSelectedNivel] = useState<number | null>(null);
   const [selectedGrado, setSelectedGrado] = useState<number | null>(null);
 
@@ -31,26 +38,10 @@ export default function AsignacionEstudiantesPage() {
 
   // 1. CARGA INICIAL
   useEffect(() => {
-    const fetchMaestros = async () => {
-      try {
-        const [resAnios, resNiveles] = await Promise.all([
-          fetch(`${API_URL}/academic/anios/`),
-          fetch(`${API_URL}/academic/niveles/`)
-        ]);
-        const dataAnios = await resAnios.json();
-        setAnios(dataAnios);
-        setNiveles(await resNiveles.json());
-
-        const activo = dataAnios.find((a: AnioEscolar) => a.activo);
-        if (activo) setSelectedAnio(activo.id_anio_escolar);
-        else if (dataAnios.length > 0) setSelectedAnio(dataAnios[0].id_anio_escolar);
-
-      } catch (error) {
-        console.error(error);
-        toast.error("Error al cargar datos iniciales");
-      }
-    };
-    fetchMaestros();
+    fetch(`${API_URL}/academic/niveles/`)
+      .then(res => res.json())
+      .then(setNiveles)
+      .catch(() => toast.error("Error al cargar niveles"));
   }, []);
 
   // 2. CARGAR GRADOS CUANDO CAMBIA NIVEL
@@ -132,28 +123,19 @@ export default function AsignacionEstudiantesPage() {
 
   // --- LÓGICA DE NEGOCIO Y FECHAS ---
 
-  const anioActualObj = anios.find(a => a.id_anio_escolar === selectedAnio);
+  const anioActualObj = useMemo(() => 
+    anios.find(a => a.id_anio_escolar === selectedAnio), 
+  [anios, selectedAnio]);
 
   // VALIDACIÓN DE FECHAS DE INSCRIPCIÓN
   const isPeriodoInscripcionActivo = useMemo(() => {
-    if (!anioActualObj) return false;
-
-    // Si no tiene fechas configuradas, asumimos cerrado por seguridad o abierto según prefieras.
-    // Aquí asumimos CERRADO si no hay fechas.
-    if (!anioActualObj.inicio_inscripcion || !anioActualObj.fin_inscripcion) return false;
-
+    if (!anioActualObj?.inicio_inscripcion || !anioActualObj?.fin_inscripcion) return false;
     const hoy = new Date();
-    // Ajustar horas para comparar solo fechas (ignorar hora actual)
     hoy.setHours(0, 0, 0, 0);
-
-    // Convertir strings YYYY-MM-DD a Date con ajuste de zona horaria local
-    // (Ojo: new Date('2026-01-05') suele ser UTC, mejor usar split)
     const [yI, mI, dI] = anioActualObj.inicio_inscripcion.split('-').map(Number);
     const inicio = new Date(yI, mI - 1, dI);
-
     const [yF, mF, dF] = anioActualObj.fin_inscripcion.split('-').map(Number);
     const fin = new Date(yF, mF - 1, dF);
-
     return hoy >= inicio && hoy <= fin;
   }, [anioActualObj]);
 
@@ -301,18 +283,12 @@ export default function AsignacionEstudiantesPage() {
               </div>
               <div className="h-6 w-px bg-gray-200 mx-2"></div>
               <div className="flex items-center gap-2">
-                <label className="text-xs font-bold text-gray-400 uppercase">Periodo:</label>
-                <select
+                <AnioSelector 
                   value={selectedAnio}
-                  onChange={(e) => setSelectedAnio(e.target.value)}
-                  className="bg-gray-50 border-gray-200 rounded-lg text-sm font-bold text-[#093E7A] focus:ring-[#093E7A] focus:border-[#093E7A] py-1 pr-8"
-                >
-                  {anios.map(a => (
-                    <option key={a.id_anio_escolar} value={a.id_anio_escolar}>
-                      {a.id_anio_escolar} - {a.tipo}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setSelectedAnio}
+                  anios={anios}
+                  loading={loadingAnios}
+                />
 
                 {/* INDICADOR DE ESTADO DE INSCRIPCIÓN */}
                 {isPeriodoInscripcionActivo ? (

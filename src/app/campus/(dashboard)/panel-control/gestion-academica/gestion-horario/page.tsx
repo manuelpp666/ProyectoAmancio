@@ -12,9 +12,16 @@ import {
 } from "@/src/interfaces/academic";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
+import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
+import { AnioSelector } from "@/src/components/utils/AnioSelector";
 
 export default function ConstructorHorariosPage() {
-
+  const {
+    anioPlanificacion,
+    setAnioPlanificacion,
+    listaAnios,
+    loadingAnios
+  } = useAnioAcademico();
 
   // --- ESTADOS PARA LA DATA ---
   const [secciones, setSecciones] = useState<Seccion[]>([]);
@@ -25,9 +32,6 @@ export default function ConstructorHorariosPage() {
   const [loading, setLoading] = useState<boolean>(true);
 
   const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
-
-  const [listaAnios, setListaAnios] = useState<AnioEscolar[]>([]);
-  const [anioPlanificacion, setAnioPlanificacion] = useState<string>("");
 
   // --- REFERENCIA PARA IMPRESIÓN ---
   const contentRef = useRef<HTMLDivElement>(null);
@@ -106,24 +110,7 @@ export default function ConstructorHorariosPage() {
     contentRef,
     documentTitle: `Horario_${anioPlanificacion}_Seccion`,
   });
-  // 1. CARGA DE AÑOS ACADÉMICOS (Solo una vez al montar)
-  useEffect(() => {
-    const cargarAnios = async () => {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/anios/`);
-        const data: AnioEscolar[] = await res.json();
-        setListaAnios(data);
-
-        // Seleccionar el activo o el primero de la lista
-        const activo = data.find((a) => a.activo === true) || data[0];
-        if (activo) setAnioPlanificacion(activo.id_anio_escolar.toString());
-      } catch (error) {
-        toast.error("Error al cargar años académicos");
-      }
-    };
-    cargarAnios();
-  }, []);
-
+  
   // --- 2. CARGA INICIAL (Secciones y Horas) ---
   useEffect(() => {
     if (!anioPlanificacion) return;
@@ -259,18 +246,12 @@ export default function ConstructorHorariosPage() {
               <span className="material-symbols-outlined text-[#093E7A]">calendar_month</span>
               <h2 className="text-xl font-bold text-gray-800">Constructor 2026</h2>
               <div className="flex items-center gap-2 border-l pl-6">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Año Académico:</label>
-                <select
+                <AnioSelector
                   value={anioPlanificacion}
-                  onChange={(e) => setAnioPlanificacion(e.target.value)}
-                  className="bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold text-[#093E7A] py-1 px-3 outline-none cursor-pointer hover:bg-white transition-colors"
-                >
-                  {listaAnios.map((anio) => (
-                    <option key={anio.id_anio_escolar} value={anio.id_anio_escolar}>
-                      {anio.id_anio_escolar} {anio.activo === true ? ' (Actual)' : ''}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setAnioPlanificacion}
+                  anios={listaAnios}
+                  loading={loadingAnios}
+                />
               </div>
             </div>
             <div className="flex gap-3">

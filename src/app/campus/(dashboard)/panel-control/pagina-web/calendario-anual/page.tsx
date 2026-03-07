@@ -9,13 +9,18 @@ import { AnioEscolar } from "@/src/interfaces/academic"; // Asegúrate de que es
 import { ConfirmModal } from '@/src/components/utils/ConfirmModal';
 import { useRouter } from 'next/navigation';
 import { EventRow } from '@/src/components/Evento/EventRow';
+import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
+import { AnioSelector } from "@/src/components/utils/AnioSelector";
+
 
 export default function CalendarioPage() {
   const router = useRouter();
-  
-  // --- ESTADOS PARA AÑOS ACADÉMICOS ---
-  const [anios, setAnios] = useState<AnioEscolar[]>([]);
-  const [anioSeleccionado, setAnioSeleccionado] = useState<string>("");
+  const { 
+  anioPlanificacion: anioSeleccionado, 
+  setAnioPlanificacion: setAnioSeleccionado, 
+  listaAnios: anios, 
+  loadingAnios 
+} = useAnioAcademico();
   
   // --- ESTADOS PARA EVENTOS ---
   const [eventos, setEventos] = useState<Evento[]>([]);
@@ -28,28 +33,7 @@ export default function CalendarioPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [idToDelete, setIdToDelete] = useState<number | null>(null);
 
-  // 1. Cargar Años Académicos
-  useEffect(() => {
-    const fetchAnios = async () => {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/anios/`);
-        if (!res.ok) throw new Error("Error al obtener años");
-        const data: AnioEscolar[] = await res.json();
-        setAnios(data);
-
-        const actual = data.find(a => a.activo);
-        if (actual) {
-          setAnioSeleccionado(String(actual.id_anio_escolar));
-        } else if (data.length > 0) {
-          setAnioSeleccionado(String(data[0].id_anio_escolar));
-        }
-      } catch (error) {
-        toast.error("No se pudieron cargar los periodos académicos");
-      }
-    };
-    fetchAnios();
-  }, []);
-
+  
   // 2. Cargar Eventos por Año (Memorizado)
   const fetchEventos = useCallback(async (anioId: string) => {
     if (!anioId) return;
@@ -109,21 +93,13 @@ export default function CalendarioPage() {
                   Gestión de Eventos
                 </h3>
                 <div className="flex items-center gap-3 mt-2">
-                  <span className="text-sm font-bold text-gray-500">Periodo:</span>
-                  <div className="relative">
-                    <select
-                      value={anioSeleccionado}
-                      onChange={(e) => setAnioSeleccionado(e.target.value)}
-                      className="appearance-none bg-white border border-gray-200 text-[#093E7A] text-xs py-1.5 pl-3 pr-8 rounded-lg focus:outline-none font-black uppercase tracking-wider cursor-pointer"
-                    >
-                      {anios.map(a => (
-                        <option key={a.id_anio_escolar} value={a.id_anio_escolar}>
-                          Año {a.id_anio_escolar}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                  </div>
+                  
+                  <AnioSelector 
+    value={anioSeleccionado}
+    onChange={setAnioSeleccionado}
+    anios={anios}
+    loading={loadingAnios}
+  />
                 </div>
               </div>
 

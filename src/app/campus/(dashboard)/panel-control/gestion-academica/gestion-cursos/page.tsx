@@ -1,12 +1,19 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
-import { NivelConCursos, AnioEscolar, Area } from "@/src/interfaces/academic"; // Ajusta la ruta
+import { NivelConCursos, AnioEscolar, Area } from "@/src/interfaces/academic"; 
+import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
+import { AnioSelector } from "@/src/components/utils/AnioSelector";
 import { toast } from "sonner";
 
 export default function GestionCursosPage() {
+  const { 
+    anioPlanificacion: selectedAnio, 
+    setAnioPlanificacion: setSelectedAnio, 
+    listaAnios: anios, 
+    loadingAnios 
+  } = useAnioAcademico();
   const [niveles, setNiveles] = useState<NivelConCursos[]>([]);
-  const [anios, setAnios] = useState<AnioEscolar[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -67,29 +74,29 @@ export default function GestionCursosPage() {
     });
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    setLoading(true);
     try {
-      const [resNiveles, resAnios, resAreas] = await Promise.all([
+      // Nota: Si tu API permite filtrar por año, añade ?anio_id=${selectedAnio}
+      const [resNiveles, resAreas] = await Promise.all([
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/niveles-cursos/`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/anios/`),
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/areas/`)
       ]);
 
-      if (resNiveles.ok && resAnios.ok && resAreas.ok) {
+      if (resNiveles.ok && resAreas.ok) {
         setNiveles(await resNiveles.json());
-        setAnios(await resAnios.json());
         setAreas(await resAreas.json());
       }
     } catch (error) {
-      console.error("Error al conectar con la API:", error);
+      toast.error("Error al conectar con la API");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   // --- Lógica de Guardado ---
 
@@ -215,14 +222,12 @@ export default function GestionCursosPage() {
               </div>
               <div className="h-6 w-px bg-gray-200 mx-2"></div>
               <div className="flex items-center gap-2">
-                <label className="text-xs font-bold text-gray-400 uppercase">Año Académico:</label>
-                <select className="bg-gray-50 border-gray-200 rounded-lg text-sm font-bold text-[#093E7A] py-1">
-                  {anios.map(anio => (
-                    <option key={anio.id_anio_escolar} value={anio.id_anio_escolar}>
-                      {anio.id_anio_escolar} {anio.activo ? '(Activo)' : ''}
-                    </option>
-                  ))}
-                </select>
+                <AnioSelector 
+                  value={selectedAnio}
+                  onChange={setSelectedAnio}
+                  anios={anios}
+                  loading={loadingAnios}
+                />
               </div>
             </div>
             <button

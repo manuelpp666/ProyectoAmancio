@@ -8,30 +8,21 @@ import Link from "next/link";
 import { AnioEscolar } from "@/src/interfaces/academic";
 import { ResumenNota } from "@/src/interfaces/datos_alumno";
 import { toast } from "sonner";
+import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
+import { AnioSelector } from "@/src/components/utils/AnioSelector";
 
 export default function MisCalificacionesPage() {
+  const {
+    anioPlanificacion: anioSeleccionado,
+    setAnioPlanificacion: setAnioSeleccionado,
+    listaAnios: anios,
+    loadingAnios
+  } = useAnioAcademico();
+
   const { id_usuario, loading: userLoading } = useUser();
   const [resumen, setResumen] = useState<ResumenNota[]>([]);
-  const [anios, setAnios] = useState<AnioEscolar[]>([]);
-  const [anioSeleccionado, setAnioSeleccionado] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
-  // 1. Cargar Años al montar
-  useEffect(() => {
-    const fetchAnios = async () => {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/anios/`);
-        const data: AnioEscolar[] = await res.json();
-        setAnios(data);
-        const actual = data.find(a => a.activo) || data[0];
-        if (actual) setAnioSeleccionado(String(actual.id_anio_escolar));
-      } catch (err) {
-        toast.error("No se pudieron cargar los años escolares");
-        console.error("Error cargando años:", err);
-      }
-    };
-    fetchAnios();
-  }, []);
 
   // 2. Carga de Resumen (Memorizada)
   const fetchResumen = useCallback(async (uid: number, anio: string) => {
@@ -71,17 +62,13 @@ export default function MisCalificacionesPage() {
         </div>
 
         {/* SELECTOR DE AÑO */}
-        <div className="relative">
-          <select
+        <div className="flex items-center gap-3">
+          <AnioSelector
             value={anioSeleccionado}
-            onChange={(e) => setAnioSeleccionado(e.target.value)}
-            className="appearance-none bg-white border-2 border-gray-200 py-2 pl-4 pr-10 rounded-xl font-bold text-sm cursor-pointer hover:border-[#701C32]"
-          >
-            {anios.map(a => (
-              <option key={a.id_anio_escolar} value={a.id_anio_escolar}>Año {a.id_anio_escolar}</option>
-            ))}
-          </select>
-          <ChevronDown size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            onChange={setAnioSeleccionado}
+            anios={anios}
+            loading={loadingAnios}
+          />
         </div>
       </header>
 

@@ -4,6 +4,8 @@ import { ArrowRight, ChevronDown, Loader2, BookOpen, AlertCircle } from "lucide-
 import { Curso, AnioEscolar } from "@/src/interfaces/academic";
 import { useUser } from "@/src/context/userContext";
 import Link from "next/link";
+import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
+import { AnioSelector } from "@/src/components/utils/AnioSelector";
 
 interface CursoCards extends Curso {
   docente_nombres: string;
@@ -13,36 +15,18 @@ interface CursoCards extends Curso {
 }
 
 export default function CursosPage() {
+
+  const {
+    anioPlanificacion: anioSeleccionado,
+    setAnioPlanificacion: setAnioSeleccionado,
+    listaAnios: anios,
+    loadingAnios
+  } = useAnioAcademico();
   const { id_usuario, loading: userLoading } = useUser();
   const [cursos, setCursos] = useState<CursoCards[]>([]);
-  const [anios, setAnios] = useState<AnioEscolar[]>([]);
-  const [anioSeleccionado, setAnioSeleccionado] = useState<string>("");
   const [loadingCursos, setLoadingCursos] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 1. Cargar Años (Solo al montar el componente)
-  useEffect(() => {
-    const fetchAnios = async () => {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/anios/`);
-        if (!res.ok) throw new Error("Error al obtener años escolares");
-        const data: AnioEscolar[] = await res.json();
-        setAnios(data);
-
-        // Priorizar el año activo
-        const actual = data.find(a => a.activo);
-        if (actual) {
-          setAnioSeleccionado(String(actual.id_anio_escolar));
-        } else if (data.length > 0) {
-          setAnioSeleccionado(String(data[0].id_anio_escolar));
-        }
-      } catch (error) {
-        console.error("Error cargando años:", error);
-        setError("No se pudieron cargar los periodos académicos");
-      }
-    };
-    fetchAnios();
-  }, []);
 
   // 2. Función de carga de cursos (Memorizada para evitar renders infinitos)
   const fetchMisCursos = useCallback(async (uid: number, anio: string) => {
@@ -76,11 +60,11 @@ export default function CursosPage() {
   }, [id_usuario, anioSeleccionado, userLoading, fetchMisCursos]);
 
   // Pantalla de carga inicial (Mientras se recupera la sesión)
-  if (userLoading) {
+  if (userLoading || loadingAnios) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
         <Loader2 className="animate-spin text-[#701C32]" size={48} />
-        <p className="text-gray-500 animate-pulse">Cargando perfil...</p>
+        <p className="text-gray-500 animate-pulse">Cargando periodo académico...</p>
       </div>
     );
   }
@@ -95,24 +79,12 @@ export default function CursosPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-gray-600">Periodo:</span>
-          <div className="relative">
-            <select
-              value={anioSeleccionado}
-              onChange={(e) => {
-                setCursos([]); // Limpiamos cursos actuales para feedback visual
-                setAnioSeleccionado(e.target.value);
-              }}
-              className="appearance-none bg-white border-2 border-gray-200 hover:border-[#701C32] text-gray-700 text-sm py-2 pl-4 pr-10 rounded-xl focus:outline-none transition-all cursor-pointer font-bold"
-            >
-              {anios.map(a => (
-                <option key={a.id_anio_escolar} value={a.id_anio_escolar}>
-                  Año Académico {a.id_anio_escolar}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          </div>
+          <AnioSelector
+            value={anioSeleccionado}
+            onChange={setAnioSeleccionado}
+            anios={anios}
+            loading={loadingAnios}
+          />
         </div>
       </div>
 

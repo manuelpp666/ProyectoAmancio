@@ -4,21 +4,28 @@ import { Nivel, Seccion, AnioEscolar, Grado } from "@/src/interfaces/academic";
 import GradoCard from "@/src/components/Academic/GradoCard";
 import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 import { toast } from "sonner";
+import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
+import { AnioSelector } from "@/src/components/utils/AnioSelector";
+
 
 // URL Base
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function GestionAcademicaPage() {
+
+  const {
+    anioPlanificacion: anioSeleccionado,
+    setAnioPlanificacion: setAnioSeleccionado,
+    anioObj,
+    listaAnios: anios,
+    loadingAnios,
+    refreshAnios
+  } = useAnioAcademico();
   // --- ESTADOS GLOBALES ---
   const [niveles, setNiveles] = useState<Nivel[]>([]);
-  const [anios, setAnios] = useState<AnioEscolar[]>([]);
   const [grados, setGrados] = useState<Grado[]>([]);
   const [secciones, setSecciones] = useState<Seccion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // --- ESTADO DEL AÑO ACTUAL ---
-  const [anioSeleccionado, setAnioSeleccionado] = useState<string>("");
-  const [anioObj, setAnioObj] = useState<AnioEscolar | null>(null);
 
   // --- MODAL APERTURA AÑO ---
   const [isAperturaModalOpen, setIsAperturaModalOpen] = useState(false);
@@ -65,26 +72,16 @@ export default function GestionAcademicaPage() {
   const fetchDatosMaestros = async () => {
     try {
       setIsLoading(true);
-      const [resAnios, resNiveles, resGrados] = await Promise.all([
-        fetch(`${API_URL}/academic/anios/`),
+      const [resNiveles, resGrados] = await Promise.all([
         fetch(`${API_URL}/academic/niveles/`),
         fetch(`${API_URL}/academic/grados/`)
       ]);
 
-      const dataAnios = await resAnios.json();
-      setAnios(dataAnios);
       setNiveles(await resNiveles.json());
       setGrados(await resGrados.json());
 
-      if (!anioSeleccionado) {
-        const activo = dataAnios.find((a: AnioEscolar) => a.activo);
-        if (activo) setAnioSeleccionado(activo.id_anio_escolar);
-        else if (dataAnios.length > 0) setAnioSeleccionado(dataAnios[0].id_anio_escolar);
-      }
-
     } catch (error) {
-      console.error("Error cargando datos:", error);
-      toast.error("Error de conexión con el servidor");
+      toast.error("Error de conexión");
     } finally {
       setIsLoading(false);
     }
@@ -107,27 +104,20 @@ export default function GestionAcademicaPage() {
 
   useEffect(() => {
     if (anioSeleccionado) {
-      const obj = anios.find(a => a.id_anio_escolar === anioSeleccionado) || null;
-      setAnioObj(obj);
+      // 1. Cargar secciones del año elegido
       fetchSeccionesDelAnio(anioSeleccionado);
 
-      // Cargar fechas de inscripción actuales si existen
-      if (obj) {
-        // @ts-ignore (Si TS se queja de las propiedades nuevas)
+      // 2. Sincronizar datos de inscripción si el objeto del año existe
+      if (anioObj) {
         setInscripcionData({
-          // @ts-ignore
-          inicio_inscripcion: obj.inicio_inscripcion || "",
-          // @ts-ignore
-          fin_inscripcion: obj.fin_inscripcion || ""
+          inicio_inscripcion: anioObj.inicio_inscripcion || "",
+          fin_inscripcion: anioObj.fin_inscripcion || ""
         });
       }
     } else {
-      setAnioObj(null);
       setSecciones([]);
     }
-  }, [anioSeleccionado, anios]);
-
-
+  }, [anioSeleccionado, anioObj]);
   // =========================================================
   // 2. LÓGICA DE FILTROS
   // =========================================================
@@ -140,7 +130,7 @@ export default function GestionAcademicaPage() {
   };
 
   const getNivelesVisibles = () => {
-    if (!anioObj) return [];
+    if (loadingAnios || !anioObj) return niveles;
     const esVerano = anioObj.tipo === "VERANO";
 
     return niveles.filter(n => {
@@ -183,8 +173,7 @@ export default function GestionAcademicaPage() {
       if (res.ok) {
         toast.success(`Año Académico ${nuevoAnioData.id_anio_escolar} configurado`);
         setIsAperturaModalOpen(false);
-        setNuevoAnioData({ id_anio_escolar: "", fecha_inicio: "", fecha_fin: "", tipo: "REGULAR" });
-        fetchDatosMaestros();
+        refreshAnios();
       } else {
         const err = await res.json();
         toast.error(err.detail || "Error al abrir el año");
@@ -338,19 +327,13 @@ export default function GestionAcademicaPage() {
               </div>
               <div className="h-6 w-px bg-gray-200 mx-2"></div>
               <div className="flex items-center gap-2">
-                <label className="text-xs font-bold text-gray-400 uppercase">Año Académico:</label>
-                <select
+
+                <AnioSelector
                   value={anioSeleccionado}
-                  onChange={(e) => setAnioSeleccionado(e.target.value)}
-                  className="bg-gray-50 border-gray-200 rounded-lg text-sm font-bold text-[#093E7A] focus:ring-[#093E7A] focus:border-[#093E7A] py-1 pr-8"
-                >
-                  {anios.map(a => (
-                    <option key={a.id_anio_escolar} value={a.id_anio_escolar}>
-                      {a.id_anio_escolar} ({a.tipo})
-                    </option>
-                  ))}
-                  {anios.length === 0 && <option>Cargando...</option>}
-                </select>
+                  onChange={setAnioSeleccionado}
+                  anios={anios}
+                  loading={loadingAnios}
+                />
                 {anioObj && (
                   <div className="flex items-center gap-2 ml-4 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg">
                     <div className="flex flex-col">

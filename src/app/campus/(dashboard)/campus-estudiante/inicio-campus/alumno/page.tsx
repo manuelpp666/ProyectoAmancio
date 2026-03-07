@@ -1,18 +1,25 @@
 "use client";
 import { useEffect, useState } from "react";
-import { ChevronDown, Loader2, AlertCircle} from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { useUser } from "@/src/context/userContext";
 import { toast } from "sonner";
-import { HoraLectiva, AnioEscolar } from "@/src/interfaces/academic";
+import { HoraLectiva } from "@/src/interfaces/academic";
 import { TablaHorario } from "@/src/components/Horario/TablaHorario";
 import { useHorario } from "@/src/hooks/useHorario";
+import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
+import { AnioSelector } from "@/src/components/utils/AnioSelector";
 
 
 export default function HorarioAlumnoPage() {
+
+  const {
+    anioPlanificacion: anioSeleccionado,
+    setAnioPlanificacion: setAnioSeleccionado,
+    listaAnios: anios,
+    loadingAnios
+  } = useAnioAcademico();
   const { id_usuario, loading: userLoading } = useUser();
   const [bloquesHoras, setBloquesHoras] = useState<HoraLectiva[]>([]);
-  const [anios, setAnios] = useState<AnioEscolar[]>([]);
-  const [anioSeleccionado, setAnioSeleccionado] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
   // Usamos el hook para obtener el horario automáticamente
@@ -21,34 +28,25 @@ export default function HorarioAlumnoPage() {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const [resAnios, resHoras] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/anios/`),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/horarios/horas`)
-        ]);
-
-        const dataAnios = await resAnios.json();
+        // 1. Solo pedimos las horas, los años ya vienen del hook
+        const resHoras = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/horarios/horas`);
         const dataHoras = await resHoras.json();
-
-        setAnios(dataAnios);
         setBloquesHoras(dataHoras);
-
-        const actual = dataAnios.find((a: any) => a.activo) || dataAnios[0];
-        if (actual) setAnioSeleccionado(actual.id_anio_escolar);
       } catch (err) {
-        toast.error("Error al cargar la configuración inicial");
+        toast.error("Error al cargar la estructura del horario");
       }
     };
     fetchConfig();
   }, []);
 
-  if (userLoading || (horarioLoading && bloquesHoras.length === 0)) {
-    return (
-      <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
-        <Loader2 className="animate-spin text-[#701C32]" size={48} />
-        <p className="text-gray-500">Cargando...</p>
-      </div>
-    );
-  }
+  if (userLoading || loadingAnios || (horarioLoading && bloquesHoras.length === 0)) {
+  return (
+    <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
+      <Loader2 className="animate-spin text-[#701C32]" size={48} />
+      <p className="text-gray-500">Cargando horario...</p>
+    </div>
+  );
+}
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-6 pb-8 px-4">
@@ -60,20 +58,12 @@ export default function HorarioAlumnoPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <select
-              value={anioSeleccionado}
-              onChange={(e) => setAnioSeleccionado(e.target.value)}
-              className="appearance-none bg-white border-2 border-gray-200 text-gray-700 text-sm py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:border-[#701C32] transition-all cursor-pointer font-bold"
-            >
-              {anios.map(a => (
-                <option key={a.id_anio_escolar} value={a.id_anio_escolar}>
-                  Año {a.id_anio_escolar}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          </div>
+          <AnioSelector 
+    value={anioSeleccionado}
+    onChange={setAnioSeleccionado}
+    anios={anios}
+    loading={loadingAnios}
+  />
         </div>
       </div>
 

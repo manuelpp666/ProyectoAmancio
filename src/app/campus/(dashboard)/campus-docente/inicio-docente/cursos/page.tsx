@@ -5,31 +5,23 @@ import { useUser } from "@/src/context/userContext";
 import { AnioEscolar } from "@/src/interfaces/academic";
 import Link from "next/link";
 import { CursoDocente } from "@/src/interfaces/academic";
-
+import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
+import { AnioSelector } from "@/src/components/utils/AnioSelector";
 
 export default function MisCursosDocente() {
+
+  const {
+    anioPlanificacion: anioSeleccionado,
+    setAnioPlanificacion: setAnioSeleccionado,
+    listaAnios: anios,
+    loadingAnios
+  } = useAnioAcademico();
   const { id_usuario, loading: userLoading } = useUser();
   const [cursos, setCursos] = useState<CursoDocente[]>([]);
-  const [anios, setAnios] = useState<AnioEscolar[]>([]);
-  const [anioSeleccionado, setAnioSeleccionado] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Cargar Años Escolares
-  useEffect(() => {
-    const fetchAnios = async () => {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/anios/`);
-        const data = await res.json();
-        setAnios(data);
-        const actual = data.find((a: any) => a.activo) || data[0];
-        if (actual) setAnioSeleccionado(String(actual.id_anio_escolar));
-      } catch (err) {
-        setError("Error al cargar periodos académicos");
-      }
-    };
-    fetchAnios();
-  }, []);
+
 
   // Cargar Cursos del Docente
   const fetchCursos = useCallback(async (uid: number, anio: string) => {
@@ -53,7 +45,13 @@ export default function MisCursosDocente() {
     }
   }, [id_usuario, anioSeleccionado, userLoading, fetchCursos]);
 
-  if (userLoading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-[#701C32]" size={48} /></div>;
+  if (userLoading || loadingAnios) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="animate-spin text-[#701C32]" size={48} />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 p-4">
@@ -62,19 +60,12 @@ export default function MisCursosDocente() {
         <h1 className="text-3xl font-bold text-[#701C32]">Mis Cursos Asignados</h1>
 
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-gray-600">Periodo:</span>
-          <div className="relative">
-            <select
-              value={anioSeleccionado}
-              onChange={(e) => setAnioSeleccionado(e.target.value)}
-              className="appearance-none bg-white border-2 border-gray-200 text-gray-700 py-2 pl-4 pr-10 rounded-xl focus:outline-none focus:border-[#701C32] font-bold cursor-pointer transition-all"
-            >
-              {anios.map(a => (
-                <option key={a.id_anio_escolar} value={a.id_anio_escolar}>Año {a.id_anio_escolar}</option>
-              ))}
-            </select>
-            <ChevronDown size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          </div>
+          <AnioSelector
+            value={anioSeleccionado}
+            onChange={setAnioSeleccionado}
+            anios={anios}
+            loading={loadingAnios}
+          />
         </div>
       </div>
 
