@@ -7,7 +7,7 @@ import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
 import { Seccion, Curso } from "@/src/interfaces/academic";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
-
+import { apiFetch } from "@/src/lib/api";
 
 export default function AsignacionDocentesPage() {
   
@@ -53,9 +53,9 @@ export default function AsignacionDocentesPage() {
     try {
       setLoading(true);
       const [resVinculos, resDocentes, resSecciones] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/vínculos-academicos/${anioPlanificacion}`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/docentes-disponibles/`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/secciones/${anioPlanificacion}`)
+        apiFetch(`/gestion/vínculos-academicos/${anioPlanificacion}`),
+        apiFetch(`/gestion/docentes-disponibles/`),
+        apiFetch(`/academic/secciones/${anioPlanificacion}`)
       ]);
 
       setVinculos(await resVinculos.json());
@@ -78,7 +78,7 @@ export default function AsignacionDocentesPage() {
     setFormData({ ...formData, id_seccion, id_curso: "" });
     if (!id_seccion) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/cursos-por-seccion/${id_seccion}`);
+      const res = await apiFetch(`/academic/cursos-por-seccion/${id_seccion}`);
       const data = await res.json();
       setCursosDisponibles(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -106,10 +106,10 @@ export default function AsignacionDocentesPage() {
 
   const guardarAsignacion = async (e: React.FormEvent) => {
     e.preventDefault();
-    const url = editingId ? `${process.env.NEXT_PUBLIC_API_URL}/gestion/carga/${editingId}` : `${process.env.NEXT_PUBLIC_API_URL}/gestion/carga/`;
+    const url = editingId ? `/gestion/carga/${editingId}` : `/gestion/carga/`;
     const method = editingId ? "PATCH" : "POST";
 
-    const promise = fetch(url, {
+    const promise = apiFetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -134,7 +134,7 @@ export default function AsignacionDocentesPage() {
   const handleEliminar = async (id: number) => {
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/carga/${id}`, { method: "DELETE" });
+      const res = await apiFetch(`/gestion/carga/${id}`, { method: "DELETE" });
       if (res.ok) {
         toast.success("Asignación eliminada correctamente");
         fetchData();

@@ -3,18 +3,18 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useUser } from "@/src/context/userContext";
 import { EstadoConducta } from "@/src/interfaces/datos_alumno";
-import { 
-  ShieldCheck, 
-  AlertTriangle, 
-  History, 
-  Loader2, 
+import {
+  ShieldCheck,
+  AlertTriangle,
+  History,
+  Loader2,
   Info,
   CheckCircle2,
   ArrowRight,
   AlertCircle
 
 } from "lucide-react";
-
+import { apiFetch } from "@/src/lib/api";
 
 export default function ConductaAlumnoPage() {
   const { id_usuario, loading: userLoading } = useUser();
@@ -25,7 +25,7 @@ export default function ConductaAlumnoPage() {
   const fetchEstadoConducta = useCallback(async (uid: number) => {
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/conducta/usuario/${uid}/estado-conducta`);
+      const res = await apiFetch(`/conducta/usuario/${uid}/estado-conducta`);
       if (!res.ok) throw new Error("No se pudo obtener la información de conducta");
       const result = await res.json();
       setData(result);
@@ -59,7 +59,7 @@ export default function ConductaAlumnoPage() {
       default: return "bg-emerald-500 text-emerald-500 border-emerald-200";
     }
   };
-const ultimoReporte = data?.historial?.[0];
+  const ultimoReporte = data?.historial?.[0];
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-12 px-4 animate-in fade-in duration-500">
       {/* HEADER */}
@@ -75,10 +75,10 @@ const ultimoReporte = data?.historial?.[0];
         <div className="relative flex-shrink-0">
           {/* Círculo de Puntaje */}
           <div className={`w-32 h-32 rounded-full border-8 flex items-center justify-center flex-col ${data?.estado_color === 'Verde' ? 'border-emerald-50' : data?.estado_color === 'Amarillo' ? 'border-amber-50' : 'border-red-50'}`}>
-             <span className={`text-4xl font-black ${data?.estado_color === 'Verde' ? 'text-emerald-600' : data?.estado_color === 'Amarillo' ? 'text-amber-600' : 'text-red-600'}`}>
-                {data?.puntaje_actual}
-             </span>
-             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Puntos</span>
+            <span className={`text-4xl font-black ${data?.estado_color === 'Verde' ? 'text-emerald-600' : data?.estado_color === 'Amarillo' ? 'text-amber-600' : 'text-red-600'}`}>
+              {data?.puntaje_actual}
+            </span>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Puntos</span>
           </div>
         </div>
 
@@ -90,10 +90,10 @@ const ultimoReporte = data?.historial?.[0];
             </div>
             <span className="font-black text-2xl text-gray-300">100</span>
           </div>
-          
+
           {/* La Barra de Progreso */}
           <div className="h-4 w-full bg-gray-100 rounded-full overflow-hidden">
-            <div 
+            <div
               className={`h-full transition-all duration-1000 ease-out ${getColorClasses(data?.estado_color || "").split(' ')[0]}`}
               style={{ width: data?.porcentaje_progreso }}
             />
@@ -117,49 +117,49 @@ const ultimoReporte = data?.historial?.[0];
         </h3>
 
         {/* ÚLTIMO REPORTE Y ACCESO AL HISTORIAL */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="text-xl font-bold text-gray-800">Última Incidencia</h3>
-          <Link 
-            href="/campus/campus-estudiante/inicio-campus/alumno/conducta/mis-reportes" 
-            className="text-sm font-bold text-[#701C32] hover:underline flex items-center gap-1"
-          >
-            Ver historial completo <ArrowRight size={16} />
-          </Link>
-        </div>
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-bold text-gray-800">Última Incidencia</h3>
+            <Link
+              href="/campus/campus-estudiante/inicio-campus/alumno/conducta/mis-reportes"
+              className="text-sm font-bold text-[#701C32] hover:underline flex items-center gap-1"
+            >
+              Ver historial completo <ArrowRight size={16} />
+            </Link>
+          </div>
 
-        {ultimoReporte ? (
-          <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-5">
-            <div className="flex justify-between items-start">
-              <div className="flex gap-4">
-                <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-red-500">
-                  <AlertCircle size={20} />
+          {ultimoReporte ? (
+            <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-5">
+              <div className="flex justify-between items-start">
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-red-500">
+                    <AlertCircle size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-800">{ultimoReporte.motivo}</h4>
+                    <p className="text-xs text-gray-500">{ultimoReporte.fecha}</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-bold text-gray-800">{ultimoReporte.motivo}</h4>
-                  <p className="text-xs text-gray-500">{ultimoReporte.fecha}</p>
-                </div>
+                <span className="text-red-600 font-black">-{ultimoReporte.puntos_restados} pts</span>
               </div>
-              <span className="text-red-600 font-black">-{ultimoReporte.puntos_restados} pts</span>
             </div>
-          </div>
-        ) : (
-          <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-12 flex flex-col items-center text-center">
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
-              <ShieldCheck className="text-emerald-500" size={32} />
+          ) : (
+            <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-12 flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                <ShieldCheck className="text-emerald-500" size={32} />
+              </div>
+              <h4 className="text-emerald-900 font-bold text-lg">¡Excelente conducta!</h4>
+              <p className="text-emerald-700 text-sm max-w-xs">No tienes reportes registrados. Mantén tu puntaje en 100 para obtener beneficios al finalizar el año.</p>
             </div>
-            <h4 className="text-emerald-900 font-bold text-lg">¡Excelente conducta!</h4>
-            <p className="text-emerald-700 text-sm max-w-xs">No tienes reportes registrados. Mantén tu puntaje en 100 para obtener beneficios al finalizar el año.</p>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
       </div>
 
       {/* NOTA ACLARATORIA */}
       <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex gap-3 items-start">
         <Info className="text-blue-500 flex-shrink-0" size={20} />
         <p className="text-xs text-blue-700 leading-relaxed">
-          Los puntos son descontados automáticamente según la gravedad de la falta tipificada en el Reglamento Interno. 
+          Los puntos son descontados automáticamente según la gravedad de la falta tipificada en el Reglamento Interno.
           Si consideras que un reporte es erróneo, por favor acude a la oficina de tutoría o psicología.
         </p>
       </div>

@@ -4,6 +4,7 @@ import { useEventos } from '@/src/hooks/useEvento';
 import { EventRow } from '@/src/components/Evento/EventRow';
 import { Search, Filter, CalendarDays } from "lucide-react";
 import { AnioEscolar } from "@/src/interfaces/academic";
+import { apiFetch } from "@/src/lib/api";
 
 export default function TodosLosEventosPage() {
   // 1. Cargamos todos los eventos
@@ -18,7 +19,7 @@ export default function TodosLosEventosPage() {
   useEffect(() => {
     const fetchAnios = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/anios/`);
+        const res = await apiFetch(`/academic/anios/`);
         if (res.ok) {
           const data = await res.json();
           setAniosAcademicos(data);

@@ -8,6 +8,8 @@ interface NoticiaRowProps {
     noticia: NoticiaResponse;
 }
 import { toast } from 'sonner';
+import { apiFetch } from "@/src/lib/api";
+
 
 export const NoticiaRow = ({ noticia }: NoticiaRowProps) => {
    const [isModalOpen, setIsModalOpen] = useState(false);
@@ -15,7 +17,7 @@ export const NoticiaRow = ({ noticia }: NoticiaRowProps) => {
 const handleToggleStatus = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/noticias/${noticia.id_noticia}`, {
+            const response = await apiFetch(`/web/noticias/${noticia.id_noticia}`, {
                 method: 'DELETE', // Tu endpoint usa @router.delete
             });
 

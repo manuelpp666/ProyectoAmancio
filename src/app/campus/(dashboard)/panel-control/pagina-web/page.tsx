@@ -8,7 +8,7 @@ import * as LucideIcons from "lucide-react";
 import HeaderPanel from '@/src/components/Campus/PanelControl/Header';
 import { Save, Home, Users, Footprints, Loader2,ChevronRight} from 'lucide-react';
 import { toast } from "sonner";
-
+import { apiFetch } from "@/src/lib/api";
 
 const SECCIONES = [
   {
@@ -61,7 +61,7 @@ export default function GestionWebPage() {
     const camposActuales = SECCIONES.find(s => s.id === tab)?.campos || [];
     const promesas = camposActuales.map(campo => {
       const valor = getVal(campo.clave);
-      return fetch(`${process.env.NEXT_PUBLIC_API_URL}/configuracion/${campo.clave}?seccion=${tab}`, {
+      return apiFetch(`/configuracion/${campo.clave}?seccion=${tab}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ valor })

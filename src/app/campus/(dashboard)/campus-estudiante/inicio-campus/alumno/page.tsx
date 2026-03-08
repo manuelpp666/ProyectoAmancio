@@ -8,7 +8,7 @@ import { TablaHorario } from "@/src/components/Horario/TablaHorario";
 import { useHorario } from "@/src/hooks/useHorario";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
-
+import { apiFetch } from "@/src/lib/api";
 
 export default function HorarioAlumnoPage() {
 
@@ -29,7 +29,7 @@ export default function HorarioAlumnoPage() {
     const fetchConfig = async () => {
       try {
         // 1. Solo pedimos las horas, los años ya vienen del hook
-        const resHoras = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/horarios/horas`);
+        const resHoras = await apiFetch(`/horarios/horas`);
         const dataHoras = await resHoras.json();
         setBloquesHoras(dataHoras);
       } catch (err) {
@@ -40,13 +40,13 @@ export default function HorarioAlumnoPage() {
   }, []);
 
   if (userLoading || loadingAnios || (horarioLoading && bloquesHoras.length === 0)) {
-  return (
-    <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
-      <Loader2 className="animate-spin text-[#701C32]" size={48} />
-      <p className="text-gray-500">Cargando horario...</p>
-    </div>
-  );
-}
+    return (
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
+        <Loader2 className="animate-spin text-[#701C32]" size={48} />
+        <p className="text-gray-500">Cargando horario...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-6 pb-8 px-4">
@@ -58,12 +58,12 @@ export default function HorarioAlumnoPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <AnioSelector 
-    value={anioSeleccionado}
-    onChange={setAnioSeleccionado}
-    anios={anios}
-    loading={loadingAnios}
-  />
+          <AnioSelector
+            value={anioSeleccionado}
+            onChange={setAnioSeleccionado}
+            anios={anios}
+            loading={loadingAnios}
+          />
         </div>
       </div>
 

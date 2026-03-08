@@ -6,6 +6,8 @@ import ModalCrearTarea from "@/src/components/Tarea/ModalCrearTarea";
 import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
 import { toast } from "sonner";
 import ModalVerEntregas from "@/src/components/Tarea/ModalVerEntregas";
+import { apiFetch } from "@/src/lib/api";
+
 
 export default function DetalleCursoDocente() {
   const params = useParams();
@@ -58,7 +60,7 @@ export default function DetalleCursoDocente() {
 
     const toastId = toast.loading("Publicando notas...");
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/virtual/guardar-notas-masivo/`, {
+      const res = await apiFetch(`/virtual/guardar-notas-masivo/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -80,7 +82,7 @@ export default function DetalleCursoDocente() {
   const fetchSabana = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/virtual/sabana-notas/${idCarga}/${bimestre}`);
+      const res = await apiFetch(`/virtual/sabana-notas/${idCarga}/${bimestre}`);
       const data = await res.json();
       setDatos(data);
     } catch (error) {
@@ -115,7 +117,7 @@ export default function DetalleCursoDocente() {
 
     const toastId = toast.loading("Eliminando tarea...");
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/virtual/tareas/${tareaAEliminar.id_tarea}`, {
+      const res = await apiFetch(`/virtual/tareas/${tareaAEliminar.id_tarea}`, {
         method: 'DELETE'
       });
 

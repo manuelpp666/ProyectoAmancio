@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useUser } from "@/src/context/userContext";
 import { toast } from "sonner";
 import { FileText, Plus, Clock, CheckCircle, XCircle, AlertCircle, Loader2, X, Paperclip } from "lucide-react";
+import { apiFetch } from "@/src/lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function SolicitudesPage() {
   const { id_usuario } = useUser();
@@ -27,7 +27,7 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fetchSolicitudes = useCallback(async (alumnoId: number) => {
     try {
       setIsLoading(true);
-      const res = await fetch(`${API_URL}/finance/solicitudes/alumno/${alumnoId}`);
+      const res = await apiFetch(`/finance/solicitudes/alumno/${alumnoId}`);
       if (res.ok) {
         const data = await res.json();
         setSolicitudes(data);
@@ -40,7 +40,7 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
   }, []);
   const fetchAlumnoData = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/alumnos/alumnos/usuario/${id_usuario}`);
+      const res = await apiFetch(`/alumnos/alumnos/usuario/${id_usuario}`);
       if (res.ok) {
         const data = await res.json();
         setIdAlumno(data.id_alumno); // Guardamos el ID real del alumno (ej: 5)
@@ -56,7 +56,7 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const fetchTiposTramite = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/finance/tramites-tipos/alumnos`);
+      const res = await apiFetch(`/finance/tramites-tipos/alumnos`);
       if (res.ok) {
         const data = await res.json();
         setTiposTramite(data.filter((t: any) => t.activo));
@@ -93,7 +93,7 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
     }
 
     try {
-      const res = await fetch(`${API_URL}/finance/solicitudes/`, {
+      const res = await apiFetch(`/finance/solicitudes/`, {
         method: "POST",
         // IMPORTANTE: Al enviar FormData, NO se debe poner el header "Content-Type"
         body: data

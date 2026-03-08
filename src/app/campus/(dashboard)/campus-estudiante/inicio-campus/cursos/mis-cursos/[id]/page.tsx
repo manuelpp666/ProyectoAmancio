@@ -9,7 +9,7 @@ import { useUser } from "@/src/context/userContext";
 import ModalEntregaTarea from "@/src/components/Tarea/ModalEntregaTarea";
 import { toast } from "sonner";
 import { DetalleCurso,Tarea,ResumenNotas } from "@/src/interfaces/academic";
-
+import { apiFetch } from "@/src/lib/api";
 
 
 export default function DetalleCursoPage() {
@@ -53,9 +53,7 @@ export default function DetalleCursoPage() {
     setLoading(true);
     setError(null); // Limpiar errores previos
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/gestion/curso-detalle/${id}/${id_usuario}?anio=${anio}`
-      );
+      const res = await apiFetch(`/gestion/curso-detalle/${id}/${id_usuario}?anio=${anio}`);
 
       if (!res.ok) throw new Error("No se pudo obtener el detalle del curso");
 

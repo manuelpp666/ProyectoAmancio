@@ -8,6 +8,7 @@ import {
 import { DocenteCreate } from "@/src/interfaces/docente";
 import { useState } from 'react';
 import { DocenteForm } from '@/src/components/Docente/FormularioDocente';
+import { apiFetch } from "@/src/lib/api";
 
 export default function RegistrarDocentePage() {
   const [loading, setLoading] = useState(false);
@@ -18,7 +19,7 @@ export default function RegistrarDocentePage() {
     const toastId = toast.loading("Enviando datos al servidor...");
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/docentes/`, {
+      const response = await apiFetch(`/docentes/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data), // Usamos 'data' directamente

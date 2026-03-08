@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useUser } from "@/src/context/userContext";
 import { Megaphone, Star, Wallet, Calendar, CheckCheck, Clock, Loader2, HeartPulse } from "lucide-react";
-
+import { apiFetch } from "@/src/lib/api";
 // Helper para definir estilos e iconos según el tipo de notificación
 const getNotifStyle = (tipo: string) => {
   switch (tipo) {
@@ -25,7 +25,7 @@ export default function NotificacionesPage() {
     const fetchNotificaciones = async () => {
       if (!id_usuario) return;
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/notificaciones/${id_usuario}`);
+        const res = await apiFetch(`/gestion/notificaciones/${id_usuario}`);
         const data = await res.json();
         setNotificaciones(data.notificaciones || []);
       } catch (error) {

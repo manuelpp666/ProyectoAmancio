@@ -5,7 +5,7 @@ import { useUser } from "@/src/context/userContext";
 import { BookOpen, ChevronRight, Loader2, ChevronDown, AlertCircle } from "lucide-react";
 import { BarChart, Bar, ResponsiveContainer, Cell } from "recharts";
 import Link from "next/link";
-import { AnioEscolar } from "@/src/interfaces/academic";
+import { apiFetch } from "@/src/lib/api";
 import { ResumenNota } from "@/src/interfaces/datos_alumno";
 import { toast } from "sonner";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
@@ -28,7 +28,7 @@ export default function MisCalificacionesPage() {
   const fetchResumen = useCallback(async (uid: number, anio: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/resumen-notas/${uid}?anio=${anio}`);
+      const res = await apiFetch(`/gestion/resumen-notas/${uid}?anio=${anio}`);
       if (!res.ok) throw new Error("Error al cargar notas");
       const data = await res.json();
       setResumen(data);

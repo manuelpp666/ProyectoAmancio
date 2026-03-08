@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { X, Download, FileText, Clock, User, CheckCircle, MessageSquare, Save } from "lucide-react";
 import { toast } from "sonner";
+import { apiFetch } from "@/src/lib/api";
 
 export default function ModalVerEntregas({ tarea, onClose }: { tarea: any; onClose: () => void }) {
   const [entregas, setEntregas] = useState<any[]>([]);
@@ -15,7 +16,7 @@ export default function ModalVerEntregas({ tarea, onClose }: { tarea: any; onClo
   useEffect(() => {
     const fetchEntregas = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/virtual/tareas/${tarea.id_tarea}/entregas`);
+        const res = await apiFetch(`/virtual/tareas/${tarea.id_tarea}/entregas`);
         if (!res.ok) throw new Error();
         const data = await res.json();
         setEntregas(data);
@@ -48,8 +49,8 @@ export default function ModalVerEntregas({ tarea, onClose }: { tarea: any; onClo
 
     try {
       // Enviamos nota y retroalimentación al endpoint
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/virtual/calificar-entrega/${idEntrega}?calificacion=${nota}&retroalimentacion=${encodeURIComponent(retro)}`, 
+      const res = await apiFetch(
+        `/virtual/calificar-entrega/${idEntrega}?calificacion=${nota}&retroalimentacion=${encodeURIComponent(retro)}`, 
         { method: 'PUT' }
       );
 

@@ -6,7 +6,7 @@ import { BookOpen, Users, Clock, ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation"
 import { useState } from "react";
 import { CursoDocente } from "@/src/interfaces/academic";
-
+import { apiFetch } from "@/src/lib/api";
 
 export default function InicioDocentePage() {
 
@@ -22,8 +22,8 @@ export default function InicioDocentePage() {
       try {
         // Llamadas en paralelo para mayor velocidad
         const [resResumen, resCursos] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/resumen-docente/${id_usuario}`),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/mis-cursos-docente-dashboard/${id_usuario}`)
+          await apiFetch(`/gestion/resumen-docente/${id_usuario}`),
+          await apiFetch(`/gestion/mis-cursos-docente-dashboard/${id_usuario}`)
         ]);
 
         const dataResumen = await resResumen.json();
@@ -40,16 +40,6 @@ export default function InicioDocentePage() {
       fetchData();
     }
   }, [id_usuario, loading, role]);
-  // 2. Proteger la ruta: Si no es estudiante, lo expulsamos
-  useEffect(() => {
-    if (!loading) {
-      if (!role) {
-        router.push("/campus"); // No ha iniciado sesión
-      } else if (role !== "DOCENTE") {
-        router.push("/prohibido"); // Es admin o estudiante intentando entrar aquí
-      }
-    }
-  }, [role, loading, router]);
 
   // 3. Estado de carga mientras se recupera la sesión del localStorage
   if (loading) {

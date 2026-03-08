@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useState, useCallback } from "react"; // 1. Agregamos useCallback
 import { ArrowRight, ChevronDown, Loader2, BookOpen, AlertCircle } from "lucide-react";
-import { Curso, AnioEscolar } from "@/src/interfaces/academic";
+import { Curso} from "@/src/interfaces/academic";
 import { useUser } from "@/src/context/userContext";
 import Link from "next/link";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
+import { apiFetch } from "@/src/lib/api";
 
 interface CursoCards extends Curso {
   docente_nombres: string;
@@ -34,7 +35,7 @@ export default function CursosPage() {
     setError(null);
     try {
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/mis-cursos/${uid}?anio=${anio}`);
+      const res = await apiFetch(`/gestion/mis-cursos/${uid}?anio=${anio}`);
 
       if (!res.ok) throw new Error("Error en la respuesta del servidor");
 

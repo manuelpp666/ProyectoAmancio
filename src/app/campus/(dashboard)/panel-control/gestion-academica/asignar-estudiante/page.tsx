@@ -6,6 +6,7 @@ import { Nivel, Grado, Seccion } from "@/src/interfaces/academic";
 import { AlumnoMatriculado } from "@/src/interfaces/matricula";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
+import { apiFetch } from "@/src/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -38,7 +39,7 @@ export default function AsignacionEstudiantesPage() {
 
   // 1. CARGA INICIAL
   useEffect(() => {
-    fetch(`${API_URL}/academic/niveles/`)
+    apiFetch(`/academic/niveles/`)
       .then(res => res.json())
       .then(setNiveles)
       .catch(() => toast.error("Error al cargar niveles"));
@@ -47,7 +48,7 @@ export default function AsignacionEstudiantesPage() {
   // 2. CARGAR GRADOS CUANDO CAMBIA NIVEL
   useEffect(() => {
     if (selectedNivel) {
-      fetch(`${API_URL}/academic/grados/?nivel_id=${selectedNivel}`)
+      apiFetch(`/academic/grados/?nivel_id=${selectedNivel}`)
         .then(res => res.json())
         .then(setGrados)
         .catch(err => console.error(err));
@@ -64,7 +65,7 @@ export default function AsignacionEstudiantesPage() {
     setIsLoading(true);
     try {
       // Cargar Secciones
-      const resSecciones = await fetch(`${API_URL}/academic/secciones/?anio_id=${selectedAnio}&grado_id=${selectedGrado}`);
+      const resSecciones = await apiFetch(`/academic/secciones/?anio_id=${selectedAnio}&grado_id=${selectedGrado}`);
       const dataSecciones: Seccion[] = await resSecciones.json();
       setSecciones(dataSecciones);
 
@@ -86,7 +87,7 @@ export default function AsignacionEstudiantesPage() {
       });
 
       // Cargar Alumnos
-      const resMatriculas = await fetch(`${API_URL}/enrollment/matriculas/?anio_id=${selectedAnio}&grado_id=${selectedGrado}`);
+      const resMatriculas = await apiFetch(`/enrollment/matriculas/?anio_id=${selectedAnio}&grado_id=${selectedGrado}`);
 
       if (resMatriculas.ok) {
         const dataMatriculas = await resMatriculas.json();
@@ -220,7 +221,7 @@ export default function AsignacionEstudiantesPage() {
 
     try {
       const promesas = alumnosAConfirmar.map(alumno =>
-        fetch(`${API_URL}/enrollment/matriculas/${alumno.id_matricula}`, {
+        apiFetch(`/enrollment/matriculas/${alumno.id_matricula}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

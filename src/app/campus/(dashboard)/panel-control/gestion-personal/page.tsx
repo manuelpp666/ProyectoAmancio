@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Users, UserPlus, Edit, ShieldCheck, BookOpen, Briefcase, Power, PowerOff, X } from "lucide-react";
 import { Personal } from "@/src/interfaces/personal";
 import { TipoPersonal } from "@/src/interfaces/personal";
+import { apiFetch } from "@/src/lib/api";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function GestionPersonalPage() {
@@ -33,7 +34,7 @@ export default function GestionPersonalPage() {
   const fetchPersonal = async (tipo: TipoPersonal) => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_URL}/personal/${tipo}`);
+      const res = await apiFetch(`/personal/${tipo}`);
       if (res.ok) setPersonal(await res.json());
     } catch (e) {
       toast.error("Error cargando datos");
@@ -45,8 +46,8 @@ export default function GestionPersonalPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const url = isEditing 
-      ? `${API_URL}/personal/${activeTab}/${currentId}`
-      : `${API_URL}/personal/${activeTab}`;
+      ? `/personal/${activeTab}/${currentId}`
+      : `/personal/${activeTab}`;
       
     const method = isEditing ? "PUT" : "POST";
 
@@ -59,7 +60,7 @@ export default function GestionPersonalPage() {
     const payload = (isEditing && !password) ? restData : formData;
 
     try {
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -79,7 +80,7 @@ export default function GestionPersonalPage() {
 
   const handleEstado = async (id: number, nuevoEstado: boolean) => {
     try {
-      await fetch(`${API_URL}/personal/${activeTab}/${id}/estado?activo=${nuevoEstado}`, { method: "PATCH" });
+      await apiFetch(`/personal/${activeTab}/${id}/estado?activo=${nuevoEstado}`, { method: "PATCH" });
       toast.success(nuevoEstado ? "Usuario habilitado" : "Usuario dado de baja");
       fetchPersonal(activeTab);
     } catch (e) {

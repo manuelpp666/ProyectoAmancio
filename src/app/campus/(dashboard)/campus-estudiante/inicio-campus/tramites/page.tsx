@@ -9,6 +9,7 @@ import {
   FileText
 } from "lucide-react";
 import Link from 'next/link';
+import { apiFetch } from "@/src/lib/api";
 
 export default function Page() {
 
@@ -21,7 +22,7 @@ export default function Page() {
   // 1. Cargar datos del alumno
   const fetchAlumnoData = useCallback(async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/alumnos/alumnos/usuario/${id_usuario}`);
+      const res = await apiFetch(`/alumnos/alumnos/usuario/${id_usuario}`);
       const data = await res.json();
       setAlumno(data);
       fetchPagos(data.id_alumno);
@@ -35,8 +36,8 @@ export default function Page() {
     try {
       // Es recomendable tener dos endpoints o un filtro en el front
       const [resPendientes, resHistorial] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/finance/alumnos/${id_alumno}/deudas`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/finance/pagos/historial/${id_alumno}`)
+        apiFetch(`/finance/alumnos/${id_alumno}/deudas`),
+        apiFetch(`/finance/pagos/historial/${id_alumno}`)
       ]);
 
       setPendientes(await resPendientes.json());

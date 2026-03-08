@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import { EventRow } from '@/src/components/Evento/EventRow';
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
-
+import { apiFetch } from "@/src/lib/api";
 
 export default function CalendarioPage() {
   const router = useRouter();
@@ -39,7 +39,7 @@ export default function CalendarioPage() {
     if (!anioId) return;
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/eventos/por-anio/${anioId}`);
+      const res = await apiFetch(`/web/eventos/por-anio/${anioId}`);
       if (!res.ok) throw new Error("Error al cargar eventos");
       const data = await res.json();
       setEventos(data);
@@ -58,7 +58,7 @@ export default function CalendarioPage() {
   const confirmDelete = async () => {
     if (!idToDelete) return;
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/eventos/${idToDelete}`, {
+      const response = await apiFetch(`/web/eventos/${idToDelete}`, {
         method: 'DELETE'
       });
       if (response.ok) {

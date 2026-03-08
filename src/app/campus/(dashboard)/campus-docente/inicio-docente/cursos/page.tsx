@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { ArrowRight, Users, Loader2, BookOpen, AlertCircle, ChevronDown } from "lucide-react";
 import { useUser } from "@/src/context/userContext";
-import { AnioEscolar } from "@/src/interfaces/academic";
+import { apiFetch } from "@/src/lib/api";
 import Link from "next/link";
 import { CursoDocente } from "@/src/interfaces/academic";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
@@ -28,7 +28,7 @@ export default function MisCursosDocente() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/mis-cursos-docente/${uid}?anio=${anio}`);
+      const res = await apiFetch(`/gestion/mis-cursos-docente/${uid}?anio=${anio}`);
       if (!res.ok) throw new Error("No se pudieron obtener los cursos");
       const data = await res.json();
       setCursos(data);

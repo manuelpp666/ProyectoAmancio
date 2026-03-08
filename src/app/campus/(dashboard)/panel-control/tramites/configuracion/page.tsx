@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Pago, Solicitud } from "@/src/interfaces/finance";
 import { Grado } from "@/src/interfaces/academic";
 import { Tramite } from "@/src/interfaces/tramite";
+import { apiFetch } from "@/src/lib/api";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function GestionFinancieraPage() {
@@ -49,7 +50,7 @@ export default function GestionFinancieraPage() {
     if (!pagoAConfirmar) return;
 
     try {
-      const res = await fetch(`${API_URL}/finance/pagos/${pagoAConfirmar}/confirmar-manual`, {
+      const res = await apiFetch(`/finance/pagos/${pagoAConfirmar}/confirmar-manual`, {
         method: "PATCH",
       });
 
@@ -86,18 +87,18 @@ export default function GestionFinancieraPage() {
   const fetchTramites = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch(`${API_URL}/finance/tramites-tipos/`);
+      const res = await apiFetch(`/finance/tramites-tipos/`);
       if (res.ok) setTramites(await res.json());
     } catch (e) { toast.error("Error cargando trámites"); } finally { setIsLoading(false); }
   };
 
   const fetchGrados = async () => {
-    const res = await fetch(`${API_URL}/academic/grados/`);
+    const res = await apiFetch(`/academic/grados/`);
     if (res.ok) setGrados(await res.json());
   };
 
   const fetchSolicitudes = async () => {
-    const res = await fetch(`${API_URL}/finance/solicitudes/pendientes-revision`);
+    const res = await apiFetch(`/finance/solicitudes/pendientes-revision`);
     if (res.ok) setSolicitudes(await res.json());
   };
 
@@ -110,7 +111,7 @@ export default function GestionFinancieraPage() {
       params.append("anio", anioFiltro.toString());
       params.append("criterio_fecha", criterioFecha);
 
-      const res = await fetch(`${API_URL}/finance/pagos/?${params.toString()}`);
+      const res = await apiFetch(`/finance/pagos/?${params.toString()}`);
       if (res.ok) {
         setPagos(await res.json());
       }
@@ -170,8 +171,8 @@ export default function GestionFinancieraPage() {
       activo: true
     };
 
-    const url = isEditing ? `${API_URL}/finance/tramites-tipos/${currentId}` : `${API_URL}/finance/tramites-tipos/`;
-    const res = await fetch(url, {
+    const url = isEditing ? `/finance/tramites-tipos/${currentId}` : `/finance/tramites-tipos/`;
+    const res = await apiFetch(url, {
       method: isEditing ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -195,7 +196,7 @@ export default function GestionFinancieraPage() {
   const handleDictamen = async (nuevoEstado: "APROBADO" | "RECHAZADO") => {
     if (!selectedSolicitud) return;
     try {
-      const res = await fetch(`${API_URL}/finance/solicitudes/${selectedSolicitud.id_solicitud_tramite}/dictamen`, {
+      const res = await apiFetch(`/finance/solicitudes/${selectedSolicitud.id_solicitud_tramite}/dictamen`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ estado: nuevoEstado, respuesta_administrativa: respuestaAdmin })

@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { ChevronDown, Loader2, Calendar, ArrowLeft, BookmarkCheck, Clock } from "lucide-react";
 import { useUser } from "@/src/context/userContext";
 import Link from "next/link";
+import { apiFetch } from "@/src/lib/api";
 
 export default function HistorialCitasPage() {
   const { id_usuario, loading: userLoading } = useUser();
@@ -15,7 +16,7 @@ export default function HistorialCitasPage() {
   const fetchAnios = useCallback(async (uid: number) => {
     try {
       // Necesitarás crear este endpoint o usar uno similar al de reportes
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/conducta/usuario/${uid}/anios-reportes`); 
+      const res = await apiFetch(`/conducta/usuario/${uid}/anios-reportes`);
       const data = await res.json();
       if (data.length > 0) setAniosConCitas(data);
     } catch (e) { console.error(e); }
@@ -25,7 +26,7 @@ export default function HistorialCitasPage() {
     setLoading(true);
     try {
      
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/conducta/usuario/${uid}/historial-citas?anio=${anio}`);
+      const res = await apiFetch(`/conducta/usuario/${uid}/historial-citas?anio=${anio}`);
       const data = await res.json();
       setCitas(data || []);
     } catch (e) {

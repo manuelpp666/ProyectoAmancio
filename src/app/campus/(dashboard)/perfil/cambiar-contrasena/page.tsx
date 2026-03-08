@@ -4,6 +4,7 @@ import { useUser } from "@/src/context/userContext";
 import { Lock, Eye, EyeOff, Save, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/src/lib/api";
 
 export default function SecurityPage() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function SecurityPage() {
       router.push("/campus/campus-estudiante/inicio-campus");
     } else {
       // Por si acaso el role es null, enviarlo al login o inicio
-      router.push("/login");
+      router.push("/campus");
     }
   };
   // Lógica de fuerza de contraseña
@@ -53,7 +54,7 @@ export default function SecurityPage() {
 
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/perfil/auth/change-password`, {
+      const res = await apiFetch(`/perfil/auth/change-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

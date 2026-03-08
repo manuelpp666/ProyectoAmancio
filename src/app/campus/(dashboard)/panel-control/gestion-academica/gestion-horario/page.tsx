@@ -14,6 +14,8 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
+import { apiFetch } from "@/src/lib/api";
+
 
 export default function ConstructorHorariosPage() {
   const {
@@ -59,10 +61,7 @@ export default function ConstructorHorariosPage() {
         x: 0,
         y: 0,
 
-        onclone: (clonedDoc) => {
-          // tu código de limpieza...
-          // puedes mantenerlo
-        },
+        
       });
 
       const imgData = canvas.toDataURL("image/jpeg", 0.92);
@@ -119,8 +118,8 @@ export default function ConstructorHorariosPage() {
       try {
         setLoading(true);
         const [resSec, resHoras] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/secciones-horario/${anioPlanificacion}`),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/horarios/horas`)
+          apiFetch(`/academic/secciones-horario/${anioPlanificacion}`),
+          apiFetch(`/horarios/horas`)
         ]);
 
         const dataSec = await resSec.json();
@@ -152,8 +151,8 @@ export default function ConstructorHorariosPage() {
 
     const cargarDatosSeccion = async () => {
       const [resMat, resHorario] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/horarios/materias-disponibles/${seccionActiva}`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/horarios/seccion/${seccionActiva}`)
+        apiFetch(`/horarios/materias-disponibles/${seccionActiva}`),
+        apiFetch(`/horarios/seccion/${seccionActiva}`)
       ]);
       setMateriasDisponibles(await resMat.json());
       setHorarioAsignado(await resHorario.json());
@@ -164,7 +163,7 @@ export default function ConstructorHorariosPage() {
   // --- 3. LÓGICA DE ASIGNACIÓN (Drag & Drop simplificado) ---
   const handleDrop = async (idCargaAcademica: string | number, idHora: number, dia: string) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/horarios/`, {
+      const res = await apiFetch(`/horarios/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -183,7 +182,7 @@ export default function ConstructorHorariosPage() {
 
       toast.success("Horario asignado");
       // Recargar el horario de la sección
-      const resUpdate = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/horarios/seccion/${seccionActiva}`);
+      const resUpdate = await apiFetch(`/horarios/seccion/${seccionActiva}`);
       setHorarioAsignado(await resUpdate.json());
     } catch (err) {
       toast.error("Error de conexión");

@@ -7,7 +7,7 @@ import {
 
 } from "lucide-react";
 import { toast } from "sonner";
-
+import { apiFetch } from "@/src/lib/api";
 
 export default function HistorialPage() {
   const { id_usuario } = useUser();
@@ -20,13 +20,13 @@ export default function HistorialPage() {
     const cargarDatos = async () => {
       try {
         // 1. Primero, obtenemos el alumno para tener su ID real
-        const resAlumno = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/alumnos/alumnos/usuario/${id_usuario}`);
+        const resAlumno = await apiFetch(`/alumnos/alumnos/usuario/${id_usuario}`);
         const alumno = await resAlumno.json();
 
         // Aseguramos que tenemos el ID antes de hacer la segunda llamada
         if (alumno && alumno.id_alumno) {
           // 2. Usamos el ID real obtenido (alumno.id_alumno)
-          const resHistorial = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/finance/pagos/historial/${alumno.id_alumno}`);
+          const resHistorial = await apiFetch(`/finance/pagos/historial/${alumno.id_alumno}`);
 
           if (!resHistorial.ok) throw new Error("Error al obtener historial");
 

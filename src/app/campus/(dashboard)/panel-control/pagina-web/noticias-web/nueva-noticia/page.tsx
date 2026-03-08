@@ -7,6 +7,8 @@ import { NoticiaCreate } from "@/src/interfaces/noticia";
 import { toast } from 'sonner';
 import { useRouter } from "next/navigation";
 import { useUser } from "@/src/context/userContext";
+import { apiFetch } from "@/src/lib/api";
+
 
 export default function CrearNoticiaPage() {
   const [loading, setLoading] = useState(false);
@@ -27,7 +29,7 @@ export default function CrearNoticiaPage() {
         ...noticiaPayload,
         id_autor: id_usuario
       };
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/noticias/`, {
+      const response = await apiFetch(`/web/noticias/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payloadConAutor),

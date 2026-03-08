@@ -11,6 +11,8 @@ import {
   Stethoscope
 } from "lucide-react";
 import { Cita } from "@/src/interfaces/datos_alumno";
+import { apiFetch } from "@/src/lib/api";
+
 
 export default function ResumenCitasPage() {
   const { id_usuario, loading: userLoading } = useUser();
@@ -20,7 +22,7 @@ export default function ResumenCitasPage() {
   const fetchProximaCita = useCallback(async (uid: number) => {
     try {
       
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/conducta/usuario/${uid}/proxima-cita`);
+      const res = await apiFetch(`/conducta/usuario/${uid}/proxima-cita`);
       
       // Si el backend devuelve null (no hay citas), data será null
       const data = await res.json();

@@ -4,6 +4,7 @@ import { useUser } from "@/src/context/userContext";
 import { 
   User, BadgeCheck, Loader2, HeartPulse, Phone, Mail, Wallet
 } from 'lucide-react';
+import { apiFetch } from "@/src/lib/api";
 
 export default function MisDatos() {
   // 1. Estados y Contexto
@@ -17,7 +18,7 @@ export default function MisDatos() {
     const fetchDatos = async () => {
       if (!username) return; 
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/perfil/mi-perfil/${username}`);
+        const response = await apiFetch(`/perfil/mi-perfil/${username}`);
         if (response.ok) {
           const data = await response.json();
           setPerfil(data);

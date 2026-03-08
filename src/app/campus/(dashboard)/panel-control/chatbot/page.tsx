@@ -3,13 +3,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner'
 import { ConfirmModal } from '@/src/components/utils/ConfirmModal';
-import { 
-   FileText, Trash2, 
-   PlayCircle, CheckCircle2, Loader2,  X, Send, Bot, MessageSquare 
+import {
+  FileText, Trash2,
+  PlayCircle, CheckCircle2, Loader2, X, Send, Bot, MessageSquare
 } from "lucide-react";
 import { Chatbot } from '@/src/interfaces/chatbot';
 import { ChatMessage } from '@/src/interfaces/chatbot';
-
+import { apiFetch } from "@/src/lib/api";
 
 export default function ChatbotKnowledgePage() {
   const [documents, setDocuments] = useState<Chatbot[]>([]);
@@ -36,8 +36,12 @@ export default function ChatbotKnowledgePage() {
   const fetchDocuments = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/chatbot/documents`);
-      setDocuments(res.data);
+      const res = await apiFetch("/chatbot/documents"); // URL corta y limpia
+
+      if (!res.ok) throw new Error();
+
+      const data = await res.json();
+      setDocuments(data);
     } catch (error) {
       toast.error("Error al cargar los documentos");
     } finally {
@@ -54,9 +58,15 @@ export default function ChatbotKnowledgePage() {
     formData.append('file', file);
     try {
       setUploading(true);
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/chatbot/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      const res = await apiFetch("/chatbot/upload", {
+        method: "POST",
+        body: formData, // apiFetch detectará que es FormData y no pondrá JSON header
       });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Error al subir");
+      }
       toast.success("Documento entrenado correctamente");
       fetchDocuments();
     } catch (error: any) {
@@ -76,10 +86,16 @@ export default function ChatbotKnowledgePage() {
   // Función que ejecuta la eliminación real
   const handleDelete = async () => {
     if (!selectedDocId) return;
-    
-    const promise = axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/chatbot/delete/${selectedDocId}`);
-    
-    toast.promise(promise, {
+
+    const deleteAction = async () => {
+      const res = await apiFetch(`/chatbot/delete/${selectedDocId}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) throw new Error();
+      return res;
+    };
+
+    toast.promise(deleteAction(), {
       loading: 'Eliminando conocimiento de Amancio IA...',
       success: () => {
         setDocuments(prev => prev.filter(doc => doc.id !== selectedDocId));
@@ -115,7 +131,7 @@ export default function ChatbotKnowledgePage() {
   return (
     <div className="flex h-screen overflow-hidden bg-[#F8FAFC] antialiased">
       {/* --- EL MODAL DE CONFIRMACIÓN --- */}
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDelete}
@@ -125,7 +141,7 @@ export default function ChatbotKnowledgePage() {
       />
       <div className="flex-1 flex flex-col h-full overflow-y-auto">
         <div className="p-8 space-y-10 max-w-[1400px] mx-auto w-full">
-          
+
           <header>
             <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Entrenamiento del Chatbot</h2>
             <p className="text-sm text-gray-500 font-medium">Gestiona la información que alimenta la inteligencia del asistente virtual. POR AHORA NO SE PUEDEN SUBIR IMÁGENES</p>
@@ -135,7 +151,7 @@ export default function ChatbotKnowledgePage() {
             <div className="lg:col-span-8 space-y-8">
               <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
                 <input type="file" hidden ref={fileInputRef} onChange={handleFileUpload} accept=".pdf,.docx" />
-                <div 
+                <div
                   onClick={() => fileInputRef.current?.click()}
                   className={`border-2 border-dashed border-gray-200 rounded-[1.5rem] p-12 flex flex-col items-center justify-center transition-all cursor-pointer group ${uploading ? 'opacity-50 pointer-events-none' : 'hover:bg-[#701C32]/[0.02]'}`}
                 >
@@ -160,10 +176,10 @@ export default function ChatbotKnowledgePage() {
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                       {documents.map((doc) => (
-                        <KnowledgeRow 
-                          key={doc.id} 
-                          doc={doc} 
-                          onDelete={() => confirmDelete(doc.id)} 
+                        <KnowledgeRow
+                          key={doc.id}
+                          doc={doc}
+                          onDelete={() => confirmDelete(doc.id)}
                         />
                       ))}
                     </tbody>
@@ -181,9 +197,9 @@ export default function ChatbotKnowledgePage() {
                 <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
                   <div className="bg-[#701C32] h-full transition-all duration-500" style={{ width: `${(documents.length / 5) * 100}%` }}></div>
                 </div>
-                
+
                 {/* BOTÓN PARA ABRIR CHAT */}
-                <button 
+                <button
                   onClick={() => setShowTestChat(true)}
                   className="w-full bg-[#701C32] text-white py-4 rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-[#701C32]/20 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
                 >
@@ -199,7 +215,7 @@ export default function ChatbotKnowledgePage() {
       {showTestChat && (
         <div className="fixed inset-0 z-50 flex items-center justify-end p-6 bg-black/20 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-md h-[85vh] rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden border border-gray-100 animate-in slide-in-from-right duration-500">
-            
+
             <div className="p-6 bg-[#701C32] text-white flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <Bot size={20} className="text-blue-200" />
@@ -217,9 +233,8 @@ export default function ChatbotKnowledgePage() {
               )}
               {messages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] p-4 rounded-2xl text-[13px] font-medium leading-relaxed shadow-sm ${
-                    msg.role === 'user' ? 'bg-[#093E7A] text-white rounded-tr-none' : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
-                  }`}>
+                  <div className={`max-w-[85%] p-4 rounded-2xl text-[13px] font-medium leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-[#093E7A] text-white rounded-tr-none' : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
+                    }`}>
                     {msg.text}
                   </div>
                 </div>
@@ -237,11 +252,11 @@ export default function ChatbotKnowledgePage() {
             </div>
 
             <form onSubmit={handleAsk} className="p-4 bg-white border-t border-gray-100 flex gap-2">
-              <input 
-                value={inputMessage} 
+              <input
+                value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Pregunta algo..." 
-                className="flex-1 bg-gray-50 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-[#701C32]/10" 
+                placeholder="Pregunta algo..."
+                className="flex-1 bg-gray-50 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-[#701C32]/10"
               />
               <button type="submit" disabled={isTyping} className="bg-[#701C32] text-white p-3 rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50">
                 <Send size={18} />

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Evento } from '@/src/interfaces/evento';
 import { toast } from "sonner";
+import { apiFetch } from "@/src/lib/api";
 
 // Agregamos defaultAnio a las props
 interface EventFormProps {
@@ -45,11 +46,11 @@ export default function EventForm({ evento, defaultAnio, onClose, onSuccess }: E
         };
 
         const url = evento
-            ? `${process.env.NEXT_PUBLIC_API_URL}/web/eventos/${evento.id_evento}`
-            : `${process.env.NEXT_PUBLIC_API_URL}/web/eventos/`;
+            ? `/web/eventos/${evento.id_evento}`
+            : `/web/eventos/`;
 
         try {
-            const response = await fetch(url, {
+            const response = await apiFetch(url, {
                 method: evento ? 'PUT' : 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

@@ -5,6 +5,13 @@ import { useUser } from "@/src/context/userContext";
 import Link from "next/link";
 import { User, Lock, GraduationCap, Loader2, AlertCircle } from "lucide-react";
 
+
+const ROLE_ROUTES = {
+  ADMIN: "/campus/panel-control",
+  DOCENTE: "/campus/campus-docente/inicio-docente",
+  ALUMNO: "/campus/campus-estudiante/inicio-campus",
+  AUXILIAR: "/campus/campus-auxiliar/inicio",
+};
 export default function LoginPage() {
   const router = useRouter();
   const { setUserData } = useUser(); // 2. Extraer la función para guardar datos
@@ -20,36 +27,24 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      // 5. Llamada real a tu backend de FastAPI
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/usuarios/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: username,
-          password: password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        // Manejo de errores del backend (401, 404, etc.)
         throw new Error(data.detail || "Credenciales incorrectas");
       }
 
-      // 6. Guardar en el Contexto Global (y localStorage automáticamente si lo configuraste)
-      setUserData(data.rol, data.username,data.id_usuario);
+      // PASO CLAVE: Ahora pasamos el token que viene del backend
+      setUserData(data.rol, data.username, data.id_usuario, data.access_token);
 
-      // 7. Redirección basada en el ROL REAL de la base de datos
-      if (data.rol === "ADMIN") {
-        router.push("/campus/panel-control");
-      } else if (data.rol === "DOCENTE") {
-        router.push("/campus/campus-docente/inicio-docente");
-      } else {
-        router.push("/campus/campus-estudiante/inicio-campus");
-      }
+      // Redirección "ciega" basada en el diccionario
+      const destination = ROLE_ROUTES[data.rol as keyof typeof ROLE_ROUTES] || "/campus/campus-estudiante/inicio-campus";
+      router.push(destination);
 
     } catch (err: any) {
       setError(err.message);

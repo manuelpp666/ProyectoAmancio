@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Megaphone, Star, Wallet, Clock, Loader2, Calendar, CheckCheck, HeartPulse } from "lucide-react";
 import Link from "next/link";
 import { DashboardData } from "@/src/interfaces/alumno";
+import { apiFetch } from "@/src/lib/api";
 
 // Función helper para seleccionar iconos
 const getIcon = (tipo: string) => {
@@ -28,17 +29,7 @@ export default function DashboardPage() {
     const [loadingData, setLoadingData] = useState(true);
     const [notificaciones, setNotificaciones] = useState<any[]>([]);
 
-    // 2. Proteger la ruta: Si no es estudiante, lo expulsamos
-    useEffect(() => {
-        if (!loading) {
-            if (!role) {
-                router.push("/campus"); // No ha iniciado sesión
-            } else if (role !== "ALUMNO") {
-                router.push("/prohibido"); // Es admin o docente intentando entrar aquí
-            }
-        }
-    }, [role, loading, router]);
-
+    
     useEffect(() => {
         const fetchAllData = async () => {
             if (!id_usuario) return;
@@ -47,9 +38,9 @@ export default function DashboardPage() {
             try {
                 // Ejecutamos las peticiones en paralelo para mayor velocidad
                 const [resDash, resEventos, resNotif] = await Promise.all([
-                    fetch(`${process.env.NEXT_PUBLIC_API_URL}/virtual/api/dashboard/estudiante/${id_usuario}`),
-                    fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/eventos/resumen`),
-                    fetch(`${process.env.NEXT_PUBLIC_API_URL}/gestion/notificaciones/${id_usuario}`)
+                    apiFetch(`/virtual/api/dashboard/estudiante/${id_usuario}`),
+                    apiFetch(`/web/eventos/resumen`),
+                    apiFetch(`/gestion/notificaciones/${id_usuario}`)
                 ]);
 
                 const [jsonDash, jsonEventos, jsonNotif] = await Promise.all([

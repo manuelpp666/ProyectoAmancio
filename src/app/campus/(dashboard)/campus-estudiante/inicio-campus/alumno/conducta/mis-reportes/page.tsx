@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { ChevronDown, Loader2, History, Calendar, ArrowLeft } from "lucide-react";
 import { useUser } from "@/src/context/userContext";
 import Link from "next/link";
+import { apiFetch } from "@/src/lib/api";
 
 export default function HistorialConductaPage() {
   const { id_usuario, loading: userLoading } = useUser();
@@ -16,7 +17,7 @@ export default function HistorialConductaPage() {
     const fetchAniosDisponibles = async () => {
       if (!id_usuario) return;
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/conducta/usuario/${id_usuario}/anios-reportes`);
+        const res = await apiFetch(`/conducta/usuario/${id_usuario}/anios-reportes`);
         const data: number[] = await res.json();
         setAniosConData(data);
 
@@ -36,7 +37,7 @@ export default function HistorialConductaPage() {
   const fetchReportes = useCallback(async (uid: number, anio: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/conducta/usuario/${uid}/estado-conducta?anio=${anio}`);
+      const res = await apiFetch(`/conducta/usuario/${uid}/estado-conducta?anio=${anio}`);
       const data = await res.json();
       setReportes(data?.historial || []);
     } catch (e) {

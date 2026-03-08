@@ -2,13 +2,13 @@
 import { useUser } from "@/src/context/userContext";
 import { useEffect, useState } from "react"; // Añadimos useState
 import React from 'react';
-import { useRouter } from "next/navigation";
-import Link from "next/link"; // Importante para la navegación
+import Link from "next/link";
+import { apiFetch } from "@/src/lib/api";
 import {
   LayoutDashboard,
   Users,
   Globe,
-  UserPlus, 
+  UserPlus,
   Loader2,
   BadgeCheck,
   Calendar,
@@ -23,25 +23,14 @@ export default function DashboardPage() {
 
   // 1. Extraer datos del contexto
   const { role, username, loading } = useUser();
-  const router = useRouter();
   const [postulantesCount, setPostulantesCount] = useState(0);
 
-  // 2. Proteger la ruta: Solo ADMIN
-  useEffect(() => {
-    if (!loading) {
-      if (!role) {
-        router.push("/campus");
-      } else if (role.toUpperCase() !== "ADMIN") {
-        router.push("/prohibido");
-      }
-    }
-  }, [role, loading, router]);
   useEffect(() => {
     if (role?.toUpperCase() === "ADMIN") {
       // Llamada a la API para obtener el número de pendientes
       const fetchPostulantes = async () => {
         try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/alumnos/solicitudes-pendientes`);
+          const res = await apiFetch("/alumnos/solicitudes-pendientes");
           if (res.ok) {
             const data = await res.json();
             setPostulantesCount(data.length);
@@ -90,7 +79,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard icon={<Users className="text-blue-600" />} bg="bg-blue-50" label="Total Estudiantes" value="1,250" growth="+5.2%" />
             <StatCard icon={<BadgeCheck className="text-purple-600" />} bg="bg-purple-50" label="Docentes Activos" value="84" growth="+2.1%" />
-            
+
             <StatCard icon={<Newspaper className="text-emerald-600" />} bg="bg-emerald-50" label="Noticias" value="45" growth="+12.5%" />
           </div>
 

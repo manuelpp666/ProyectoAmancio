@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { apiFetch } from "@/src/lib/api";
 
 export function useAnioAcademico() {
   const [anioPlanificacion, setAnioPlanificacion] = useState<string>("");
@@ -10,7 +11,7 @@ export function useAnioAcademico() {
     const cargarAnios = async () => {
       try {
         setLoadingAnios(true);
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/anios/`);
+        const res = await apiFetch(`/academic/anios/`);
         const data = await res.json();
         setListaAnios(data);
 

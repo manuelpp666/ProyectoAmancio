@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { Menu, Bell, User, Key, LogOut, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useUser } from "@/src/context/userContext";
+import { apiFetch } from "@/src/lib/api";
 
 export function HeaderCampus({ onOpenMenu }: { onOpenMenu: () => void }) {
   const { username, role, logout } = useUser();
@@ -15,7 +16,7 @@ export function HeaderCampus({ onOpenMenu }: { onOpenMenu: () => void }) {
     const fetchNombre = async () => {
       if (!username) return;
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/perfil/mi-perfil/${username}`);
+        const response = await apiFetch(`/perfil/mi-perfil/${username}`);
         if (response.ok) {
           const data = await response.json();
           // Guardamos "Nombres Apellidos"

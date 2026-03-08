@@ -6,7 +6,7 @@ import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcade
 import { toast } from "sonner";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
-
+import { apiFetch } from "@/src/lib/api";
 
 // URL Base
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -73,8 +73,8 @@ export default function GestionAcademicaPage() {
     try {
       setIsLoading(true);
       const [resNiveles, resGrados] = await Promise.all([
-        fetch(`${API_URL}/academic/niveles/`),
-        fetch(`${API_URL}/academic/grados/`)
+        apiFetch(`/academic/niveles/`),
+        apiFetch(`/academic/grados/`)
       ]);
 
       setNiveles(await resNiveles.json());
@@ -89,7 +89,7 @@ export default function GestionAcademicaPage() {
 
   const fetchSeccionesDelAnio = async (idAnio: string) => {
     try {
-      const res = await fetch(`${API_URL}/academic/secciones/?anio_id=${idAnio}`);
+      const res = await apiFetch(`/academic/secciones/?anio_id=${idAnio}`);
       if (res.ok) {
         setSecciones(await res.json());
       }
@@ -164,7 +164,7 @@ export default function GestionAcademicaPage() {
   const handleAperturaAnio = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_URL}/academic/anios/`, {
+      const res = await apiFetch(`/academic/anios/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...nuevoAnioData }),
@@ -189,7 +189,7 @@ export default function GestionAcademicaPage() {
     if (!anioSeleccionado) return;
 
     try {
-      const res = await fetch(`${API_URL}/academic/anios/${anioSeleccionado}/inscripciones`, {
+      const res = await apiFetch(`/academic/anios/${anioSeleccionado}/inscripciones`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(inscripcionData)
@@ -215,11 +215,11 @@ export default function GestionAcademicaPage() {
 
     const esEdicion = !!seccionEnEdicion;
     const url = esEdicion
-      ? `${API_URL}/academic/secciones/${seccionEnEdicion.id_seccion}`
-      : `${API_URL}/academic/secciones/`;
+      ? `/academic/secciones/${seccionEnEdicion.id_seccion}`
+      : `/academic/secciones/`;
 
     try {
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method: esEdicion ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -248,7 +248,7 @@ export default function GestionAcademicaPage() {
         label: "Eliminar",
         onClick: async () => {
           try {
-            const res = await fetch(`${API_URL}/academic/secciones/${id}`, { method: "DELETE" });
+            const res = await apiFetch(`/academic/secciones/${id}`, { method: "DELETE" });
             if (res.ok) {
               toast.success("Sección eliminada");
               fetchSeccionesDelAnio(anioSeleccionado);
@@ -264,7 +264,7 @@ export default function GestionAcademicaPage() {
     if (!anioSeleccionado) return toast.error("Selecciona un año destino");
 
     try {
-      const res = await fetch(`${API_URL}/academic/anios/copiar-estructura`, {
+      const res = await apiFetch(`/academic/anios/copiar-estructura`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

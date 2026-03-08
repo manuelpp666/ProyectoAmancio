@@ -6,6 +6,8 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { NoticiaForm } from "@/src/components/Noticia/FormulatioNoticia";
 import { Noticia, NoticiaCreate } from "@/src/interfaces/noticia";
 import { toast } from "sonner";
+import { apiFetch } from "@/src/lib/api";
+
 
 export default function EditarNoticiaPage() {
   const params = useParams();
@@ -18,7 +20,7 @@ export default function EditarNoticiaPage() {
   useEffect(() => {
     const fetchNoticia = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/noticias/${params.id}`);
+        const response = await apiFetch(`/web/noticias/${params.id}`);
         if (!response.ok) throw new Error("No se pudo obtener la noticia");
         const data = await response.json();
         setNoticia(data);
@@ -39,7 +41,7 @@ export default function EditarNoticiaPage() {
     const toastId = toast.loading("Actualizando noticia...");
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/noticias/${params.id}`, {
+      const response = await apiFetch(`/web/noticias/${params.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(noticiaPayload),

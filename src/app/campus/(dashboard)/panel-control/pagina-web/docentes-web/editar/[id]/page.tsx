@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, UserCheck } from "lucide-react";
 import { Docente, DocenteCreate } from "@/src/interfaces/docente";
 import { DocenteForm } from "@/src/components/Docente/FormularioDocente";
+import { apiFetch } from "@/src/lib/api";
 
 export default function EditarDocentePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function EditarDocentePage({ params }: { params: Promise<{ id: st
   useEffect(() => {
     const fetchDocente = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/docentes/${resolvedParams.id}`);
+        const response = await apiFetch(`/docentes/${resolvedParams.id}`);
         if (!response.ok) throw new Error("No se pudo cargar el docente");
         const data = await response.json();
         setDocente(data);
@@ -38,7 +39,7 @@ export default function EditarDocentePage({ params }: { params: Promise<{ id: st
     const toastId = toast.loading("Actualizando información...");
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/docentes/${resolvedParams.id}`, {
+      const response = await apiFetch(`/docentes/${resolvedParams.id}`, {
         method: "PUT", // O PATCH según tu API
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

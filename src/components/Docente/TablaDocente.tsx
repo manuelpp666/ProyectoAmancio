@@ -1,7 +1,7 @@
 import { GraduationCap, CheckCircle2, PauseCircle, XCircle, Edit3, UserMinus, Phone } from 'lucide-react';
 import { Docente } from "@/src/interfaces/docente";
 import Link from 'next/link';
-import { createPortal } from 'react-dom';
+import { apiFetch } from "@/src/lib/api";
 import { useState } from 'react';
 import { ConfirmModal } from '../utils/ConfirmModal';
 
@@ -20,7 +20,7 @@ export const TeacherRow = ({ docente, img = '1' }: TeacherRowProps) => {
     const handleToggleStatus = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/docentes/${docente.id_docente}/modificarestado`, {
+            const response = await apiFetch(`/docentes/${docente.id_docente}/modificarestado`, {
                 method: 'PUT',
             });
             if (response.ok) {

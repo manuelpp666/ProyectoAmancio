@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { X, Save, AlertCircle, Loader2, FileUp, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { apiFetch } from "@/src/lib/api";
+
 
 export default function ModalCrearTarea({ idCarga, bimestre, tareaExistente, onClose, onRefresh }: any) {
   const [loading, setLoading] = useState(false);
@@ -53,12 +55,12 @@ export default function ModalCrearTarea({ idCarga, bimestre, tareaExistente, onC
       }
 
       const url = tareaExistente
-        ? `${process.env.NEXT_PUBLIC_API_URL}/virtual/tareas/${tareaExistente.id_tarea}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/virtual/tareas/`;
+        ? `/virtual/tareas/${tareaExistente.id_tarea}`
+        : `/virtual/tareas/`;
 
       const method = tareaExistente ? "PUT" : "POST";
 
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         method: method,
         body: dataToSend,
       });

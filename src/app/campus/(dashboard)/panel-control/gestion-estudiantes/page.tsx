@@ -4,6 +4,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { AlumnoBase } from "@/src/interfaces/admision";
 import EdadBadge from "@/src/components/utils/CalcularEdad";
+import { apiFetch } from "@/src/lib/api";
 
 function InfoItem({ label, value }: { label: string, value: string }) {
     return (
@@ -35,12 +36,12 @@ export default function GestionEstudiantesPage() {
             let endpoint = filtroPostulantes ? "/alumnos/solicitudes-pendientes" : "/alumnos/";
 
             // Si hay algo escrito en búsqueda, lo añadimos como query param
-            const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`);
+            const url = new URL(`${endpoint}`);
             if (busqueda) {
                 url.searchParams.append("dni", busqueda);
             }
 
-            const response = await fetch(url.toString());
+            const response = await apiFetch(url.toString());
             if (!response.ok) throw new Error("Error al obtener datos");
             const data = await response.json();
             setAlumnos(data);
@@ -61,7 +62,7 @@ export default function GestionEstudiantesPage() {
     const verDetalle = async (id: number) => {
         setCargandoDetalle(true);
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/alumnos/detalle-completo/${id}`);
+            const res = await apiFetch(`/alumnos/detalle-completo/${id}`);
             if (!res.ok) throw new Error();
             const data = await res.json();
             setModalInfo({ abierto: true, datos: data });
@@ -74,9 +75,9 @@ export default function GestionEstudiantesPage() {
     // 2. Función Principal de Decisión
     const ejecutarDecision = async (id: number, aprobado: boolean, motivo?: string) => {
         setModalInfo({ abierto: false, datos: null });
-        const url = `${process.env.NEXT_PUBLIC_API_URL}/alumnos/decidir-admision/${id}?aprobado=${aprobado}${motivo ? `&motivo=${motivo}` : ""}`;
+        const url = `/alumnos/decidir-admision/${id}?aprobado=${aprobado}${motivo ? `&motivo=${motivo}` : ""}`;
 
-        const promise = fetch(url, { method: "POST" }).then(async (res) => {
+        const promise = apiFetch(url, { method: "POST" }).then(async (res) => {
             if (!res.ok) throw new Error();
             cargarDatos();
             return res.json();

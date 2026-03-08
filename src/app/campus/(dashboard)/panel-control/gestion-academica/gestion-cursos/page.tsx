@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
-import { NivelConCursos, AnioEscolar, Area } from "@/src/interfaces/academic"; 
+import { NivelConCursos, Area } from "@/src/interfaces/academic"; 
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
+import { apiFetch } from "@/src/lib/api";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
 import { toast } from "sonner";
 
@@ -57,8 +58,8 @@ export default function GestionCursosPage() {
             const params = new URLSearchParams();
             gradosIds.forEach(id => params.append('grados_ids', id.toString()));
 
-            const res = await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL}/academic/cursos/${cursoId}?${params.toString()}`,
+            const res = await apiFetch(
+              `/academic/cursos/${cursoId}?${params.toString()}`,
               { method: "DELETE" }
             );
 
@@ -79,8 +80,8 @@ export default function GestionCursosPage() {
     try {
       // Nota: Si tu API permite filtrar por año, añade ?anio_id=${selectedAnio}
       const [resNiveles, resAreas] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/niveles-cursos/`),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/areas/`)
+        apiFetch(`/academic/niveles-cursos/`),
+        apiFetch(`/academic/areas/`)
       ]);
 
       if (resNiveles.ok && resAreas.ok) {
@@ -103,7 +104,7 @@ export default function GestionCursosPage() {
   const handleCrearArea = async () => {
     if (!nuevaAreaNombre.trim()) return;
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/areas/`, {
+      const res = await apiFetch(`/academic/areas/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nombre: nuevaAreaNombre })
@@ -129,12 +130,12 @@ export default function GestionCursosPage() {
 
     const isEditing = editingId !== null;
     const url = isEditing
-      ? `${process.env.NEXT_PUBLIC_API_URL}/academic/cursos/${editingId}`
-      : `${process.env.NEXT_PUBLIC_API_URL}/academic/cursos/`;
+      ? `/academic/cursos/${editingId}`
+      : `/academic/cursos/`;
 
     try {
       // 1. Guardar/Actualizar Curso
-      const resCurso = await fetch(url, {
+      const resCurso = await apiFetch(url, {
         method: isEditing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -147,11 +148,11 @@ export default function GestionCursosPage() {
       // 2. Actualizar Plan de Estudio
       // Si editamos, usamos el batch endpoint que creamos arriba
       const planUrl = isEditing
-        ? `${process.env.NEXT_PUBLIC_API_URL}/academic/plan-estudio/batch/${editingId}`
+        ? `/academic/plan-estudio/batch/${editingId}`
         : null;
 
       if (isEditing) {
-        await fetch(planUrl!, {
+        await apiFetch(planUrl!, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(gradosSeleccionados)
@@ -160,7 +161,7 @@ export default function GestionCursosPage() {
         // Lógica de creación (la que ya tenías con Promise.all)
         await Promise.all(
           gradosSeleccionados.map(gradoId =>
-            fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/plan-estudio/`, {
+            apiFetch(`/academic/plan-estudio/`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ id_curso: cursoData.id_curso, id_grado: gradoId })

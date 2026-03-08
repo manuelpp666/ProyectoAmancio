@@ -12,6 +12,7 @@ import {
   ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
+import { apiFetch } from "@/src/lib/api";
 
 export default function ModalEntregaTarea({ tarea, idUsuario, onClose, onRefresh }: any) {
   const [file, setFile] = useState<File | null>(null);
@@ -38,7 +39,7 @@ export default function ModalEntregaTarea({ tarea, idUsuario, onClose, onRefresh
       formData.append("id_tarea", String(idTareaFinal));
       formData.append("id_usuario", String(idUsuario));
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/virtual/entregar-tarea/`, {
+      const res = await apiFetch(`/virtual/entregar-tarea/`, {
         method: "POST",
         body: formData,
       });
