@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
   // Lo mandamos a su panel correspondiente para que no se vuelva a loguear
   if (token && pathname === '/campus') {
     if (role === 'ADMIN') return NextResponse.redirect(new URL('/campus/panel-control', request.url));
-    if (role === 'DOCENTE') return NextResponse.redirect(new URL('/campus/campus-docente', request.url));
+    if (role === 'DOCENTE') return NextResponse.redirect(new URL('/campus/campus-docente/inicio-docente', request.url));
     // Por defecto a estudiante
     return NextResponse.redirect(new URL('/campus/campus-estudiante/inicio-campus', request.url));
   }
@@ -34,7 +34,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/prohibido', request.url));
   }
   // Solo ALUMNO entra a campus-estudiante
-  if (pathname.startsWith('/campus/campus-estudiante') && role !== 'ESTUDIANTE') {
+  if (pathname.startsWith('/campus/campus-estudiante') && role !== 'ALUMNO') {
     return NextResponse.redirect(new URL('/prohibido', request.url));
   }
 

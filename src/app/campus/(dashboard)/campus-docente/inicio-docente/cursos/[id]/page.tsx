@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import ModalVerEntregas from "@/src/components/Tarea/ModalVerEntregas";
 import { apiFetch } from "@/src/lib/api";
 
-
 export default function DetalleCursoDocente() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -20,6 +19,7 @@ export default function DetalleCursoDocente() {
   const [activeTab, setActiveTab] = useState("notas"); // Estado para pestañas
 
   const [showModal, setShowModal] = useState(false);
+  const [isCerrarBimestreOpen, setIsCerrarBimestreOpen] = useState(false);
   const idCarga = params.id;
   const anio = searchParams.get("anio");
 
@@ -32,6 +32,9 @@ export default function DetalleCursoDocente() {
   const [editandoNotas, setEditandoNotas] = useState(false);
   const [notasTemporales, setNotasTemporales] = useState<any>({}); // { "id_alumno_id_tarea": valor }
 
+  // para saber si esta al 100%
+  const pesoTotal = datos?.evaluaciones?.reduce((acc: number, tarea: any) => acc + (tarea.peso || 0), 0) || 0;
+  const esPesoValido = pesoTotal === 100;
 
   // Función para capturar el cambio en los inputs
   const handleNotaChange = (idAlumno: number, idTarea: number, valor: string) => {
@@ -111,6 +114,28 @@ export default function DetalleCursoDocente() {
     setIsConfirmOpen(true);
   };
 
+  const cerrarBimestre = async () => {
+    const toastId = toast.loading("Cerrando bimestre y calculando promedios...");
+    try {
+      const res = await apiFetch(`/gestion/cerrar-bimestre/${idCarga}/${bimestre}`, {
+        method: 'POST'
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.detail || "Error al cerrar bimestre");
+      }
+
+      toast.success(`¡Bimestre ${bimestre} cerrado con éxito!`, { id: toastId });
+      fetchSabana(); // Recargar para ver si hubo cambios en los promedios
+    } catch (error: any) {
+      toast.error(error.message, { id: toastId });
+    }
+  };
+  const handleCerrarBimestre = () => {
+    if (!esPesoValido) return;
+    setIsCerrarBimestreOpen(true);
+  };
   // 2. Esta función es la que realmente hace el fetch (se pasa al onConfirm del modal)
   const executeDelete = async () => {
     if (!tareaAEliminar) return;
@@ -201,6 +226,19 @@ export default function DetalleCursoDocente() {
             </select>
 
             <div className="flex gap-2">
+
+              {/* Botón de Cerrar Bimestre */}
+              <button
+                onClick={handleCerrarBimestre}
+                disabled={!esPesoValido}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm
+          ${esPesoValido
+                    ? "bg-[#701C32] text-white hover:bg-[#8a223d]"
+                    : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
+                title={!esPesoValido ? "El peso total de las tareas debe ser 100% para cerrar" : ""}
+              >
+                <BarChart3 size={16} /> Cerrar Bimestre
+              </button>
               {!editandoNotas ? (
                 <button
                   onClick={() => setEditandoNotas(true)}
@@ -367,6 +405,15 @@ export default function DetalleCursoDocente() {
         message={`¿Estás seguro de que deseas eliminar "${tareaAEliminar?.titulo}"? Esta acción no se puede deshacer y borrará todas las notas asociadas.`}
         confirmText="Sí, eliminar tarea"
         type="danger"
+      />
+      <ConfirmModal
+        isOpen={isCerrarBimestreOpen}
+        onClose={() => setIsCerrarBimestreOpen(false)}
+        onConfirm={cerrarBimestre}
+        title={`¿Cerrar Bimestre ${bimestre}?`}
+        message="Al cerrar el bimestre se calcularán los promedios finales. Asegúrate de que todas las notas hayan sido publicadas correctamente."
+        confirmText="Sí, cerrar bimestre"
+        type="warning" // Usamos warning para diferenciarlo de una eliminación
       />
       {tareaVerEntregas && (
         <ModalVerEntregas

@@ -35,7 +35,7 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     document.cookie = "authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     document.cookie = "userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     localStorage.clear();
-    window.location.href = "/login?error=session_expired";
+    window.location.href = "/prohibido";
   }
 
   return response;
