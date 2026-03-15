@@ -8,9 +8,23 @@ import { Tramite } from "@/src/interfaces/tramite";
 import { apiFetch } from "@/src/lib/api";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// --- NUEVA INTERFAZ PARA TIPOS DE PAGO ---
+interface TipoPago {
+  id_tipo_pago: number;
+  categoria: string;
+  nombre: string;
+  costo: number;
+  fecha_inicio: string;
+  fecha_vencimiento: string;
+  mora: number;
+  accion_vencimiento: string;
+  activo: boolean;
+}
+
 export default function GestionFinancieraPage() {
   // --- ESTADOS ---
-  const [tabActiva, setTabActiva] = useState<"config" | "solicitudes" | "recaudacion">("config");
+  // Se agregó "tipos-pagos" a los tipos de tabActiva
+  const [tabActiva, setTabActiva] = useState<"config" | "solicitudes" | "tipos-pagos" | "recaudacion">("config");
   const [isLoading, setIsLoading] = useState(false);
   const [busqueda, setBusqueda] = useState("");
 
@@ -19,17 +33,26 @@ export default function GestionFinancieraPage() {
   const [grados, setGrados] = useState<Grado[]>([]);
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [pagos, setPagos] = useState<Pago[]>([]);
+  
+  // Nuevo estado para los Tipos de Pago
+  const [tiposPago, setTiposPago] = useState<TipoPago[]>([]);
 
-  // Modales
+  // Modales Trámites y Solicitudes
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [isDictamenModalOpen, setIsDictamenModalOpen] = useState(false);
   const [selectedSolicitud, setSelectedSolicitud] = useState<Solicitud | null>(null);
 
+  // Nuevos estados para el Modal de Tipos de Pago
+  const [isModalTipoPagoOpen, setIsModalTipoPagoOpen] = useState(false);
+  const [isEditingTipoPago, setIsEditingTipoPago] = useState(false);
+  const [currentIdTipoPago, setCurrentIdTipoPago] = useState<number | null>(null);
+
   // Estados para el Modal de Confirmación
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [pagoAConfirmar, setPagoAConfirmar] = useState<number | null>(null);
+  
   const abrirModalDictamen = (solicitud: Solicitud) => {
     setRespuestaAdmin("");
     setSelectedSolicitud(solicitud);
@@ -55,7 +78,7 @@ export default function GestionFinancieraPage() {
       });
 
       if (res.ok) {
-        toast.success("Pago confirmado y matrícula procesada");
+        toast.success("Pago confirmado y procesos ejecutados");
         fetchPagos(); // Recargar la tabla
       } else {
         toast.error("No se pudo confirmar el pago");
@@ -64,8 +87,10 @@ export default function GestionFinancieraPage() {
       toast.error("Error de conexión con el servidor");
     } finally {
       setPagoAConfirmar(null);
+      setIsConfirmOpen(false); // Cierra el modal después de ejecutar
     }
   };
+
   // Formulario Trámite
   const [formData, setFormData] = useState({
     nombre: "",
@@ -77,11 +102,32 @@ export default function GestionFinancieraPage() {
   });
   const [respuestaAdmin, setRespuestaAdmin] = useState("");
 
+  // Formulario Tipo Pago
+  const [formDataTipoPago, setFormDataTipoPago] = useState({
+    categoria: "OTRO", nombre: "", costo: 0, fecha_inicio: "", fecha_vencimiento: "", mora: 0, accion_vencimiento: "APLICAR_MORA", activo: true
+  });
+
+  // --- NUEVOS ESTADOS PARA FECHAS MM-DD ---
+  const [mesInicio, setMesInicio] = useState("01");
+  const [diaInicio, setDiaInicio] = useState("01");
+  const [mesFin, setMesFin] = useState("12");
+  const [diaFin, setDiaFin] = useState("31");
+
+  const meses = [
+    { num: "01", nom: "Enero" }, { num: "02", nom: "Febrero" }, { num: "03", nom: "Marzo" },
+    { num: "04", nom: "Abril" }, { num: "05", nom: "Mayo" }, { num: "06", nom: "Junio" },
+    { num: "07", nom: "Julio" }, { num: "08", nom: "Agosto" }, { num: "09", nom: "Septiembre" },
+    { num: "10", nom: "Octubre" }, { num: "11", nom: "Noviembre" }, { num: "12", nom: "Diciembre" }
+  ];
+  const dias = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
+  const nombreMes = (mm: string) => meses.find(m => m.num === mm)?.nom || mm;
+
   // --- CARGA DE DATOS ---
   useEffect(() => {
     if (tabActiva === "config") { fetchTramites(); fetchGrados(); }
     if (tabActiva === "solicitudes") fetchSolicitudes();
-    if (tabActiva === "recaudacion") fetchPagos();
+    if (tabActiva === "recaudacion") { fetchPagos(); fetchTiposPago(); } // Cargamos tiposPago para el filtro
+    if (tabActiva === "tipos-pagos") fetchTiposPago();
   }, [tabActiva]);
 
   const fetchTramites = async () => {
@@ -100,6 +146,14 @@ export default function GestionFinancieraPage() {
   const fetchSolicitudes = async () => {
     const res = await apiFetch(`/finance/solicitudes/pendientes-revision`);
     if (res.ok) setSolicitudes(await res.json());
+  };
+
+  // Nueva función para cargar tipos de pago
+  const fetchTiposPago = async () => {
+    try {
+      const res = await apiFetch(`/finance/tipos-pago`);
+      if (res.ok) setTiposPago(await res.json());
+    } catch (e) { toast.error("Error cargando los tipos de pago"); }
   };
 
   const fetchPagos = async () => {
@@ -121,6 +175,7 @@ export default function GestionFinancieraPage() {
       setIsLoading(false);
     }
   };
+
   useEffect(() => {
     if (tabActiva === "recaudacion") {
       const timer = setTimeout(() => {
@@ -183,11 +238,9 @@ export default function GestionFinancieraPage() {
       setIsModalOpen(false);
       fetchTramites();
     } else {
-      // AQUÍ ESTÁ EL CAMBIO: Capturamos el "detail" que enviamos desde FastAPI
-      // Si el backend envía detail, lo mostramos, si no, un error genérico
       const mensajeError = data.detail || "Error al procesar la solicitud";
       toast.error(mensajeError, {
-        duration: 5000, // Le damos más tiempo para que el usuario pueda leer la explicación
+        duration: 5000, 
         style: { background: '#FEF2F2', color: '#B91C1C', border: '1px solid #F87171' }
       });
     }
@@ -206,11 +259,62 @@ export default function GestionFinancieraPage() {
         setIsDictamenModalOpen(false);
         setSelectedSolicitud(null);
         setRespuestaAdmin("");
-
         fetchSolicitudes();
       }
     } catch (e) { toast.error("Error al procesar"); }
   };
+
+  // --- HANDLERS MODAL TIPOS DE PAGO ---
+  const openNewTipoPago = () => { 
+    setFormDataTipoPago({ categoria: "OTRO", nombre: "", costo: 0, fecha_inicio: "", fecha_vencimiento: "", mora: 0, accion_vencimiento: "APLICAR_MORA", activo: true }); 
+    setMesInicio("01"); setDiaInicio("01"); setMesFin("12"); setDiaFin("31");
+    setIsEditingTipoPago(false); 
+    setIsModalTipoPagoOpen(true); 
+  };
+  const openEditTipoPago = (p: TipoPago) => { 
+    setFormDataTipoPago({ ...p }); 
+    const [mI, dI] = p.fecha_inicio.split("-");
+    const [mF, dF] = p.fecha_vencimiento.split("-");
+    setMesInicio(mI || "01"); setDiaInicio(dI || "01");
+    setMesFin(mF || "12"); setDiaFin(dF || "31");
+    setCurrentIdTipoPago(p.id_tipo_pago); 
+    setIsEditingTipoPago(true); 
+    setIsModalTipoPagoOpen(true); 
+  };
+  const handleEliminarTipoPago = async (id: number) => {
+    if (!confirm("¿Estás seguro de eliminar este tipo de pago?")) return;
+    try { 
+      await apiFetch(`/finance/tipos-pago/${id}`, { method: "DELETE" }); 
+      toast.success("Eliminado correctamente"); 
+      fetchTiposPago(); 
+    } catch (e) { toast.error("Error al eliminar"); }
+  };
+  const handleSubmitTipoPago = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // Reemplazamos las fechas por la concatenación de los nuevos selectores MM-DD
+    const fInicio = `${mesInicio}-${diaInicio}`;
+    const fFin = `${mesFin}-${diaFin}`;
+    const payload = { ...formDataTipoPago, fecha_inicio: fInicio, fecha_vencimiento: fFin };
+    
+    const url = isEditingTipoPago ? `/finance/tipos-pago/${currentIdTipoPago}` : `/finance/tipos-pago`;
+    try {
+      const res = await apiFetch(url, { 
+        method: isEditingTipoPago ? "PUT" : "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify(payload) 
+      });
+      if (res.ok) { 
+        toast.success(isEditingTipoPago ? "Actualizado correctamente" : "Creado correctamente"); 
+        setIsModalTipoPagoOpen(false); 
+        fetchTiposPago(); 
+      } else { 
+        const errorData = await res.json(); toast.error(errorData.detail || "Error al guardar"); 
+      }
+    } catch (e) { toast.error("Error de conexión"); }
+  };
+
+  // Extracción dinámica de categorías para el filtro de Recaudación
+  const categoriasUnicas = Array.from(new Set(tiposPago.map(tp => tp.categoria)));
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
@@ -229,6 +333,7 @@ export default function GestionFinancieraPage() {
             {[
               { id: 'config', label: 'Tarifario/Trámites', icon: 'settings' },
               { id: 'solicitudes', label: 'Atención de Solicitudes', icon: 'mark_as_unread' },
+              { id: 'tipos-pagos', label: 'Tipos de Pagos', icon: 'receipt_long' }, // NUEVA PESTAÑA AÑADIDA AQUÍ
               { id: 'recaudacion', label: 'Caja y Recaudación', icon: 'account_balance_wallet' }
             ].map(t => (
               <button
@@ -339,6 +444,66 @@ export default function GestionFinancieraPage() {
             </div>
           )}
 
+          {/* --- TAB: TIPOS DE PAGOS --- */}
+          {tabActiva === "tipos-pagos" && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h1 className="text-xl font-bold text-gray-800">Tipos de Pago Globales (Plantillas)</h1>
+                  <p className="text-xs text-gray-500">Reglas fijas para generación de deudas por rango de fecha y categoría.</p>
+                </div>
+                <button onClick={openNewTipoPago} className="bg-[#093E7A] text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2">
+                  <span className="material-symbols-outlined">add</span> Nuevo Pago
+                </button>
+              </div>
+
+              <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase">Categoría</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase">Nombre del Pago</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase">Rango de Fechas</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase text-center">Costo</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {tiposPago.length === 0 ? (
+                      <tr><td colSpan={5} className="p-10 text-center text-gray-400 italic">No hay plantillas de pago registradas</td></tr>
+                    ) : tiposPago.map(p => {
+                      const [mI, dI] = p.fecha_inicio.split("-");
+                      const [mF, dF] = p.fecha_vencimiento.split("-");
+                      return (
+                      <tr key={p.id_tipo_pago} className="hover:bg-gray-50">
+                        <td className="p-4">
+                          <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                            p.categoria === 'PENSION' ? 'bg-blue-100 text-blue-700' : 
+                            p.categoria === 'MATRICULA' ? 'bg-purple-100 text-purple-700' : 
+                            p.categoria === 'VACANTE' ? 'bg-green-100 text-green-700' : 
+                            p.categoria === 'MODULO' ? 'bg-orange-100 text-orange-700' : 
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {p.categoria === 'MODULO' ? 'MÓDULO' : p.categoria}
+                          </span>
+                        </td>
+                        <td className="p-4 font-bold text-gray-800">{p.nombre}</td>
+                        <td className="p-4 text-xs font-medium text-gray-600">
+                          {dI} de {nombreMes(mI)} a {dF} de {nombreMes(mF)}
+                        </td>
+                        <td className="p-4 text-center font-black text-[#093E7A]">S/ {Number(p.costo).toFixed(2)}</td>
+                        <td className="p-4 flex justify-end gap-2">
+                          <button onClick={() => openEditTipoPago(p)} className="text-gray-400 hover:text-blue-600"><span className="material-symbols-outlined text-sm">edit</span></button>
+                          <button onClick={() => handleEliminarTipoPago(p.id_tipo_pago)} className="text-gray-400 hover:text-red-600"><span className="material-symbols-outlined text-sm">delete</span></button>
+                        </td>
+                      </tr>
+                    )})}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* --- TAB: CAJA Y RECAUDACIÓN --- */}
           {tabActiva === "recaudacion" && (
             <div className="space-y-4">
@@ -359,18 +524,23 @@ export default function GestionFinancieraPage() {
                   </div>
                 </div>
 
-                {/* Selector de Tipo */}
+                {/* Selector de Categoría (Dinámico) */}
                 <div className="w-44">
-                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">Tipo de Pago</label>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">Categoría</label>
                   <select
                     className="w-full px-3 py-2 bg-gray-50 border rounded-lg text-sm outline-none"
                     value={filtroTipoPago}
                     onChange={(e) => setFiltroTipoPago(e.target.value)}
                   >
-                    <option value="TODOS">Todos los tipos</option>
-                    <option value="PENSION">Pensiones</option>
-                    <option value="MATRICULA">Matrícula</option>
-                    <option value="VACANTE">Vacantes</option>
+                    <option value="TODOS">Todas las categorías</option>
+                    {categoriasUnicas.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat === 'PENSION' ? 'Pensiones' : 
+                         cat === 'MATRICULA' ? 'Matrículas' : 
+                         cat === 'VACANTE' ? 'Vacantes' : 
+                         cat === 'MODULO' ? 'Módulos (Libros)' : cat}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -505,7 +675,7 @@ export default function GestionFinancieraPage() {
         </div>
       </div>
 
-      {/* --- MODAL DE TRÁMITE (TU DISEÑO ANTERIOR) --- */}
+      {/* --- MODAL DE TRÁMITE --- */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
@@ -584,7 +754,7 @@ export default function GestionFinancieraPage() {
         </div>
       )}
 
-      {/* MODAL DICTAMEN */}
+      {/* --- MODAL DICTAMEN SOLICITUD --- */}
       {isDictamenModalOpen && selectedSolicitud && (
         <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
@@ -637,14 +807,99 @@ export default function GestionFinancieraPage() {
         </div>
       )}
 
+      {/* --- NUEVO MODAL PARA TIPOS DE PAGO --- */}
+      {isModalTipoPagoOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="bg-[#093E7A] p-4 flex justify-between items-center text-white shrink-0">
+              <h3 className="font-bold">{isEditingTipoPago ? 'Editar Plantilla' : 'Nueva Plantilla Automática'}</h3>
+              <button onClick={() => setIsModalTipoPagoOpen(false)}><span className="material-symbols-outlined">close</span></button>
+            </div>
+            <form onSubmit={handleSubmitTipoPago} className="p-6 space-y-4 overflow-y-auto">
+              
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Categoría del Pago</label>
+                <select required className="w-full bg-blue-50 border border-blue-200 text-[#093E7A] font-bold rounded-lg px-4 py-2 text-sm outline-none" value={formDataTipoPago.categoria} onChange={e => setFormDataTipoPago({...formDataTipoPago, categoria: e.target.value})}>
+                  <option value="VACANTE">Derecho de Vacante</option>
+                  <option value="MATRICULA">Matrícula</option>
+                  <option value="PENSION">Pensión Mensual</option>
+                  <option value="MODULO">Módulos (Libros)</option>
+                  <option value="OTRO">Otro (Genérico)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre (Ej: Matrícula Anticipada o Pensión Abril)</label>
+                <input required type="text" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" value={formDataTipoPago.nombre} onChange={e => setFormDataTipoPago({...formDataTipoPago, nombre: e.target.value})} />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Válido Desde / Inicio</label>
+                  <div className="flex gap-2">
+                    <select className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-sm outline-none" value={mesInicio} onChange={e => setMesInicio(e.target.value)}>
+                      {meses.map(m => <option key={m.num} value={m.num}>{m.nom}</option>)}
+                    </select>
+                    <select className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-sm outline-none" value={diaInicio} onChange={e => setDiaInicio(e.target.value)}>
+                      {dias.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Válido Hasta / Vence</label>
+                  <div className="flex gap-2">
+                    <select className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-sm outline-none" value={mesFin} onChange={e => setMesFin(e.target.value)}>
+                      {meses.map(m => <option key={m.num} value={m.num}>{m.nom}</option>)}
+                    </select>
+                    <select className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-sm outline-none" value={diaFin} onChange={e => setDiaFin(e.target.value)}>
+                      {dias.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Costo Base (S/)</label>
+                  <input required type="number" min="0" step="0.01" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" value={formDataTipoPago.costo} onChange={e => setFormDataTipoPago({...formDataTipoPago, costo: parseFloat(e.target.value)})} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Acción al Vencer</label>
+                  <select className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" value={formDataTipoPago.accion_vencimiento} onChange={e => setFormDataTipoPago({...formDataTipoPago, accion_vencimiento: e.target.value})}>
+                    <option value="APLICAR_MORA">Aplicar Mora (+10 días)</option>
+                    <option value="DESHABILITAR">Se Deshabilita</option>
+                  </select>
+                </div>
+              </div>
+              
+              {formDataTipoPago.accion_vencimiento === "APLICAR_MORA" && formDataTipoPago.categoria === "PENSION" && (
+                <div>
+                  <label className="block text-xs font-bold text-orange-500 uppercase mb-1">Monto de Mora (S/)</label>
+                  <input required type="number" min="0" step="0.01" className="w-full bg-orange-50 border border-orange-200 rounded-lg px-4 py-2 text-sm outline-none" value={formDataTipoPago.mora} onChange={e => setFormDataTipoPago({...formDataTipoPago, mora: parseFloat(e.target.value)})} />
+                </div>
+              )}
+              {formDataTipoPago.categoria !== "PENSION" && (
+                 <p className="text-xs text-gray-400 italic">* Nota: La mora automática del sistema está configurada para aplicar únicamente a Pensiones.</p>
+              )}
+              
+              <div className="pt-4 flex gap-3">
+                <button type="button" onClick={() => setIsModalTipoPagoOpen(false)} className="flex-1 py-2.5 bg-gray-100 text-gray-500 font-bold rounded-lg text-sm hover:bg-gray-200 transition-colors">Cancelar</button>
+                <button type="submit" className="flex-1 py-2.5 bg-[#093E7A] text-white font-bold rounded-lg text-sm hover:bg-[#072d5a] transition-colors">Guardar Plantilla</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL CONFIRMACIÓN --- */}
       <ConfirmModal
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={ejecutarConfirmacionManual}
         title="Confirmar Pago Manual"
-        message="¿Estás seguro de registrar este pago manualmente? Si es un derecho de vacante, se generará la matrícula del alumno de forma automática en el sistema."
+        message="¿Estás seguro de registrar este pago manualmente? Si es un derecho de vacante o matrícula, se ejecutarán los procesos en cascada para generar las deudas correspondientes (Pensiones y Módulos)."
         confirmText="Sí, Confirmar Pago"
-        type="warning" // Usamos warning para que no sea rojo "danger" sino un color de atención
+        type="warning" 
       />
     </div>
   );

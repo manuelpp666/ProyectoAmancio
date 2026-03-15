@@ -1,8 +1,8 @@
-export type TipoPersonal = "admin" | "docente" | "auxiliar";
+export type TipoPersonal = "admin" | "docente" | "auxiliar" | "psicologo";
 
 export interface Personal {
-  id: number; // Corregido: int -> number
-  id_usuario: number; // Corregido: int -> number
+  id: number;
+  id_usuario: number;
   dni: string;
   nombres: string;
   apellidos: string;

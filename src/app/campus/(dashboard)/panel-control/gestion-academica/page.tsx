@@ -8,7 +8,6 @@ import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
 import { apiFetch } from "@/src/lib/api";
 
-// URL Base
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function GestionAcademicaPage() {
@@ -21,14 +20,15 @@ export default function GestionAcademicaPage() {
     loadingAnios,
     refreshAnios
   } = useAnioAcademico();
+  
   // --- ESTADOS GLOBALES ---
   const [niveles, setNiveles] = useState<Nivel[]>([]);
   const [grados, setGrados] = useState<Grado[]>([]);
   const [secciones, setSecciones] = useState<Seccion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // --- MODAL APERTURA AÑO ---
-  const [isAperturaModalOpen, setIsAperturaModalOpen] = useState(false);
+  // --- MODAL CREAR AÑO (NUEVO) ---
+  const [isCrearAnioModalOpen, setIsCrearAnioModalOpen] = useState(false);
   const [nuevoAnioData, setNuevoAnioData] = useState({
     id_anio_escolar: "",
     fecha_inicio: "",
@@ -36,7 +36,15 @@ export default function GestionAcademicaPage() {
     tipo: "REGULAR"
   });
 
-  // --- MODAL INSCRIPCIONES (NUEVO) ---
+  // --- MODAL EDITAR AÑO (MODIFICADO) ---
+  const [isEditarAnioModalOpen, setIsEditarAnioModalOpen] = useState(false);
+  const [editarAnioData, setEditarAnioData] = useState({
+    fecha_inicio: "",
+    fecha_fin: "",
+    tipo: "REGULAR"
+  });
+
+  // --- MODAL INSCRIPCIONES ---
   const [isInscripcionModalOpen, setIsInscripcionModalOpen] = useState(false);
   const [inscripcionData, setInscripcionData] = useState({
     inicio_inscripcion: "",
@@ -47,28 +55,25 @@ export default function GestionAcademicaPage() {
   const [isSeccionModalOpen, setIsSeccionModalOpen] = useState(false);
   const [selectedGradoId, setSelectedGradoId] = useState<number | null>(null);
   const [seccionEnEdicion, setSeccionEnEdicion] = useState<Seccion | null>(null);
-  const [nuevaSeccion, setNuevaSeccion] = useState({
-    nombre: "",
-    vacantes: 30
-  });
+  const [nuevaSeccion, setNuevaSeccion] = useState({ nombre: "", vacantes: 30 });
 
   // --- MODAL COPIAR ---
   const [isCopiarModalOpen, setIsCopiarModalOpen] = useState(false);
   const [anioOrigenCopiar, setAnioOrigenCopiar] = useState("");
 
   // Validaciones
-  const fechasValidas = nuevoAnioData.fecha_inicio && nuevoAnioData.fecha_fin
-    ? new Date(nuevoAnioData.fecha_fin) > new Date(nuevoAnioData.fecha_inicio)
-    : false;
+  const fechasCrearValidas = nuevoAnioData.fecha_inicio && nuevoAnioData.fecha_fin
+    ? new Date(nuevoAnioData.fecha_fin) > new Date(nuevoAnioData.fecha_inicio) : false;
+
+  const fechasEditarValidas = editarAnioData.fecha_inicio && editarAnioData.fecha_fin
+    ? new Date(editarAnioData.fecha_fin) > new Date(editarAnioData.fecha_inicio) : false;
 
   const fechasInscripcionValidas = inscripcionData.inicio_inscripcion && inscripcionData.fin_inscripcion
-    ? new Date(inscripcionData.fin_inscripcion) > new Date(inscripcionData.inicio_inscripcion)
-    : false;
+    ? new Date(inscripcionData.fin_inscripcion) > new Date(inscripcionData.inicio_inscripcion) : false;
 
   // =========================================================
   // 1. CARGA DE DATOS
   // =========================================================
-
   const fetchDatosMaestros = async () => {
     try {
       setIsLoading(true);
@@ -76,26 +81,16 @@ export default function GestionAcademicaPage() {
         apiFetch(`/academic/niveles/`),
         apiFetch(`/academic/grados/`)
       ]);
-
       setNiveles(await resNiveles.json());
       setGrados(await resGrados.json());
-
-    } catch (error) {
-      toast.error("Error de conexión");
-    } finally {
-      setIsLoading(false);
-    }
+    } catch (error) { toast.error("Error de conexión"); } finally { setIsLoading(false); }
   };
 
   const fetchSeccionesDelAnio = async (idAnio: string) => {
     try {
       const res = await apiFetch(`/academic/secciones/?anio_id=${idAnio}`);
-      if (res.ok) {
-        setSecciones(await res.json());
-      }
-    } catch (error) {
-      console.error(error);
-    }
+      if (res.ok) setSecciones(await res.json());
+    } catch (error) { console.error(error); }
   };
 
   useEffect(() => {
@@ -104,24 +99,26 @@ export default function GestionAcademicaPage() {
 
   useEffect(() => {
     if (anioSeleccionado) {
-      // 1. Cargar secciones del año elegido
       fetchSeccionesDelAnio(anioSeleccionado);
-
-      // 2. Sincronizar datos de inscripción si el objeto del año existe
       if (anioObj) {
         setInscripcionData({
           inicio_inscripcion: anioObj.inicio_inscripcion || "",
           fin_inscripcion: anioObj.fin_inscripcion || ""
+        });
+        setEditarAnioData({
+          fecha_inicio: anioObj.fecha_inicio || "",
+          fecha_fin: anioObj.fecha_fin || "",
+          tipo: anioObj.tipo || "REGULAR"
         });
       }
     } else {
       setSecciones([]);
     }
   }, [anioSeleccionado, anioObj]);
+
   // =========================================================
   // 2. LÓGICA DE FILTROS
   // =========================================================
-
   const isAnioSinComenzar = () => {
     if (!anioObj) return false;
     const hoy = new Date();
@@ -132,36 +129,26 @@ export default function GestionAcademicaPage() {
   const getNivelesVisibles = () => {
     if (loadingAnios || !anioObj) return niveles;
     const esVerano = anioObj.tipo === "VERANO";
-
     return niveles.filter(n => {
       const nombre = n.nombre.toLowerCase();
-      if (esVerano) {
-        return true;
-      } else {
-        return !nombre.includes("pre") && !nombre.includes("academia");
-      }
+      if (esVerano) return true;
+      return !nombre.includes("pre") && !nombre.includes("academia");
     });
   };
 
   const getOpcionesSeccion = (gradoId: number) => {
     const grado = grados.find(g => g.id_grado === gradoId);
     if (!grado) return ["A", "B", "C"];
-
     const nivel = niveles.find(n => n.id_nivel === grado.id_nivel);
     const nombreNivel = nivel?.nombre.toLowerCase() || "";
-
-    if (nombreNivel.includes("primaria")) {
-      return ["Azul", "Amarillo", "Rojo", "Verde", "Naranja"];
-    } else {
-      return ["A", "B", "C", "D", "E", "F"];
-    }
+    if (nombreNivel.includes("primaria")) return ["Azul", "Amarillo", "Rojo", "Verde", "Naranja"];
+    return ["A", "B", "C", "D", "E", "F"];
   };
 
   // =========================================================
   // 3. HANDLERS
   // =========================================================
-
-  const handleAperturaAnio = async (e: React.FormEvent) => {
+  const handleCrearAnio = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const res = await apiFetch(`/academic/anios/`, {
@@ -169,66 +156,69 @@ export default function GestionAcademicaPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...nuevoAnioData }),
       });
-
       if (res.ok) {
-        toast.success(`Año Académico ${nuevoAnioData.id_anio_escolar} configurado`);
-        setIsAperturaModalOpen(false);
+        toast.success(`Año ${nuevoAnioData.id_anio_escolar} creado exitosamente`);
+        setIsCrearAnioModalOpen(false);
         refreshAnios();
       } else {
         const err = await res.json();
-        toast.error(err.detail || "Error al abrir el año");
+        toast.error(err.detail || "Error al crear el año");
       }
-    } catch (error) {
-      toast.error("Error de conexión");
-    }
+    } catch (error) { toast.error("Error de conexión"); }
   };
 
-  // NUEVO HANDLER: Guardar Inscripciones
+  const handleEditarAnio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!anioSeleccionado) return;
+    try {
+      const res = await apiFetch(`/academic/anios/${anioSeleccionado}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editarAnioData)
+      });
+      if (res.ok) {
+        toast.success("Fechas del año académico actualizadas");
+        setIsEditarAnioModalOpen(false);
+        refreshAnios();
+      } else {
+        const err = await res.json();
+        toast.error(err.detail || "Error al actualizar fechas");
+      }
+    } catch (error) { toast.error("Error de conexión"); }
+  };
+
   const handleGuardarInscripcion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!anioSeleccionado) return;
-
     try {
       const res = await apiFetch(`/academic/anios/${anioSeleccionado}/inscripciones`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(inscripcionData)
       });
-
       if (res.ok) {
         toast.success("Fechas de inscripción actualizadas");
         setIsInscripcionModalOpen(false);
-        fetchDatosMaestros(); // Recargar para tener los datos frescos
+        refreshAnios();
       } else {
         const err = await res.json();
         toast.error(err.detail || "Error al guardar fechas");
       }
-    } catch (error) {
-      toast.error("Error de conexión");
-    }
+    } catch (error) { toast.error("Error de conexión"); }
   };
 
-  // --- SECCIONES ---
+  // --- SECCIONES Y COPIAR ---
   const handleGuardarSeccion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedGradoId || !anioSeleccionado) return toast.error("Falta seleccionar año o grado");
-
     const esEdicion = !!seccionEnEdicion;
-    const url = esEdicion
-      ? `/academic/secciones/${seccionEnEdicion.id_seccion}`
-      : `/academic/secciones/`;
-
+    const url = esEdicion ? `/academic/secciones/${seccionEnEdicion.id_seccion}` : `/academic/secciones/`;
     try {
       const response = await apiFetch(url, {
         method: esEdicion ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...nuevaSeccion,
-          id_grado: selectedGradoId,
-          id_anio_escolar: anioSeleccionado
-        }),
+        body: JSON.stringify({ ...nuevaSeccion, id_grado: selectedGradoId, id_anio_escolar: anioSeleccionado }),
       });
-
       if (response.ok) {
         toast.success("Sección guardada correctamente");
         setIsSeccionModalOpen(false);
@@ -237,9 +227,7 @@ export default function GestionAcademicaPage() {
         const errorData = await response.json();
         toast.error(errorData.detail || "Error al guardar sección");
       }
-    } catch (error) {
-      toast.error("Error al guardar sección");
-    }
+    } catch (error) { toast.error("Error al guardar sección"); }
   };
 
   const handleEliminarSeccion = async (id: number) => {
@@ -249,10 +237,7 @@ export default function GestionAcademicaPage() {
         onClick: async () => {
           try {
             const res = await apiFetch(`/academic/secciones/${id}`, { method: "DELETE" });
-            if (res.ok) {
-              toast.success("Sección eliminada");
-              fetchSeccionesDelAnio(anioSeleccionado);
-            }
+            if (res.ok) { toast.success("Sección eliminada"); fetchSeccionesDelAnio(anioSeleccionado); }
           } catch (e) { toast.error("Error al eliminar"); }
         },
       },
@@ -262,43 +247,22 @@ export default function GestionAcademicaPage() {
   const handleCopiarEstructura = async () => {
     if (!anioOrigenCopiar) return toast.error("Selecciona un año origen");
     if (!anioSeleccionado) return toast.error("Selecciona un año destino");
-
     try {
       const res = await apiFetch(`/academic/anios/copiar-estructura`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          anio_origen: anioOrigenCopiar,
-          anio_destino: anioSeleccionado
-        })
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ anio_origen: anioOrigenCopiar, anio_destino: anioSeleccionado })
       });
-
       if (res.ok) {
         const data = await res.json();
         toast.success(data.message);
         setIsCopiarModalOpen(false);
         fetchSeccionesDelAnio(anioSeleccionado);
-      } else {
-        toast.error("Error al copiar estructura");
-      }
-    } catch (error) {
-      toast.error("Error de conexión");
-    }
+      } else { toast.error("Error al copiar estructura"); }
+    } catch (error) { toast.error("Error de conexión"); }
   };
 
-  // Helpers
-  const prepararNuevaSeccion = (gradoId: number) => {
-    setSeccionEnEdicion(null);
-    setSelectedGradoId(gradoId);
-    setNuevaSeccion({ nombre: "", vacantes: 30 });
-    setIsSeccionModalOpen(true);
-  };
-  const prepararEditarSeccion = (seccion: Seccion) => {
-    setSeccionEnEdicion(seccion);
-    setSelectedGradoId(seccion.id_grado);
-    setNuevaSeccion({ nombre: seccion.nombre, vacantes: seccion.vacantes });
-    setIsSeccionModalOpen(true);
-  };
+  const prepararNuevaSeccion = (gradoId: number) => { setSeccionEnEdicion(null); setSelectedGradoId(gradoId); setNuevaSeccion({ nombre: "", vacantes: 30 }); setIsSeccionModalOpen(true); };
+  const prepararEditarSeccion = (seccion: Seccion) => { setSeccionEnEdicion(seccion); setSelectedGradoId(seccion.id_grado); setNuevaSeccion({ nombre: seccion.nombre, vacantes: seccion.vacantes }); setIsSeccionModalOpen(true); };
 
   return (
     <>
@@ -326,32 +290,21 @@ export default function GestionAcademicaPage() {
                 <h2 className="text-xl font-bold text-gray-800">Estructura Escolar</h2>
               </div>
               <div className="h-6 w-px bg-gray-200 mx-2"></div>
-              <div className="flex items-center gap-2">
-
+              
+              {/* SELECTOR DE AÑOS Y BOTÓN DE NUEVO AÑO */}
+              <div className="flex items-center gap-3">
                 <AnioSelector
                   value={anioSeleccionado}
                   onChange={setAnioSeleccionado}
                   anios={anios}
                   loading={loadingAnios}
                 />
-                {anioObj && (
-                  <div className="flex items-center gap-2 ml-4 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-lg">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] uppercase font-bold text-blue-400 leading-none">Vigencia</span>
-                      <div className="flex items-center gap-2 text-sm font-semibold text-[#093E7A]">
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-xs">calendar_today</span>
-                          {new Date(anioObj.fecha_inicio).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
-                        </span>
-                        <span className="text-blue-300">→</span>
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-xs">event</span>
-                          {new Date(anioObj.fecha_fin).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <button 
+                  onClick={() => setIsCrearAnioModalOpen(true)} 
+                  className="flex items-center gap-1 px-4 py-2 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-all ml-2"
+                >
+                  <span className="material-symbols-outlined text-sm">add</span> Nuevo Año
+                </button>
               </div>
             </div>
 
@@ -378,29 +331,49 @@ export default function GestionAcademicaPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                {/* Apertura */}
+                {/* EDITAR FECHAS DE CLASES */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between">
                   <div className="mb-4">
                     <h4 className="font-bold text-gray-800 flex items-center gap-2">
                       <span className="material-symbols-outlined text-[#093E7A]">event_available</span>
-                      Apertura de Año
+                      Periodo Académico
                     </h4>
-                    <p className="text-xs text-gray-400 mt-1">Configure los parámetros iniciales del ciclo escolar.</p>
+                    <p className="text-xs text-gray-400 mt-1">Fechas de inicio y fin de clases.</p>
+                    {anioObj && (
+                      <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-800 font-medium space-y-1">
+                        <div className="flex justify-between"><span>Inicio:</span> <span className="font-bold">{anioObj.fecha_inicio}</span></div>
+                        <div className="flex justify-between"><span>Fin:</span> <span className="font-bold">{anioObj.fecha_fin}</span></div>
+                      </div>
+                    )}
                   </div>
-                  <button onClick={() => setIsAperturaModalOpen(true)} className="w-full py-2.5 bg-[#093E7A] text-white font-bold rounded-lg text-sm hover:opacity-90 transition-all flex items-center justify-center gap-2">
-                    <span className="material-symbols-outlined text-sm">lock_open</span>
-                    Apertura de Año
+                  <button 
+                    onClick={() => setIsEditarAnioModalOpen(true)} 
+                    disabled={!anioSeleccionado}
+                    className="w-full py-2.5 bg-white border-2 border-[#093E7A] text-[#093E7A] font-bold rounded-lg text-sm hover:bg-[#093E7A] hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span className="material-symbols-outlined text-sm">edit_calendar</span>
+                    Editar Fechas
                   </button>
                 </div>
 
-                {/* NUEVO: Apertura de Inscripciones (Reemplaza Cierre) */}
+                {/* INSCRIPCIONES */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between">
                   <div className="mb-4">
                     <h4 className="font-bold text-gray-800 flex items-center gap-2">
                       <span className="material-symbols-outlined text-[#093E7A]">how_to_reg</span>
-                      Apertura de Inscripciones
+                      Inscripciones / Matrícula
                     </h4>
-                    <p className="text-xs text-gray-400 mt-1">Defina el periodo habilitado para nuevas matrículas.</p>
+                    <p className="text-xs text-gray-400 mt-1">Periodo habilitado para nuevas matrículas.</p>
+                    {anioObj && anioObj.inicio_inscripcion && anioObj.fin_inscripcion ? (
+                      <div className="mt-3 p-3 bg-green-50 border border-green-100 rounded-lg text-xs text-green-800 font-medium space-y-1">
+                        <div className="flex justify-between"><span>Inicio:</span> <span className="font-bold">{anioObj.inicio_inscripcion}</span></div>
+                        <div className="flex justify-between"><span>Fin:</span> <span className="font-bold">{anioObj.fin_inscripcion}</span></div>
+                      </div>
+                    ) : (
+                      <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-500 italic text-center">
+                        Sin fechas configuradas
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={() => setIsInscripcionModalOpen(true)}
@@ -412,7 +385,7 @@ export default function GestionAcademicaPage() {
                   </button>
                 </div>
 
-                {/* Copiar */}
+                {/* COPIAR ESTRUCTURA */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between">
                   <div className="mb-4">
                     <h4 className="font-bold text-gray-800 flex items-center gap-2">
@@ -431,7 +404,7 @@ export default function GestionAcademicaPage() {
                   </button>
                   {!isAnioSinComenzar() && anioObj && (
                     <p className="text-[10px] text-red-400 mt-1 text-center">
-                      Solo disponible antes del inicio de clases ({anioObj.fecha_inicio})
+                      Solo antes del inicio de clases
                     </p>
                   )}
                 </div>
@@ -470,7 +443,7 @@ export default function GestionAcademicaPage() {
                             <GradoCard
                               key={grado.id_grado}
                               grado={gradoConSecciones}
-                              onAddSeccion={() => prepararNuevaSeccion(grado.id_grado)}
+                              onAddSeccion={() => prepararNuevaSeccion(grado.id_grado as number)} // <-- Soluciona el Error 3
                               onEditSeccion={prepararEditarSeccion}
                               onDeleteSeccion={handleEliminarSeccion}
                             />
@@ -486,7 +459,104 @@ export default function GestionAcademicaPage() {
         </div>
       </div>
 
-      {/* --- MODAL INSCRIPCIONES (NUEVO) --- */}
+      {/* --- MODAL CREAR AÑO (NUEVO BOTÓN) --- */}
+      {isCrearAnioModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="p-6 border-b bg-[#093E7A] text-white">
+              <h3 className="font-black text-lg">Crear Nuevo Año Académico</h3>
+              <p className="text-xs opacity-80">El año se creará en el sistema y aparecerá en el selector.</p>
+            </div>
+            <form onSubmit={handleCrearAnio} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Identificador del Año</label>
+                <input required maxLength={6} placeholder="Ej: 2026-1" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]" onChange={(e) => setNuevoAnioData({ ...nuevoAnioData, id_anio_escolar: e.target.value })} />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tipo de Ciclo</label>
+                <select
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
+                  value={nuevoAnioData.tipo}
+                  onChange={(e) => setNuevoAnioData({ ...nuevoAnioData, tipo: e.target.value })}
+                >
+                  <option value="REGULAR">Año Regular (Marzo-Dic)</option>
+                  <option value="VERANO">Ciclo Verano (Ene-Feb)</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Inicio Clases</label>
+                  <input required type="date" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" onChange={(e) => setNuevoAnioData({ ...nuevoAnioData, fecha_inicio: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fin Clases</label>
+                  <input required type="date" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" onChange={(e) => setNuevoAnioData({ ...nuevoAnioData, fecha_fin: e.target.value })} />
+                </div>
+              </div>
+              <div className="pt-4 flex gap-3">
+                <button type="button" onClick={() => setIsCrearAnioModalOpen(false)} className="flex-1 py-2 text-sm font-bold text-gray-500">Cancelar</button>
+                <button
+                  type="submit"
+                  disabled={!fechasCrearValidas}
+                  className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${fechasCrearValidas ? "bg-[#093E7A] text-white hover:bg-[#072d5a]" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
+                >
+                  Crear Año
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL EDITAR AÑO (MODIFICADO) --- */}
+      {isEditarAnioModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="p-6 border-b bg-[#093E7A] text-white">
+              <h3 className="font-black text-lg">Editar Año Académico</h3>
+              <p className="text-xs opacity-80">Modificando el año {anioSeleccionado}</p>
+            </div>
+            <form onSubmit={handleEditarAnio} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tipo de Ciclo</label>
+                <select
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
+                  value={editarAnioData.tipo}
+                  onChange={(e) => setEditarAnioData({ ...editarAnioData, tipo: e.target.value })}
+                >
+                  <option value="REGULAR">Año Regular (Marzo-Dic)</option>
+                  <option value="VERANO">Ciclo Verano (Ene-Feb)</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Inicio Clases</label>
+                  <input required type="date" value={editarAnioData.fecha_inicio} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" onChange={(e) => setEditarAnioData({ ...editarAnioData, fecha_inicio: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fin Clases</label>
+                  <input required type="date" value={editarAnioData.fecha_fin} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" onChange={(e) => setEditarAnioData({ ...editarAnioData, fecha_fin: e.target.value })} />
+                </div>
+              </div>
+              <div className="pt-4 flex gap-3">
+                <button type="button" onClick={() => setIsEditarAnioModalOpen(false)} className="flex-1 py-2 text-sm font-bold text-gray-500">Cancelar</button>
+                <button
+                  type="submit"
+                  disabled={!fechasEditarValidas}
+                  className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${fechasEditarValidas ? "bg-[#093E7A] text-white hover:bg-[#072d5a]" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
+                >
+                  Actualizar Año
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL INSCRIPCIONES --- */}
       {isInscripcionModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
@@ -500,34 +570,15 @@ export default function GestionAcademicaPage() {
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Inicio de Inscripciones</label>
-                <input
-                  required
-                  type="date"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
-                  value={inscripcionData.inicio_inscripcion}
-                  onChange={(e) => setInscripcionData({ ...inscripcionData, inicio_inscripcion: e.target.value })}
-                />
+                <input required type="date" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]" value={inscripcionData.inicio_inscripcion} onChange={(e) => setInscripcionData({ ...inscripcionData, inicio_inscripcion: e.target.value })} />
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fin de Inscripciones</label>
-                <input
-                  required
-                  type="date"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
-                  value={inscripcionData.fin_inscripcion}
-                  onChange={(e) => setInscripcionData({ ...inscripcionData, fin_inscripcion: e.target.value })}
-                />
+                <input required type="date" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]" value={inscripcionData.fin_inscripcion} onChange={(e) => setInscripcionData({ ...inscripcionData, fin_inscripcion: e.target.value })} />
               </div>
               <div className="pt-4 flex gap-3">
                 <button type="button" onClick={() => setIsInscripcionModalOpen(false)} className="flex-1 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-lg">Cancelar</button>
-                <button
-                  type="submit"
-                  disabled={!fechasInscripcionValidas}
-                  className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${fechasInscripcionValidas ? "bg-[#093E7A] text-white hover:bg-[#072d5a]" : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    }`}
-                >
-                  Guardar Fechas
-                </button>
+                <button type="submit" disabled={!fechasInscripcionValidas} className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${fechasInscripcionValidas ? "bg-[#093E7A] text-white hover:bg-[#072d5a]" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}>Guardar Fechas</button>
               </div>
             </form>
           </div>
@@ -561,58 +612,6 @@ export default function GestionAcademicaPage() {
               <div className="pt-4 flex gap-3">
                 <button type="button" onClick={() => setIsSeccionModalOpen(false)} className="flex-1 py-2.5 text-sm font-bold text-gray-500 bg-gray-100 rounded-lg">Cancelar</button>
                 <button type="submit" className="flex-1 py-2.5 text-sm font-bold text-white bg-[#093E7A] rounded-lg">{seccionEnEdicion ? "Actualizar" : "Guardar"}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- MODAL APERTURA AÑO --- */}
-      {isAperturaModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div className="p-6 border-b bg-[#093E7A] text-white">
-              <h3 className="font-black text-lg">Configurar Nuevo Año</h3>
-              <p className="text-xs opacity-80">El año iniciará activo automáticamente cuando llegue la fecha.</p>
-            </div>
-            <form onSubmit={handleAperturaAnio} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Identificador del Año</label>
-                <input required maxLength={6} placeholder="Ej: 2026-1" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]" onChange={(e) => setNuevoAnioData({ ...nuevoAnioData, id_anio_escolar: e.target.value })} />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tipo de Ciclo</label>
-                <select
-                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
-                  value={nuevoAnioData.tipo}
-                  onChange={(e) => setNuevoAnioData({ ...nuevoAnioData, tipo: e.target.value })}
-                >
-                  <option value="REGULAR">Año Regular (Marzo-Dic)</option>
-                  <option value="VERANO">Ciclo Verano (Ene-Feb)</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Inicio</label>
-                  <input required type="date" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" onChange={(e) => setNuevoAnioData({ ...nuevoAnioData, fecha_inicio: e.target.value })} />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fin</label>
-                  <input required type="date" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" onChange={(e) => setNuevoAnioData({ ...nuevoAnioData, fecha_fin: e.target.value })} />
-                </div>
-              </div>
-              <div className="pt-4 flex gap-3">
-                <button type="button" onClick={() => setIsAperturaModalOpen(false)} className="flex-1 py-2 text-sm font-bold text-gray-500">Cancelar</button>
-                <button
-                  type="submit"
-                  disabled={!fechasValidas}
-                  className={`flex-1 py-2 rounded-lg font-bold text-sm transition-colors ${fechasValidas ? "bg-[#093E7A] text-white hover:bg-[#072d5a]" : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    }`}
-                >
-                  Iniciar Año
-                </button>
               </div>
             </form>
           </div>

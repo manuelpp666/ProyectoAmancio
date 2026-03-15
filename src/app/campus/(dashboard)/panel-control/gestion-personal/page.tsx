@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Users, UserPlus, Edit, ShieldCheck, BookOpen, Briefcase, Power, PowerOff, X } from "lucide-react";
+import { Users, UserPlus, Edit, ShieldCheck, BookOpen, Briefcase, HeartHandshake, Power, PowerOff, X } from "lucide-react";
 import { Personal } from "@/src/interfaces/personal";
 import { TipoPersonal } from "@/src/interfaces/personal";
 import { apiFetch } from "@/src/lib/api";
@@ -51,12 +51,7 @@ export default function GestionPersonalPage() {
       
     const method = isEditing ? "PUT" : "POST";
 
-    // SOLUCIÓN AL ERROR DE 'delete': 
-    // Separamos el password del resto de los datos
     const { password, ...restData } = formData;
-    
-    // Si estamos editando y el password está vacío, enviamos 'restData' (sin password)
-    // De lo contrario, enviamos 'formData' completo
     const payload = (isEditing && !password) ? restData : formData;
 
     try {
@@ -113,7 +108,7 @@ export default function GestionPersonalPage() {
             <Users size={28} />
             Gestión de Personal
           </h1>
-          <p className="text-gray-500 text-sm">Administra los usuarios del sistema (Admin, Docentes y Auxiliares)</p>
+          <p className="text-gray-500 text-sm">Administra los usuarios del sistema (Admin, Docentes, Auxiliares y Psicólogos)</p>
         </div>
         <button onClick={openNew} className="bg-[#093E7A] text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-md hover:opacity-90 flex items-center gap-2">
           <UserPlus size={18} />
@@ -133,6 +128,9 @@ export default function GestionPersonalPage() {
           </button>
           <button onClick={() => setActiveTab("auxiliar")} className={`flex items-center gap-2 px-6 py-3 font-bold border-b-2 transition-colors ${activeTab === "auxiliar" ? "border-[#093E7A] text-[#093E7A]" : "border-transparent text-gray-500 hover:bg-gray-50"}`}>
             <Briefcase size={18} /> Auxiliares
+          </button>
+          <button onClick={() => setActiveTab("psicologo")} className={`flex items-center gap-2 px-6 py-3 font-bold border-b-2 transition-colors ${activeTab === "psicologo" ? "border-[#093E7A] text-[#093E7A]" : "border-transparent text-gray-500 hover:bg-gray-50"}`}>
+            <HeartHandshake size={18} /> Psicólogos
           </button>
         </div>
 

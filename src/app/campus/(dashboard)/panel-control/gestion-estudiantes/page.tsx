@@ -33,19 +33,22 @@ export default function GestionEstudiantesPage() {
     const cargarDatos = async () => {
         setLoading(true);
         try {
-            let endpoint = filtroPostulantes ? "/alumnos/solicitudes-pendientes" : "/alumnos/";
+            let urlRuta = filtroPostulantes ? "/alumnos/solicitudes-pendientes" : "/alumnos/";
 
             // Si hay algo escrito en búsqueda, lo añadimos como query param
-            const url = new URL(`${endpoint}`);
             if (busqueda) {
-                url.searchParams.append("dni", busqueda);
+                // Verificamos si la ruta ya tiene algún parámetro (por si acaso)
+                urlRuta += urlRuta.includes("?") ? `&dni=${busqueda}` : `?dni=${busqueda}`;
             }
 
-            const response = await apiFetch(url.toString());
+            // Usamos tu función apiFetch pasándole el string limpio
+            const response = await apiFetch(urlRuta);
             if (!response.ok) throw new Error("Error al obtener datos");
+            
             const data = await response.json();
             setAlumnos(data);
         } catch (error) {
+            console.error("Error cargando alumnos:", error); // Para ver el error real en la consola de tu navegador
             toast.error("No se pudo conectar con el servidor");
         } finally {
             setLoading(false);

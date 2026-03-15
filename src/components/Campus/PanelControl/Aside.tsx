@@ -82,7 +82,7 @@ export function AsidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
           <SidebarLink 
             href="/campus/panel-control/tramites/configuracion" 
             icon={<ClipboardList size={20} />} 
-            label="Trámites" 
+            label="Trámites y Finanzas" 
             active={pathname.includes("/panel-control/tramites")}
             onClick={onClose} 
           />
