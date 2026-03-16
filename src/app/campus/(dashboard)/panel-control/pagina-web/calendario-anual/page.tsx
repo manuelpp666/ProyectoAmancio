@@ -15,25 +15,25 @@ import { apiFetch } from "@/src/lib/api";
 
 export default function CalendarioPage() {
   const router = useRouter();
-  const { 
-  anioPlanificacion: anioSeleccionado, 
-  setAnioPlanificacion: setAnioSeleccionado, 
-  listaAnios: anios, 
-  loadingAnios 
-} = useAnioAcademico();
-  
+  const {
+    anioPlanificacion: anioSeleccionado,
+    setAnioPlanificacion: setAnioSeleccionado,
+    listaAnios: anios,
+    loadingAnios
+  } = useAnioAcademico();
+
   // --- ESTADOS PARA EVENTOS ---
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState("");
-  
+
   // Modales
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [eventoActivo, setEventoActivo] = useState<Evento | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [idToDelete, setIdToDelete] = useState<number | null>(null);
 
-  
+
   // 2. Cargar Eventos por Año (Memorizado)
   const fetchEventos = useCallback(async (anioId: string) => {
     if (!anioId) return;
@@ -85,7 +85,7 @@ export default function CalendarioPage() {
 
         <div className="flex-1 overflow-y-auto p-8 space-y-12 custom-scrollbar">
           <section className="max-w-6xl mx-auto w-full">
-            
+
             {/* HEADER DE SECCIÓN CON SELECTOR */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
               <div>
@@ -93,13 +93,13 @@ export default function CalendarioPage() {
                   Gestión de Eventos
                 </h3>
                 <div className="flex items-center gap-3 mt-2">
-                  
-                  <AnioSelector 
-    value={anioSeleccionado}
-    onChange={setAnioSeleccionado}
-    anios={anios}
-    loading={loadingAnios}
-  />
+
+                  <AnioSelector
+                    value={anioSeleccionado}
+                    onChange={setAnioSeleccionado}
+                    anios={anios}
+                    loading={loadingAnios}
+                  />
                 </div>
               </div>
 
@@ -158,16 +158,7 @@ export default function CalendarioPage() {
                   </tbody>
                 </table>
               </div>
-              
-              <div className="p-5 bg-gray-50/50 flex justify-center">
-                <button 
-                  onClick={() => router.push(`/campus/panel-control/pagina-web/calendario-anual/todos?anio=${anioSeleccionado}`)} 
-                  className="flex items-center gap-2 text-[11px] font-black text-[#093E7A] uppercase tracking-widest hover:gap-4 transition-all"
-                >
-                  Ver todos los eventos de este periodo
-                  <ChevronRight size={14} strokeWidth={3} />
-                </button>
-              </div>
+
             </div>
           </section>
         </div>
@@ -183,7 +174,7 @@ export default function CalendarioPage() {
             <EventForm
               evento={eventoActivo}
               // IMPORTANTE: Pasar el año seleccionado al formulario para que se guarde correctamente
-              defaultAnio={anioSeleccionado} 
+              defaultAnio={anioSeleccionado}
               onClose={() => setIsModalOpen(false)}
               onSuccess={() => {
                 toast.success(eventoActivo ? "Evento actualizado" : "Evento creado");

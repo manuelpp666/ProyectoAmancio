@@ -7,16 +7,16 @@ import { AlumnoMatriculado } from "@/src/interfaces/matricula";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
 import { apiFetch } from "@/src/lib/api";
+import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function AsignacionEstudiantesPage() {
-  
-  const { 
-    anioPlanificacion: selectedAnio, 
-    setAnioPlanificacion: setSelectedAnio, 
-    listaAnios: anios, 
-    loadingAnios 
+
+  const {
+    anioPlanificacion: selectedAnio,
+    setAnioPlanificacion: setSelectedAnio,
+    listaAnios: anios,
+    loadingAnios
   } = useAnioAcademico();
   // --- ESTADOS DE DATOS MAESTROS ---
 
@@ -36,6 +36,9 @@ export default function AsignacionEstudiantesPage() {
   const [draggedStudent, setDraggedStudent] = useState<AlumnoMatriculado | null>(null);
   const [seccionesEditando, setSeccionesEditando] = useState<Record<number, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
+  //Estados de modal de confirmacion
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingAsignacion, setPendingAsignacion] = useState<{ alumno: AlumnoMatriculado, seccionId: number } | null>(null);
 
   // 1. CARGA INICIAL
   useEffect(() => {
@@ -124,9 +127,9 @@ export default function AsignacionEstudiantesPage() {
 
   // --- LÓGICA DE NEGOCIO Y FECHAS ---
 
-  const anioActualObj = useMemo(() => 
-    anios.find(a => a.id_anio_escolar === selectedAnio), 
-  [anios, selectedAnio]);
+  const anioActualObj = useMemo(() =>
+    anios.find(a => a.id_anio_escolar === selectedAnio),
+    [anios, selectedAnio]);
 
   // VALIDACIÓN DE FECHAS DE INSCRIPCIÓN
   const isPeriodoInscripcionActivo = useMemo(() => {
@@ -154,7 +157,7 @@ export default function AsignacionEstudiantesPage() {
 
   const handleDragStart = (alumno: AlumnoMatriculado) => {
     if (!isPeriodoInscripcionActivo) {
-      toast.error("El periodo de inscripción/asignación está cerrado para este año.");
+      toast.error("El año académico ya comenzó. No se permite mover alumnos entre secciones.");
       return;
     }
     setDraggedStudent(alumno);
@@ -173,6 +176,14 @@ export default function AsignacionEstudiantesPage() {
       return;
     }
 
+    if (!isPeriodoInscripcionActivo) {
+      // Si el año ya comenzó, guardamos lo que el usuario quiere hacer y abrimos modal
+      setPendingAsignacion({ alumno: draggedStudent, seccionId });
+      setShowConfirmModal(true);
+      setDraggedStudent(null); // Limpiamos el drag
+      return;
+    }
+
     const alumnosEnSeccion = alumnos.filter(a => a.id_seccion === seccionId).length;
     const seccionObj = secciones.find(s => s.id_seccion === seccionId);
     if (seccionObj && alumnosEnSeccion >= seccionObj.vacantes) {
@@ -185,6 +196,14 @@ export default function AsignacionEstudiantesPage() {
       a.id_matricula === draggedStudent.id_matricula
         ? { ...a, id_seccion: seccionId }
         : a
+    );
+    setAlumnos(nuevosAlumnos);
+    setDraggedStudent(null);
+  };
+
+  const ejecutarAsignacion = (alumno: AlumnoMatriculado, seccionId: number) => {
+    const nuevosAlumnos = alumnos.map(a =>
+      a.id_matricula === alumno.id_matricula ? { ...a, id_seccion: seccionId } : a
     );
     setAlumnos(nuevosAlumnos);
     setDraggedStudent(null);
@@ -284,7 +303,7 @@ export default function AsignacionEstudiantesPage() {
               </div>
               <div className="h-6 w-px bg-gray-200 mx-2"></div>
               <div className="flex items-center gap-2">
-                <AnioSelector 
+                <AnioSelector
                   value={selectedAnio}
                   onChange={setSelectedAnio}
                   anios={anios}
@@ -481,13 +500,15 @@ export default function AsignacionEstudiantesPage() {
                               <div className="space-y-1">
                                 {alumnosEnSeccion.map(a => (
                                   <div key={a.id_matricula}
-                                    draggable={estaEditando && isPeriodoInscripcionActivo}
+                                    draggable={isPeriodoInscripcionActivo && estaEditando}
                                     onDragStart={() => handleDragStart(a)}
                                     className={`text-xs p-2 bg-gray-50 rounded border border-gray-100 truncate cursor-grab flex justify-between items-center ${!isPeriodoInscripcionActivo ? 'cursor-not-allowed opacity-60' : ''
                                       }`}
                                   >
                                     <span>{a.nombres} {a.apellidos}</span>
-                                    {estaEditando && isPeriodoInscripcionActivo && <span className="material-symbols-outlined text-[10px] text-gray-400">drag_handle</span>}
+                                    {isPeriodoInscripcionActivo && estaEditando && (
+                                      <span className="material-symbols-outlined text-[10px] text-gray-400">drag_handle</span>
+                                    )}
                                   </div>
                                 ))}
                               </div>
@@ -527,6 +548,22 @@ export default function AsignacionEstudiantesPage() {
           </div>
         </div>
       </div>
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        onClose={() => {
+          setShowConfirmModal(false);
+          setPendingAsignacion(null);
+        }}
+        onConfirm={() => {
+          if (pendingAsignacion) {
+            ejecutarAsignacion(pendingAsignacion.alumno, pendingAsignacion.seccionId);
+          }
+        }}
+        title="Asignación Extemporánea"
+        message={`El año académico ya ha iniciado. ¿Está seguro de asignar a ${pendingAsignacion?.alumno.nombres} a esta sección? Una vez asignado, no podrá ser movido a otra aula.`}
+        confirmText="Sí, asignar estudiante"
+        type="warning" // Usamos warning para que combine con el color ámbar
+      />
     </>
   );
 }
