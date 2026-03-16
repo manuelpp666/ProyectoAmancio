@@ -23,8 +23,8 @@ export default function GestionCursosPage() {
   const [showModal, setShowModal] = useState(false);
   const [showAreaModal, setShowAreaModal] = useState(false);
 
-  // Formulario Nuevo Curso
-  const [nuevoCurso, setNuevoCurso] = useState({ nombre: "", id_area: "" });
+  // Formulario Nuevo Curso (NUEVO: Agregado minutos_semanales)
+  const [nuevoCurso, setNuevoCurso] = useState({ nombre: "", id_area: "", minutos_semanales: 0 });
   const [gradosSeleccionados, setGradosSeleccionados] = useState<number[]>([]);
   const [nuevaAreaNombre, setNuevaAreaNombre] = useState("");
 
@@ -34,7 +34,7 @@ export default function GestionCursosPage() {
   const cerrarModalPrincipal = () => {
     setShowModal(false);
     setEditingId(null);
-    setNuevoCurso({ nombre: "", id_area: "" });
+    setNuevoCurso({ nombre: "", id_area: "", minutos_semanales: 0 }); // NUEVO: Reseteo de minutos
     setGradosSeleccionados([]);
   };
   // Función para abrir modal en modo edición
@@ -42,7 +42,8 @@ export default function GestionCursosPage() {
     setEditingId(cursoAgrupado.id_curso);
     setNuevoCurso({
       nombre: cursoAgrupado.nombre,
-      id_area: cursoAgrupado.id_area.toString()
+      id_area: cursoAgrupado.id_area.toString(),
+      minutos_semanales: cursoAgrupado.minutos_semanales || 0 // NUEVO: Carga de minutos
     });
     setGradosSeleccionados(cursoAgrupado.id_grados); // Necesitarás guardar los IDs en el mapeo
     setShowModal(true);
@@ -123,8 +124,9 @@ export default function GestionCursosPage() {
 
   const handleGuardarCurso = async () => {
 
-    if (!nuevoCurso.nombre.trim() || !nuevoCurso.id_area || gradosSeleccionados.length === 0) {
-      toast.error("Por favor, completa el nombre, el área y selecciona al menos un grado.");
+    // NUEVO: Validación para asegurar que se ingresen los minutos semanales
+    if (!nuevoCurso.nombre.trim() || !nuevoCurso.id_area || gradosSeleccionados.length === 0 || nuevoCurso.minutos_semanales <= 0) {
+      toast.error("Por favor, completa el nombre, el área, los minutos semanales y selecciona al menos un grado.");
       return;
     }
 
@@ -140,7 +142,8 @@ export default function GestionCursosPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nombre: nuevoCurso.nombre,
-          id_area: parseInt(nuevoCurso.id_area)
+          id_area: parseInt(nuevoCurso.id_area),
+          minutos_semanales: nuevoCurso.minutos_semanales // NUEVO: Envío de minutos a la API
         })
       });
       const cursoData = await resCurso.json();
@@ -190,6 +193,7 @@ export default function GestionCursosPage() {
             id_curso: cursoId,
             id_area: plan.curso.id_area,
             nombre: plan.curso.nombre,
+            minutos_semanales: plan.curso.minutos_semanales, // NUEVO: Agrupamos los minutos para pintarlos en la tabla
             grados: [grado.nombre],
             id_grados: [grado.id_grado] // Importante para el check del modal
           });
@@ -208,7 +212,16 @@ export default function GestionCursosPage() {
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: `... tus estilos ...` }} />
+      <style dangerouslySetInnerHTML={{ __html: `
+        body { font-family: 'Lato', sans-serif; background-color: #F8FAFC; color: #1e293b; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .fill-icon { font-variation-settings: 'FILL' 1; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .modal-overlay { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(2px); }
+      ` }} />
 
       <div className="flex h-screen overflow-hidden">
         <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
@@ -264,6 +277,7 @@ export default function GestionCursosPage() {
                         <tr className="bg-gray-50 border-b border-gray-200">
                           <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Curso / Asignatura</th>
                           <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Grados Asignados</th>
+                          <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Duración (Min/Sem)</th> {/* NUEVO CAMPO */}
                           <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Acciones</th>
                         </tr>
                       </thead>
@@ -285,6 +299,12 @@ export default function GestionCursosPage() {
                                 ))}
                               </div>
                             </td>
+                            
+                            {/* NUEVO CAMPO RENDERIZADO */}
+                            <td className="px-6 py-4 text-center font-bold text-[#093E7A]">
+                              {curso.minutos_semanales} min
+                            </td>
+
                             <td className="px-6 py-4 text-right">
                               <div className="flex justify-end gap-2">
                                 {/* BOTÓN EDITAR */}
@@ -309,7 +329,7 @@ export default function GestionCursosPage() {
                           </tr>
                         )) : (
                           <tr>
-                            <td colSpan={3} className="px-6 py-8 text-center text-gray-400 italic">No hay cursos asignados en este nivel.</td>
+                            <td colSpan={4} className="px-6 py-8 text-center text-gray-400 italic">No hay cursos asignados en este nivel.</td>
                           </tr>
                         )}
                       </tbody>
@@ -340,7 +360,22 @@ export default function GestionCursosPage() {
                     onChange={(e) => setNuevoCurso({ ...nuevoCurso, nombre: e.target.value })}
                   />
                 </div>
+                
+                {/* NUEVO INPUT: MINUTOS SEMANALES */}
                 <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-500 uppercase">Minutos Semanales</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="15"
+                    className="w-full p-3 border rounded-xl outline-none focus:ring-2 ring-blue-100"
+                    value={nuevoCurso.minutos_semanales}
+                    onChange={(e) => setNuevoCurso({ ...nuevoCurso, minutos_semanales: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+
+                {/* El Área Académica pasa a ocupar las dos columnas si quieres, o se queda aquí */}
+                <div className="space-y-2 col-span-2">
                   <label className="text-xs font-black text-gray-500 uppercase">Área Académica</label>
                   <div className="flex gap-2">
                     <select
@@ -400,7 +435,7 @@ export default function GestionCursosPage() {
             <h4 className="font-black text-[#093E7A]">Nueva Área</h4>
             <input
               type="text"
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded outline-none focus:ring-2 ring-blue-100"
               placeholder="Ej: Matemáticas"
               value={nuevaAreaNombre}
               onChange={(e) => setNuevaAreaNombre(e.target.value)}
