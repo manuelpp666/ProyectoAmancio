@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { AlumnoBase } from "@/src/interfaces/admision";
 import EdadBadge from "@/src/components/utils/CalcularEdad";
 import { apiFetch } from "@/src/lib/api";
+import { RoleGuard } from '@/src/components/auth/RoleGuard';
 
 function InfoItem({ label, value }: { label: string, value: string }) {
     return (
@@ -99,6 +100,10 @@ export default function GestionEstudiantesPage() {
     };
 
     return (
+        
+        <RoleGuard modulo="gestion_estudiantes">
+
+    
         <>
             <style dangerouslySetInnerHTML={{
                 __html: `
@@ -343,5 +348,6 @@ export default function GestionEstudiantesPage() {
                 </div>
             )}
         </>
+        </RoleGuard>
     );
 }

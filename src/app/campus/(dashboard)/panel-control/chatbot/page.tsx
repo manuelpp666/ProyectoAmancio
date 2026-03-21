@@ -10,6 +10,7 @@ import {
 import { Chatbot } from '@/src/interfaces/chatbot';
 import { ChatMessage } from '@/src/interfaces/chatbot';
 import { apiFetch } from "@/src/lib/api";
+import { RoleGuard } from '@/src/components/auth/RoleGuard';
 
 export default function ChatbotKnowledgePage() {
   const [documents, setDocuments] = useState<Chatbot[]>([]);
@@ -129,6 +130,9 @@ export default function ChatbotKnowledgePage() {
   };
 
   return (
+    
+    <RoleGuard modulo="chatbot">
+    
     <div className="flex h-screen overflow-hidden bg-[#F8FAFC] antialiased">
       {/* --- EL MODAL DE CONFIRMACIÓN --- */}
       <ConfirmModal
@@ -266,6 +270,7 @@ export default function ChatbotKnowledgePage() {
         </div>
       )}
     </div>
+    </RoleGuard>
   );
 }
 

@@ -9,6 +9,7 @@ import HeaderPanel from '@/src/components/Campus/PanelControl/Header';
 import { Save, Home, Users, Footprints, Loader2,ChevronRight} from 'lucide-react';
 import { toast } from "sonner";
 import { apiFetch } from "@/src/lib/api";
+import { RoleGuard } from '@/src/components/auth/RoleGuard';
 
 const SECCIONES = [
   {
@@ -76,6 +77,9 @@ export default function GestionWebPage() {
   };
 
   return (
+    <RoleGuard modulo="contenido_web" subModulo="info_general">
+    
+    
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
       <HeaderPanel />
       {/* BARRA SUPERIOR (HEADER) */}
@@ -190,6 +194,7 @@ export default function GestionWebPage() {
         </div>
       </div>
     </div>
+    </RoleGuard>
   );
 }
 
@@ -321,5 +326,6 @@ function EditorListaDinamica({ data, onChange, tipo }: { data: any[], onChange: 
         </div>
       )}
     </div>
+    
   );
 }

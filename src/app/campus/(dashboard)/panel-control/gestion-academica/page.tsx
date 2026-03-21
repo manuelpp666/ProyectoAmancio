@@ -7,8 +7,7 @@ import { toast } from "sonner";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
 import { apiFetch } from "@/src/lib/api";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { RoleGuard } from '@/src/components/auth/RoleGuard';
 
 export default function GestionAcademicaPage() {
 
@@ -265,6 +264,7 @@ export default function GestionAcademicaPage() {
   const prepararEditarSeccion = (seccion: Seccion) => { setSeccionEnEdicion(seccion); setSelectedGradoId(seccion.id_grado); setNuevaSeccion({ nombre: seccion.nombre, vacantes: seccion.vacantes }); setIsSeccionModalOpen(true); };
 
   return (
+    <RoleGuard modulo="academico" subModulo="estructura">
     <>
       <style dangerouslySetInnerHTML={{
         __html: `
@@ -652,5 +652,6 @@ export default function GestionAcademicaPage() {
         </div>
       )}
     </>
+    </RoleGuard>
   );
 }

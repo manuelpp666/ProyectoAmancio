@@ -7,7 +7,7 @@ import { NoticiaForm } from "@/src/components/Noticia/FormulatioNoticia";
 import { Noticia, NoticiaCreate } from "@/src/interfaces/noticia";
 import { toast } from "sonner";
 import { apiFetch } from "@/src/lib/api";
-
+import { RoleGuard } from '@/src/components/auth/RoleGuard';
 
 export default function EditarNoticiaPage() {
   const params = useParams();
@@ -72,6 +72,8 @@ export default function EditarNoticiaPage() {
   }
 
   return (
+    
+    <RoleGuard modulo="contenido_web" subModulo="noticias">
     <div className="min-h-screen bg-[#F6F7F8] flex flex-col">
       {/* Header */}
       <header className="h-20 bg-white border-b border-gray-100 px-8 flex items-center justify-between shrink-0">
@@ -95,5 +97,6 @@ export default function EditarNoticiaPage() {
         loading={isUpdating}
       />
     </div>
+    </RoleGuard>
   );
 }

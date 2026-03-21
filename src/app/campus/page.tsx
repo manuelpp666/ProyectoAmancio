@@ -40,7 +40,13 @@ export default function LoginPage() {
       }
 
       // PASO CLAVE: Ahora pasamos el token que viene del backend
-      setUserData(data.rol, data.username, data.id_usuario, data.access_token);
+      setUserData(
+        data.rol, 
+        data.username, 
+        data.id_usuario, 
+        data.access_token, 
+        data.permisos 
+      )
 
       // Redirección "ciega" basada en el diccionario
       const destination = ROLE_ROUTES[data.rol as keyof typeof ROLE_ROUTES] || "/campus/campus-estudiante/inicio-campus";

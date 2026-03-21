@@ -6,6 +6,7 @@ import { Pago, Solicitud } from "@/src/interfaces/finance";
 import { Grado } from "@/src/interfaces/academic";
 import { Tramite } from "@/src/interfaces/tramite";
 import { apiFetch } from "@/src/lib/api";
+import { RoleGuard } from '@/src/components/auth/RoleGuard';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 // --- NUEVA INTERFAZ PARA TIPOS DE PAGO ---
@@ -317,6 +318,9 @@ export default function GestionFinancieraPage() {
   const categoriasUnicas = Array.from(new Set(tiposPago.map(tp => tp.categoria)));
 
   return (
+    
+    <RoleGuard modulo="tramites_finanzas">
+    
     <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
       <div className="flex-1 flex flex-col">
 
@@ -902,5 +906,6 @@ export default function GestionFinancieraPage() {
         type="warning" 
       />
     </div>
+    </RoleGuard>
   );
 }

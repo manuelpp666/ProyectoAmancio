@@ -6,6 +6,7 @@ import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { apiFetch } from "@/src/lib/api";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
 import { toast } from "sonner";
+import { RoleGuard } from "@/src/components/auth/RoleGuard";
 
 export default function GestionCursosPage() {
   const { 
@@ -211,6 +212,7 @@ export default function GestionCursosPage() {
   if (loading) return <div className="p-10 text-center font-bold text-[#093E7A]">Cargando Carga Horaria...</div>;
 
   return (
+    <RoleGuard modulo="academico" subModulo="cursos">
     <>
       <style dangerouslySetInnerHTML={{ __html: `
         body { font-family: 'Lato', sans-serif; background-color: #F8FAFC; color: #1e293b; }
@@ -448,5 +450,6 @@ export default function GestionCursosPage() {
         </div>
       )}
     </>
+    </RoleGuard>
   );
 }

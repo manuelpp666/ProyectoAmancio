@@ -5,6 +5,7 @@ import { NoticiaResponse } from "@/src/interfaces/noticia";
 import { NoticiaRow } from "@/src/components/Noticia/TablaNoticia";
 import { useEffect, useState } from 'react';
 import { Search, Newspaper, Video, Globe, Plus } from "lucide-react";
+import { RoleGuard } from '@/src/components/auth/RoleGuard';
 
 export default function GestionContenidoPage() {
 
@@ -51,6 +52,8 @@ export default function GestionContenidoPage() {
   if (loading) return <p className="p-8">Cargando noticias...</p>;
 
   return (
+    
+    <RoleGuard modulo="contenido_web" subModulo="noticias">
     <div className="min-h-screen bg-[#F8FAFC]">
       <div className="flex h-screen overflow-hidden">
 
@@ -144,6 +147,7 @@ export default function GestionContenidoPage() {
         </div>
       </div>
     </div>
+    </RoleGuard>
   );
 }
 

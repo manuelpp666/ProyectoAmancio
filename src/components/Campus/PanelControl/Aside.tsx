@@ -1,38 +1,57 @@
 "use client";
 import Link from "next/link";
-import { 
-  Home, 
-  BookOpen, 
-  Users, 
-  Globe, 
-  Bot, 
-  GraduationCap, 
-  Settings, 
-  X, 
+import {
+  Home,
+  BookOpen,
+  Users,
+  Globe,
+  Bot,
+  GraduationCap,
+  Settings,
+  X,
   LayoutDashboard,
   ClipboardList,
   UserCog // <-- Icono nuevo importado para Gestión de Personal
 } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { usePermisos } from "@/src/hooks/usePermisos";
+
 
 export function AsidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const pathname = usePathname();
-
+  const { tienePermiso } = usePermisos();
   // Función para verificar si el link está activo
-  const isActive = (path: string) => pathname === path;
+  // Lógica para Contenido Web
+const getContenidoWebPath = () => {
+    if (tienePermiso("contenido_web", "info_general")) return "/campus/panel-control/pagina-web";
+    if (tienePermiso("contenido_web", "noticias")) return "/campus/panel-control/pagina-web/noticias-web";
+    if (tienePermiso("contenido_web", "calendario")) return "/campus/panel-control/pagina-web/calendario-anual";
+    return "/campus/panel-control/pagina-web"; // Fallback
+};
 
+// Lógica para Gestión Académica
+const getAcademicaPath = () => {
+    if (tienePermiso("academico", "estructura")) return "/campus/panel-control/gestion-academica";
+    if (tienePermiso("academico", "horarios")) return "/campus/panel-control/gestion-academica/gestion-horario";
+    if (tienePermiso("academico", "docentes")) return "/campus/panel-control/gestion-academica/asignar-docente";
+    if (tienePermiso("academico", "estudiantes")) return "/campus/panel-control/gestion-academica/asignar-estudiante";
+    if (tienePermiso("academico", "cursos")) return "/campus/panel-control/gestion-academica/gestion-cursos";
+    return "/campus/panel-control/gestion-academica"; // Fallback
+};
+  const isActive = (path: string) => pathname === path;
+  console.log("¿Tengo permiso personal?:", tienePermiso('gestion_personal'));
   return (
     <>
       {/* Overlay para móviles */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"
           onClick={onClose}
         />
       )}
 
       <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-[#701C32] text-white flex flex-col h-screen transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 ${isOpen ? "translate-x-0" : "-translate-x-full"} shadow-2xl`}>
-        
+
         {/* Header del Sidebar */}
         <div className="h-24 flex items-center justify-between px-6 border-b border-white/10 shrink-0">
           <div className="flex items-center gap-3">
@@ -49,93 +68,101 @@ export function AsidePanel({ isOpen, onClose }: { isOpen: boolean; onClose: () =
           </button>
         </div>
 
-        {/* Navegación */}
+        {/* Navegación Condicional */}
         <nav className="flex-1 py-8 space-y-1 px-4 overflow-y-auto custom-scrollbar">
-          
+
           <div className="text-white/30 text-[10px] uppercase font-black tracking-[0.2em] px-4 mb-4">Menú Principal</div>
 
-          <SidebarLink 
-            href="/campus/panel-control" 
-            icon={<LayoutDashboard size={20} />} 
-            label="Panel de Control" 
-            active={isActive("/campus/panel-control")}
-            onClick={onClose} 
-          />
+          {/* 1. Panel de Control */}
+          {tienePermiso('panel_control') && (
+            <SidebarLink
+              href="/campus/panel-control"
+              icon={<LayoutDashboard size={20} />}
+              label="Panel de Control"
+              active={isActive("/campus/panel-control")}
+              onClick={onClose}
+            />
+          )}
 
-          <SidebarLink 
-            href="/campus/panel-control/gestion-estudiantes" 
-            icon={<Users size={20} />} 
-            label="Gestión de Estudiantes" 
-            active={isActive("/campus/panel-control/gestion-estudiantes") || pathname.includes("/gestion-estudiantes/")}
-            onClick={onClose} 
-          />
+          {/* 2. Gestión de Estudiantes */}
+          {tienePermiso('gestion_estudiantes') && (
+            <SidebarLink
+              href="/campus/panel-control/gestion-estudiantes"
+              icon={<Users size={20} />}
+              label="Gestión de Estudiantes"
+              active={isActive("/campus/panel-control/gestion-estudiantes") || pathname.includes("/gestion-estudiantes/")}
+              onClick={onClose}
+            />
+          )}
 
-          {/* --- NUEVO APARTADO: GESTIÓN DE PERSONAL --- */}
-          <SidebarLink 
-            href="/campus/panel-control/gestion-personal" 
-            icon={<UserCog size={20} />} 
-            label="Gestión de Personal" 
-            active={pathname.includes("/panel-control/gestion-personal")}
-            onClick={onClose} 
-          />
+          {/* 3. Gestión de Personal (RRHH) */}
+          {tienePermiso('gestion_personal') && (
+            <SidebarLink
+              href="/campus/panel-control/gestion-personal"
+              icon={<UserCog size={20} />}
+              label="Gestión de Personal"
+              active={pathname.includes("/panel-control/gestion-personal")}
+              onClick={onClose}
+            />
+          )}
 
-          <SidebarLink 
-            href="/campus/panel-control/tramites/configuracion" 
-            icon={<ClipboardList size={20} />} 
-            label="Trámites y Finanzas" 
-            active={pathname.includes("/panel-control/tramites")}
-            onClick={onClose} 
-          />
+          {/* 4. Trámites y Finanzas */}
+          {tienePermiso('tramites_finanzas') && (
+            <SidebarLink
+              href="/campus/panel-control/tramites/configuracion"
+              icon={<ClipboardList size={20} />}
+              label="Trámites y Finanzas"
+              active={pathname.includes("/panel-control/tramites")}
+              onClick={onClose}
+            />
+          )}
 
-          <SidebarLink 
-            href="/campus/panel-control/gestion-academica" 
-            icon={<GraduationCap size={20} />} 
-            label="Cursos y Materias" 
-            active={isActive("/campus/panel-control/gestion-academica")}
-            onClick={onClose} 
-          />
+          {/* 5. Gestión Académica (Cursos) */}
+{tienePermiso('academico') && (
+  <SidebarLink
+    href={getAcademicaPath()} // <--- CAMBIO AQUÍ
+    icon={<GraduationCap size={20} />}
+    label="Cursos y Materias"
+    // Usamos .includes para que el botón se mantenga activo aunque estemos en un submódulo
+    active={pathname.includes("/campus/panel-control/gestion-academica")}
+    onClick={onClose}
+  />
+)}
 
-          <SidebarLink 
-            href="/campus/panel-control/pagina-web" 
-            icon={<Globe size={20} />} 
-            label="Contenido Web" 
-            active={isActive("/campus/panel-control/pagina-web")}
-            onClick={onClose} 
-          />
+{/* 6. Contenido Web */}
+{tienePermiso('contenido_web') && (
+  <SidebarLink
+    href={getContenidoWebPath()} // <--- CAMBIO AQUÍ
+    icon={<Globe size={20} />}
+    label="Contenido Web"
+    active={pathname.includes("/campus/panel-control/pagina-web")}
+    onClick={onClose}
+  />
+)}
+          {/* 7. Chatbot AI */}
+          {tienePermiso('chatbot') && (
+            <SidebarLink
+              href="/campus/panel-control/chatbot"
+              icon={<Bot size={20} />}
+              label="Gestionar Chatbot"
+              active={isActive("/campus/panel-control/chatbot")}
+              onClick={onClose}
+            />
+          )}
 
-          <SidebarLink 
-            href="/campus/panel-control/chatbot" 
-            icon={<Bot size={20} />} 
-            label="Gestionar Chatbot" 
-            active={isActive("/campus/panel-control/chatbot")}
-            onClick={onClose} 
-          />
-
-          
         </nav>
 
-        {/* Footer del Sidebar */}
-        <div className="p-4 bg-black/10 border-t border-white/5">
-          <div className="flex items-center gap-3 px-2 py-3">
-            <div className="w-8 h-8 rounded-full bg-[#09397c] flex items-center justify-center font-bold text-xs border border-white/20">
-              AV
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold truncate">Admin v1.0.4</p>
-              <p className="text-[10px] text-white/40 truncate italic">Conectado</p>
-            </div>
-          </div>
-        </div>
+
       </aside>
     </>
   );
 }
 
 // Sub-componente para los links del sidebar
-function SidebarLink({ href, icon, label, active, onClick }: { 
-  href: string; 
-  icon: React.ReactNode; 
-  label: string; 
+function SidebarLink({ href, icon, label, active, onClick }: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
   active?: boolean;
   onClick: () => void;
 }) {
@@ -145,8 +172,8 @@ function SidebarLink({ href, icon, label, active, onClick }: {
       onClick={onClick}
       className={`
         flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
-        ${active 
-          ? "bg-white/10 text-white border-l-4 border-[#09397c] shadow-inner" 
+        ${active
+          ? "bg-white/10 text-white border-l-4 border-[#09397c] shadow-inner"
           : "text-white/60 hover:bg-white/5 hover:text-white"
         }
       `}

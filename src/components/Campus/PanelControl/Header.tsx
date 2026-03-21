@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation"; // Hook para detectar la ruta
+import { usePermisos } from "@/src/hooks/usePermisos";
 
 export default function HeaderPanel() {
     const pathname = usePathname(); // 2. Obtenemos la URL actual
-
+    const { tienePermiso } = usePermisos();
     // Función auxiliar para aplicar clases dinámicamente
     const getTabClass = (path: string) => {
         const baseClass = "py-4 px-2 text-sm font-bold flex items-center gap-2 transition-all border-b-[3px]";
@@ -19,35 +20,35 @@ export default function HeaderPanel() {
         <div className="bg-white px-8">
             <div className="flex gap-8 border-b">
 
-                <Link href="/campus/panel-control/pagina-web">
-                    <button className={getTabClass("/campus/panel-control/pagina-web")}>
-                        <span className="material-symbols-outlined text-[20px]">info</span>
-                        Información General
-                    </button>
-                </Link>
-
-                <Link href="/campus/panel-control/pagina-web/noticias-web">
-                    <button className={getTabClass("/campus/panel-control/pagina-web/noticias-web")}>
-                        <span className="material-symbols-outlined text-[20px]">newspaper</span>
-                        Gestión de Noticias
-                    </button>
-                </Link>
-
-                {/* Repite la lógica para los demás botones si tienen rutas */}
-                <Link href="/campus/panel-control/pagina-web/docentes-web">
-                    <button className={getTabClass("/campus/panel-control/pagina-web/docentes-web")}>
-                        <span className="material-symbols-outlined text-[20px]">groups</span>
-                        Docentes
-                    </button>
-                </Link>
+                {tienePermiso("contenido_web", "info_general") && (
+                    <Link href="/campus/panel-control/pagina-web">
+                        <button className={getTabClass("/campus/panel-control/pagina-web")}>
+                            <span className="material-symbols-outlined text-[20px]">info</span>
+                            Información General
+                        </button>
+                    </Link>
+                )}
 
 
-                <Link href="/campus/panel-control/pagina-web/calendario-anual">
-                    <button className={getTabClass("/campus/panel-control/pagina-web/calendario-anual")}>
-                        <span className="material-symbols-outlined text-[20px]">calendar_month</span>
-                        Calendario Anual
-                    </button>
-                </Link>
+                {/* Submódulo: Noticias */}
+                {tienePermiso("contenido_web", "noticias") && (
+                    <Link href="/campus/panel-control/pagina-web/noticias-web">
+                        <button className={getTabClass("/campus/panel-control/pagina-web/noticias-web")}>
+                            <span className="material-symbols-outlined text-[20px]">newspaper</span>
+                            Gestión de Noticias
+                        </button>
+                    </Link>
+                )}
+
+                {/* Submódulo: Calendario */}
+                {tienePermiso("contenido_web", "calendario") && (
+                    <Link href="/campus/panel-control/pagina-web/calendario-anual">
+                        <button className={getTabClass("/campus/panel-control/pagina-web/calendario-anual")}>
+                            <span className="material-symbols-outlined text-[20px]">calendar_month</span>
+                            Calendario Anual
+                        </button>
+                    </Link>
+                )}
 
 
             </div>

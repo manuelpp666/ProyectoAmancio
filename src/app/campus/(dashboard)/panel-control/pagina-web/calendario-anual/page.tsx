@@ -5,7 +5,7 @@ import { Plus, ChevronRight, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import EventForm from '@/src/components/Evento/EventForm';
 import { Evento } from '@/src/interfaces/evento';
-import { AnioEscolar } from "@/src/interfaces/academic"; // Asegúrate de que esta interfaz exista
+import { RoleGuard } from '@/src/components/auth/RoleGuard';
 import { ConfirmModal } from '@/src/components/utils/ConfirmModal';
 import { useRouter } from 'next/navigation';
 import { EventRow } from '@/src/components/Evento/EventRow';
@@ -79,6 +79,7 @@ export default function CalendarioPage() {
   );
 
   return (
+    <RoleGuard modulo="contenido_web" subModulo="calendario">
     <div className="flex h-screen overflow-hidden bg-[#F8FAFC] antialiased">
       <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
         <HeaderPanel />
@@ -196,5 +197,6 @@ export default function CalendarioPage() {
         type="danger"
       />
     </div>
+    </RoleGuard>
   );
 }

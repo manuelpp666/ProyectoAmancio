@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useRouter } from "next/navigation";
 import { useUser } from "@/src/context/userContext";
 import { apiFetch } from "@/src/lib/api";
+import { RoleGuard } from '@/src/components/auth/RoleGuard';
 
 
 export default function CrearNoticiaPage() {
@@ -50,6 +51,8 @@ export default function CrearNoticiaPage() {
   };
   if (userLoading) return <div className="p-10 text-center">Cargando sesión...</div>;
   return (
+    <RoleGuard modulo="contenido_web" subModulo="noticias">
+    
     <div className="min-h-screen bg-[#F6F7F8] flex flex-col">
       {/* Header Superior */}
       <header className="h-20 bg-white border-b border-gray-100 px-8 flex items-center justify-between shrink-0">
@@ -67,5 +70,6 @@ export default function CrearNoticiaPage() {
       {/* Componente de Formulario */}
       <NoticiaForm onSubmit={handlePublicar} loading={loading} />
     </div>
+    </RoleGuard>
   );
 }

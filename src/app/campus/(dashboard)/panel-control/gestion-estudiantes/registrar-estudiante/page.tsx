@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { apiFetch } from '@/src/lib/api';
+import { RoleGuard } from '@/src/components/auth/RoleGuard';
+
+
 
 // Interfaz para los grados que cargaremos del backend
 interface Grado {
@@ -147,6 +150,9 @@ export default function RegistroEstudiantePage() {
     };
 
     return (
+        
+        <RoleGuard modulo="gestion_estudiantes">
+        
         <>
             <style dangerouslySetInnerHTML={{
                 __html: `
@@ -341,5 +347,6 @@ export default function RegistroEstudiantePage() {
                 </div>
             </div>
         </>
+        </RoleGuard>
     );
 }

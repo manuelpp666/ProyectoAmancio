@@ -8,6 +8,7 @@ import { Seccion, Curso } from "@/src/interfaces/academic";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
 import { apiFetch } from "@/src/lib/api";
+import { RoleGuard } from "@/src/components/auth/RoleGuard";
 
 export default function AsignacionDocentesPage() {
   
@@ -219,7 +220,8 @@ export default function AsignacionDocentesPage() {
 
 
   return (
-    <>
+    
+    <RoleGuard modulo="academico" subModulo="docentes">
       <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
         <div className="flex-1 flex flex-col overflow-hidden">
           <HeaderPanel />
@@ -538,6 +540,6 @@ export default function AsignacionDocentesPage() {
         confirmText="Sí, remover"
         type="danger"
       />
-    </>
+    </RoleGuard>
   );
 }

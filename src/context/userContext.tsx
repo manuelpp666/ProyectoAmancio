@@ -1,15 +1,17 @@
 // src/context/UserContext.tsx
 "use client";
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import CryptoJS from "crypto-js";
 
-type Role = "ALUMNO" | "DOCENTE" | "ADMIN" | "AUXILIAR" | null;
+type Role = "ALUMNO" | "DOCENTE" | "ADMIN" | "AUXILIAR" | "PSICOLOGO" | null;
 
 interface UserContextType {
   role: Role;
   username: string | null;
   id_usuario: number | null;
   token: string | null;
-  setUserData: (role: Role, username: string, id_usuario: number, token: string) => void;
+  permisos: any | null;
+  setUserData: (role: Role, username: string, id_usuario: number, token: string, permisos: any) => void;
   logout: () => void;
   loading: boolean;
 }
@@ -26,40 +28,58 @@ const setCookie = (name: string, value: string, days = 7) => {
 const deleteCookie = (name: string) => {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
 };
-
+const SECRET_KEY = process.env.NEXT_PUBLIC_PERMISOS_KEY
 export function UserProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<Role>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [idUsuario, setIdUsuario] = useState<number | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [permisos, setPermisos] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const savedRole = localStorage.getItem("userRole") as Role;
     const savedUser = localStorage.getItem("userName");
     const savedId = localStorage.getItem("userId");
+    const encryptedPermisos = localStorage.getItem("userPermisos");
     // El token lo intentamos recuperar del estado o cookie si fuera necesario
     // Por simplicidad, aquí lo manejamos desde el login
-    
-    if (savedRole && savedUser) {
-      setRole(savedRole);
-      setUsername(savedUser);
-      setIdUsuario(Number(savedId));
+
+    if (savedRole && savedUser && encryptedPermisos) {
+      try {
+        // DESCIFRADO: Intentamos recuperar los permisos originales
+        const bytes = CryptoJS.AES.decrypt(encryptedPermisos, SECRET_KEY);
+        const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
+
+        if (!decryptedData) throw new Error("Datos corruptos");
+
+        setRole(savedRole);
+        setUsername(savedUser);
+        setIdUsuario(Number(savedId));
+        setPermisos(JSON.parse(decryptedData));
+      } catch (error) {
+        console.error("Error de integridad en permisos. Cerrando sesión...");
+        logout(); // Si alguien editó el LocalStorage, lo expulsamos
+      }
     }
     setLoading(false);
   }, []);
 
-  const setUserData = (newRole: Role, newUser: string, newId: number, newToken: string) => {
+  const setUserData = (newRole: Role, newUser: string, newId: number, newToken: string, newPermisos: any) => {
     setRole(newRole);
     setUsername(newUser);
     setIdUsuario(newId);
     setToken(newToken);
-
+    setPermisos(newPermisos);
+const encryptedPermisos = CryptoJS.AES.encrypt(
+      JSON.stringify(newPermisos),
+      SECRET_KEY
+    ).toString();
     // Guardar en LocalStorage (lo no sensible)
     localStorage.setItem("userRole", newRole || "");
     localStorage.setItem("userName", newUser || "");
     localStorage.setItem("userId", String(newId));
-
+    localStorage.setItem("userPermisos", encryptedPermisos);
     // Guardar en Cookies (lo sensible para el Middleware)
     setCookie("authToken", newToken);
     setCookie("userRole", newRole || "");
@@ -70,6 +90,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setUsername(null);
     setIdUsuario(null);
     setToken(null);
+    setPermisos(null);
     localStorage.clear();
     deleteCookie("authToken");
     deleteCookie("userRole");
@@ -77,7 +98,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <UserContext.Provider value={{ role, username, id_usuario: idUsuario, token, setUserData, logout, loading }}>
+    <UserContext.Provider value={{ role, username, id_usuario: idUsuario, token, permisos, setUserData, logout, loading }}>
       {children}
     </UserContext.Provider>
   );

@@ -15,6 +15,7 @@ import html2canvas from "html2canvas-pro";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
 import { apiFetch } from "@/src/lib/api";
+import { RoleGuard } from '@/src/components/auth/RoleGuard';
 
 // --- INTERFACES EXTENDIDAS PARA LA NUEVA LÓGICA ---
 interface MateriaDisponibleExt extends MateriaDisponible {
@@ -264,6 +265,8 @@ export default function ConstructorHorariosPage() {
   if (loading) return <div className="p-10 text-center font-bold">Cargando Sistema de Horarios...</div>;
 
   return (
+    
+    <RoleGuard modulo="academico" subModulo="horarios">
     <>
       <style dangerouslySetInnerHTML={{
         __html: `
@@ -454,5 +457,6 @@ export default function ConstructorHorariosPage() {
         </div>
       </div>
     </>
+    </RoleGuard>
   );
 }

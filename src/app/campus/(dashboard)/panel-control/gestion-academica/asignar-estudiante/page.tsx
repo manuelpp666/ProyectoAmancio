@@ -8,7 +8,7 @@ import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
 import { apiFetch } from "@/src/lib/api";
 import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
-
+import { RoleGuard } from "@/src/components/auth/RoleGuard";
 
 export default function AsignacionEstudiantesPage() {
 
@@ -277,6 +277,7 @@ export default function AsignacionEstudiantesPage() {
   );
 
   return (
+    <RoleGuard modulo="academico" subModulo="estudiantes">
     <>
       <style dangerouslySetInnerHTML={{
         __html: `
@@ -565,5 +566,6 @@ export default function AsignacionEstudiantesPage() {
         type="warning" // Usamos warning para que combine con el color ámbar
       />
     </>
+    </RoleGuard>
   );
 }
