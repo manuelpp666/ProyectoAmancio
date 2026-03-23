@@ -10,9 +10,17 @@ interface Props {
 }
 
 export function TablaHorario({ horario, bloques }: Props) {
-    const obtenerCelda = (id_hora: number, dia: string) => {
+    const obtenerCelda = (horaInicioBloque: string, dia: string) => {
         if (!Array.isArray(horario)) return undefined;
-        return horario.find(h => h.id_hora === id_hora && h.dia_semana.toLowerCase() === dia.toLowerCase());
+        
+        return horario.find(h => {
+            // Limpiamos las strings por si acaso (ej. "07:30:00" vs "07:30")
+            const horaH = h.hora_inicio.substring(0, 5);
+            const horaB = horaInicioBloque.substring(0, 5);
+            
+            return horaH === horaB && 
+                   h.dia_semana.toLowerCase() === dia.toLowerCase();
+        });
     };
 
     return (
@@ -46,7 +54,7 @@ export function TablaHorario({ horario, bloques }: Props) {
 
                         {/* Columnas de Días */}
                         {DIAS.map(dia => {
-                            const celda = obtenerCelda(bloque.id_hora, dia);
+                            const celda = obtenerCelda(bloque.hora_inicio, dia);
                             const esReceso = bloque.tipo.toLowerCase() === "receso";
 
                             if (esReceso) {

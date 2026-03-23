@@ -10,32 +10,29 @@ export const getCookie = (name: string): string | undefined => {
  * Un wrapper de fetch que inyecta automáticamente el Token
  */
 export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
-  const token = getCookie("authToken");
-
   const isFormData = options.body instanceof FormData;
 
-  const defaultHeaders: Record<string, string> = {
-    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
-  };
-
+  const defaultHeaders: Record<string, string> = {};
   if (!isFormData) {
     defaultHeaders["Content-Type"] = "application/json";
   }
 
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
     ...options,
+    credentials: "include", // <--- Esto envía la cookie authToken automáticamente
     headers: {
       ...defaultHeaders,
       ...options.headers,
     },
   });
 
-  // Manejo global de errores (opcional pero recomendado)
   if (response.status === 401) {
-    document.cookie = "authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie = "userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     localStorage.clear();
-    window.location.href = "/prohibido";
+    // Borramos la cookie de rol (la que sí podemos ver)
+    document.cookie = "userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    if (typeof window !== "undefined") {
+      window.location.href = "/campus";
+    }
   }
 
   return response;

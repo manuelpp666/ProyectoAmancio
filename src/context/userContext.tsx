@@ -18,17 +18,31 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-// Función auxiliar para guardar cookies
+// --- Funciones Auxiliares ---
+const SECRET_KEY = process.env.NEXT_PUBLIC_PERMISOS_KEY || "fallback-key-segura";
+
+const encrypt = (data: string) => CryptoJS.AES.encrypt(data, SECRET_KEY).toString();
+
+const decrypt = (cipherText: string) => {
+  try {
+    const bytes = CryptoJS.AES.decrypt(cipherText, SECRET_KEY);
+    const originalText = bytes.toString(CryptoJS.enc.Utf8);
+    return originalText || null;
+  } catch {
+    return null;
+  }
+};
+
 const setCookie = (name: string, value: string, days = 7) => {
   const expires = new Date(Date.now() + days * 864e5).toUTCString();
   document.cookie = `${name}=${value}; expires=${expires}; path=/; SameSite=Lax`;
 };
 
-// Función auxiliar para borrar cookies
 const deleteCookie = (name: string) => {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
 };
-const SECRET_KEY = process.env.NEXT_PUBLIC_PERMISOS_KEY
+
+// --- Provider ---
 export function UserProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<Role>(null);
   const [username, setUsername] = useState<string | null>(null);
@@ -38,50 +52,49 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedRole = localStorage.getItem("userRole") as Role;
-    const savedUser = localStorage.getItem("userName");
-    const savedId = localStorage.getItem("userId");
-    const encryptedPermisos = localStorage.getItem("userPermisos");
-    // El token lo intentamos recuperar del estado o cookie si fuera necesario
-    // Por simplicidad, aquí lo manejamos desde el login
+    // 1. Obtener los strings cifrados
+    const encRole = localStorage.getItem("userRole");
+    const encUser = localStorage.getItem("userName");
+    const encId = localStorage.getItem("userId");
+    const encPermisos = localStorage.getItem("userPermisos");
 
-    if (savedRole && savedUser && encryptedPermisos) {
-      try {
-        // DESCIFRADO: Intentamos recuperar los permisos originales
-        const bytes = CryptoJS.AES.decrypt(encryptedPermisos, SECRET_KEY);
-        const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
+    if (encRole && encUser && encId && encPermisos) {
+      // 2. Desencriptar todo
+      const decRole = decrypt(encRole) as Role;
+      const decUser = decrypt(encUser);
+      const decId = decrypt(encId);
+      const decPermisos = decrypt(encPermisos);
 
-        if (!decryptedData) throw new Error("Datos corruptos");
-
-        setRole(savedRole);
-        setUsername(savedUser);
-        setIdUsuario(Number(savedId));
-        setPermisos(JSON.parse(decryptedData));
-      } catch (error) {
-        console.error("Error de integridad en permisos. Cerrando sesión...");
-        logout(); // Si alguien editó el LocalStorage, lo expulsamos
+      // 3. Validar integridad
+      if (decRole && decUser && decId && decPermisos) {
+        setRole(decRole);
+        setUsername(decUser);
+        setIdUsuario(Number(decId));
+        setPermisos(JSON.parse(decPermisos));
+      } else {
+        console.error("Integridad comprometida. Limpiando...");
+        logout();
       }
     }
     setLoading(false);
   }, []);
 
   const setUserData = (newRole: Role, newUser: string, newId: number, newToken: string, newPermisos: any) => {
+    // Actualizar estado
     setRole(newRole);
     setUsername(newUser);
     setIdUsuario(newId);
     setToken(newToken);
     setPermisos(newPermisos);
-const encryptedPermisos = CryptoJS.AES.encrypt(
-      JSON.stringify(newPermisos),
-      SECRET_KEY
-    ).toString();
-    // Guardar en LocalStorage (lo no sensible)
-    localStorage.setItem("userRole", newRole || "");
-    localStorage.setItem("userName", newUser || "");
-    localStorage.setItem("userId", String(newId));
-    localStorage.setItem("userPermisos", encryptedPermisos);
-    // Guardar en Cookies (lo sensible para el Middleware)
-    setCookie("authToken", newToken);
+
+    // Guardar en LocalStorage (TODO CIFRADO)
+    localStorage.setItem("userRole", encrypt(newRole || ""));
+    localStorage.setItem("userName", encrypt(newUser || ""));
+    localStorage.setItem("userId", encrypt(String(newId)));
+    localStorage.setItem("userPermisos", encrypt(JSON.stringify(newPermisos)));
+
+    // Cookies para el servidor/middleware
+    
     setCookie("userRole", newRole || "");
   };
 
@@ -92,7 +105,7 @@ const encryptedPermisos = CryptoJS.AES.encrypt(
     setToken(null);
     setPermisos(null);
     localStorage.clear();
-    deleteCookie("authToken");
+    
     deleteCookie("userRole");
     window.location.href = "/login";
   };

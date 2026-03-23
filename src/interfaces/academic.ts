@@ -110,8 +110,10 @@ export interface MateriaDisponible {
 
 export interface HorarioAsignado {
   id_horario: number;
-  id_hora: number;
+  id_hora?: number;       
   dia_semana: string;
+  hora_inicio: string;   
+  hora_fin: string;       
   curso_nombre: string;
   docente_nombre: string;
 }
