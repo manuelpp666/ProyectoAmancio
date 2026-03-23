@@ -98,16 +98,33 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setCookie("userRole", newRole || "");
   };
 
-  const logout = () => {
-    setRole(null);
-    setUsername(null);
-    setIdUsuario(null);
-    setToken(null);
-    setPermisos(null);
-    localStorage.clear();
-    
-    deleteCookie("userRole");
-    window.location.href = "/login";
+  const logout = async () => {
+    try {
+      // 1. Llamamos al backend para que borre la cookie HttpOnly
+      // Usamos fetch directamente o tu apiFetch
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/usuarios/logout`, {
+        method: "POST",
+        credentials: "include", // CRUCIAL para que el navegador envíe la cookie que queremos borrar
+      });
+    } catch (error) {
+      console.error("Error al cerrar sesión en el servidor:", error);
+    } finally {
+      // 2. Limpiamos el estado de React
+      setRole(null);
+      setUsername(null);
+      setIdUsuario(null);
+      setToken(null);
+      setPermisos(null);
+
+      // 3. Limpiamos almacenamiento local
+      localStorage.clear();
+      
+      // 4. Borramos la cookie de rol (la que NO es HttpOnly)
+      deleteCookie("userRole");
+
+      // 5. Redirigimos al usuario
+      window.location.href = "/campus"; 
+    }
   };
 
   return (
