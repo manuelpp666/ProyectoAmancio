@@ -8,7 +8,7 @@ import {
 import { useUser } from "@/src/context/userContext";
 import ModalEntregaTarea from "@/src/components/Tarea/ModalEntregaTarea";
 import { toast } from "sonner";
-import { DetalleCurso,Tarea,ResumenNotas } from "@/src/interfaces/academic";
+import { DetalleCurso, Tarea, ResumenNotas } from "@/src/interfaces/academic";
 import { apiFetch } from "@/src/lib/api";
 
 
@@ -154,11 +154,14 @@ export default function DetalleCursoPage() {
                               return;
                             }
                             try {
-                              const url = tarea.entregado
-                                ? `${process.env.NEXT_PUBLIC_API_URL}/virtual/tareas/${idReal}/${id_usuario}`
-                                : `${process.env.NEXT_PUBLIC_API_URL}/virtual/tareas/${idReal}`;
+                              const endpoint = tarea.entregado
+                                ? `/virtual/tareas/${idReal}/${id_usuario}`
+                                : `/virtual/tareas/${idReal}`;
 
-                              const res = await fetch(url);
+                              // 2. USAMOS apiFetch en lugar de fetch nativo
+                              const res = await apiFetch(endpoint);
+
+                              if (!res.ok) throw new Error("Error al obtener detalle");
                               if (!res.ok) throw new Error("Error al obtener detalle");
 
                               const tareaCompleta = await res.json();
