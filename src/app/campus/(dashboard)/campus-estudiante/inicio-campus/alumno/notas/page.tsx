@@ -5,12 +5,18 @@ import { useUser } from "@/src/context/userContext";
 import { BookOpen, ChevronRight, Loader2, ChevronDown, AlertCircle } from "lucide-react";
 import { BarChart, Bar, ResponsiveContainer, Cell } from "recharts";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { apiFetch } from "@/src/lib/api";
 import { ResumenNota } from "@/src/interfaces/datos_alumno";
 import { toast } from "sonner";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
 
+
+const BarrasRendimiento = dynamic(() => import("@/src/components/Chart/BarraRendimiento"), {
+  ssr: false,
+  loading: () => <div className="h-full w-full bg-gray-50 animate-pulse rounded-xl" />
+});
 export default function MisCalificacionesPage() {
   const {
     anioPlanificacion: anioSeleccionado,
@@ -22,7 +28,11 @@ export default function MisCalificacionesPage() {
   const { id_usuario, loading: userLoading } = useUser();
   const [resumen, setResumen] = useState<ResumenNota[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isClient, setIsClient] = useState(false);
 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // 2. Carga de Resumen (Memorizada)
   const fetchResumen = useCallback(async (uid: number, anio: string) => {
@@ -76,33 +86,38 @@ export default function MisCalificacionesPage() {
         <div className="text-center py-20 text-gray-400">Cargando notas...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {resumen.map((curso) => (
-            <div key={curso.id_curso} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg transition-all flex flex-col">
-              <div className="flex justify-between items-start mb-4">
-                <div className="p-3 bg-[#701C32]/5 text-[#701C32] rounded-2xl"><BookOpen size={24} /></div>
-                <span className="text-3xl font-black text-gray-800">{curso.promedio_final?.toFixed(1) || "0.0"}</span>
-              </div>
+          {resumen.map((curso) => {
+            // Formateamos los datos para el gráfico aquí mismo
+            const chartData = [
+              { label: "B1", val: curso.nota_bimestre1 || 0 },
+              { label: "B2", val: curso.nota_bimestre2 || 0 },
+              { label: "B3", val: curso.nota_bimestre3 || 0 },
+              { label: "B4", val: curso.nota_bimestre4 || 0 },
+            ];
 
-              <h3 className="font-bold text-gray-700 mb-4 h-12 line-clamp-2">{curso.curso_nombre}</h3>
+            return (
+              <div key={curso.id_curso} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg transition-all flex flex-col">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="p-3 bg-[#701C32]/5 text-[#701C32] rounded-2xl"><BookOpen size={24} /></div>
+                  <span className="text-3xl font-black text-gray-800">{curso.promedio_final?.toFixed(1) || "0.0"}</span>
+                </div>
 
-              <div className="h-20 w-full mb-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={[{ val: curso.nota_bimestre1 }, { val: curso.nota_bimestre2 }, { val: curso.nota_bimestre3 }, { val: curso.nota_bimestre4 }]}>
-                    <Bar dataKey="val" radius={[4, 4, 0, 0]}>
-                      <Cell fill={curso.promedio_final >= 11 ? "#22c55e" : "#ef4444"} />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+                <h3 className="font-bold text-gray-700 mb-4 h-12 line-clamp-2">{curso.curso_nombre}</h3>
 
-              <Link
-                href={`/campus/campus-estudiante/inicio-campus/cursos/mis-cursos/${curso.id_curso}?anio=${anioSeleccionado}`}
-                className="mt-auto w-full flex items-center justify-center gap-2 text-sm font-black text-[#701C32] bg-gray-50 hover:bg-[#701C32] hover:text-white py-3 rounded-xl transition-all"
-              >
-                Ver detalle <ChevronRight size={16} />
-              </Link>
+                {/* CONTENEDOR DEL GRÁFICO */}
+                <div className="h-24 w-full mb-4 relative">
+               <BarrasRendimiento data={chartData} />
             </div>
-          ))}
+
+                <Link
+                  href={`/campus/campus-estudiante/inicio-campus/cursos/mis-cursos/${curso.id_curso}?anio=${anioSeleccionado}`}
+                  className="mt-auto w-full flex items-center justify-center gap-2 text-sm font-black text-[#701C32] bg-gray-50 hover:bg-[#701C32] hover:text-white py-3 rounded-xl transition-all"
+                >
+                  Ver detalle <ChevronRight size={16} />
+                </Link>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
