@@ -6,6 +6,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/src/lib/api";
 
+interface FastApiValidationError {
+  loc: (string | number)[];
+  msg: string;
+  type: string;
+}
+
 export default function SecurityPage() {
   const router = useRouter();
   const { username, role } = useUser();
@@ -28,7 +34,7 @@ export default function SecurityPage() {
   };
   // Lógica de fuerza de contraseña
   const getStrength = () => {
-    if (formData.new.length === 0) return { width: '0%', color: 'bg-gray-200', label: 'Vaciío' };
+    if (formData.new.length === 0) return { width: '0%', color: 'bg-gray-200', label: 'Vacío' };
     if (formData.new.length < 6) return { width: '33%', color: 'bg-red-500', label: 'Débil' };
     if (formData.new.length < 10) return { width: '66%', color: 'bg-amber-500', label: 'Media' };
     return { width: '100%', color: 'bg-emerald-500', label: 'Fuerte' };
@@ -79,7 +85,8 @@ export default function SecurityPage() {
         } else if (Array.isArray(data.detail)) {
           // Error de validación de Pydantic/FastAPI (422)
           // Esto evita el error de "Objects are not valid as a React child"
-          errorMsg = data.detail.map(err => {
+          errorMsg = data.detail.map((err: FastApiValidationError) => {
+            // Obtenemos el nombre del campo (ej: "new_password")
             const campo = err.loc[err.loc.length - 1];
             return `${campo}: ${err.msg}`;
           }).join(" | ");

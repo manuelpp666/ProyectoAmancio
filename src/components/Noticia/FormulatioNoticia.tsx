@@ -40,7 +40,10 @@ export function NoticiaForm({ initialData, onSubmit, loading }: NoticiaFormProps
     // 3. Configurar Editor
     const editor = useEditor({
         extensions: [
-            StarterKit.configure({ bulletList: true, orderedList: true }),
+            StarterKit.configure({ 
+  bulletList: {}, // Se pasa un objeto vacío para habilitar
+  orderedList: {} 
+}),
             UnderlineExtension,
         ],
         content: initialData?.contenido || '',
@@ -58,7 +61,7 @@ export function NoticiaForm({ initialData, onSubmit, loading }: NoticiaFormProps
             setFormData({
                 titulo: initialData.titulo,
                 tipoContenido: initialData.categoria === "video" ? "video" : "texto",
-                videoUrl: initialData.categoria === "video" ? initialData.imagen_portada_url : "",
+                videoUrl: (initialData.categoria === "video" ? initialData.imagen_portada_url : "") ?? "",
                 categoria: "General"
             });
             editor?.commands.setContent(initialData.contenido);

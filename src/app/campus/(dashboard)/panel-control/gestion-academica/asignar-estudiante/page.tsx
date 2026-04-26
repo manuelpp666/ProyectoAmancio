@@ -77,14 +77,14 @@ export default function AsignacionEstudiantesPage() {
         if (mantenerEstadoEdicion) {
           const nuevoEstado = { ...prev };
           dataSecciones.forEach(s => {
-            if (nuevoEstado[s.id_seccion] === undefined) {
-              nuevoEstado[s.id_seccion] = false;
+            if (nuevoEstado[s.id_seccion||0] === undefined) {
+              nuevoEstado[s.id_seccion||0] = false;
             }
           });
           return nuevoEstado;
         } else {
           const estadoInicial: Record<number, boolean> = {};
-          dataSecciones.forEach(s => estadoInicial[s.id_seccion] = false);
+          dataSecciones.forEach(s => estadoInicial[s.id_seccion||0] = false);
           return estadoInicial;
         }
       });
@@ -186,7 +186,8 @@ export default function AsignacionEstudiantesPage() {
 
     const alumnosEnSeccion = alumnos.filter(a => a.id_seccion === seccionId).length;
     const seccionObj = secciones.find(s => s.id_seccion === seccionId);
-    if (seccionObj && alumnosEnSeccion >= seccionObj.vacantes) {
+    const limiteVacantes = seccionObj?.vacantes ?? 0;
+    if (seccionObj && alumnosEnSeccion >= limiteVacantes) {
       toast.error("¡Sección sin vacantes!");
       setDraggedStudent(null);
       return;
@@ -450,14 +451,14 @@ export default function AsignacionEstudiantesPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {secciones.map(seccion => {
                       const alumnosEnSeccion = alumnos.filter(a => a.id_seccion === seccion.id_seccion);
-                      const vacantesRestantes = seccion.vacantes - alumnosEnSeccion.length;
-                      const estaEditando = seccionesEditando[seccion.id_seccion];
+                      const vacantesRestantes = seccion.vacantes||0 - alumnosEnSeccion.length;
+                      const estaEditando = seccionesEditando[seccion.id_seccion||0];
 
                       return (
                         <div
                           key={seccion.id_seccion}
                           onDragOver={handleDragOver}
-                          onDrop={() => handleDropToSection(seccion.id_seccion)}
+                          onDrop={() => handleDropToSection(seccion.id_seccion||0)}
                           className={`border-2 border-dashed rounded-xl p-6 flex flex-col transition-all min-h-[300px] ${estaEditando ? 'border-blue-300 bg-blue-50/30' : 'border-gray-200 bg-white'
                             }`}
                         >
@@ -518,7 +519,7 @@ export default function AsignacionEstudiantesPage() {
 
                           {estaEditando ? (
                             <button
-                              onClick={() => handleConfirmarSeccion(seccion.id_seccion)}
+                              onClick={() => handleConfirmarSeccion(seccion.id_seccion||0)}
                               className="w-full bg-[#093E7A] text-white py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#093E7A]/90 transition-colors"
                             >
                               <span className="material-symbols-outlined text-sm">check_circle</span>
@@ -526,7 +527,7 @@ export default function AsignacionEstudiantesPage() {
                             </button>
                           ) : (
                             <button
-                              onClick={() => handleHabilitarEdicion(seccion.id_seccion)}
+                              onClick={() => handleHabilitarEdicion(seccion.id_seccion||0)}
                               className={`w-full bg-white border border-gray-300 text-gray-600 py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors ${!isPeriodoInscripcionActivo ? 'opacity-50 cursor-not-allowed' : ''
                                 }`}
                             >

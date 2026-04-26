@@ -7,7 +7,7 @@ import { Grado } from "@/src/interfaces/academic";
 import { Tramite } from "@/src/interfaces/tramite";
 import { apiFetch } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // --- NUEVA INTERFAZ PARA TIPOS DE PAGO ---
 interface TipoPago {

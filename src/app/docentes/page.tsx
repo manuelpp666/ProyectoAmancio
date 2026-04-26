@@ -3,14 +3,22 @@ import Footer from "@/src/components/Pagina-Web/Footer";
 import { Docente } from "@/src/interfaces/docente";
 import ChatWidget from "@/src/components/utils/ChatbotWidget";
 
+export const dynamic = "force-dynamic";
 // Función para obtener los docentes desde el servidor
 async function getDocentes(): Promise<Docente[]> {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/docentes/`, {
-    next: { revalidate: 60 } // Revalida los datos cada minuto
-  });
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/docentes/`, {
+      next: { revalidate: 60 },
+      // Es buena idea añadir un timeout para que la web no se quede "colgada" esperando al back
+      signal: AbortSignal.timeout(7000) 
+    });
 
-  if (!res.ok) return [];
-  return res.json();
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (error) {
+    console.error("Error cargando docentes:", error);
+    return []; // Retorna un array vacío para que el componente siga funcionando
+  }
 }
 
 export default async function Page() {

@@ -62,7 +62,7 @@ export default function GradoCard({
               <button
                 onClick={(e) => {
                   e.stopPropagation(); // Evitar abrir el modal de editar
-                  onDeleteSeccion(sec.id_seccion);
+                  onDeleteSeccion(sec.id_seccion||0);
                 }}
                 className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-300 hover:text-red-500 opacity-0 group-hover/badge:opacity-100 transition p-1"
                 title="Eliminar Sección"

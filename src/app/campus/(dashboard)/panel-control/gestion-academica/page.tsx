@@ -261,8 +261,8 @@ export default function GestionAcademicaPage() {
   };
 
   const prepararNuevaSeccion = (gradoId: number) => { setSeccionEnEdicion(null); setSelectedGradoId(gradoId); setNuevaSeccion({ nombre: "", vacantes: 30 }); setIsSeccionModalOpen(true); };
-  const prepararEditarSeccion = (seccion: Seccion) => { setSeccionEnEdicion(seccion); setSelectedGradoId(seccion.id_grado); setNuevaSeccion({ nombre: seccion.nombre, vacantes: seccion.vacantes }); setIsSeccionModalOpen(true); };
-
+  const prepararEditarSeccion = (seccion: Seccion) => { setSeccionEnEdicion(seccion); setSelectedGradoId(seccion.id_grado); setNuevaSeccion({ nombre: seccion.nombre, vacantes: seccion.vacantes ?? 30 }); setIsSeccionModalOpen(true); };
+  
   return (
     <RoleGuard modulo="academico" subModulo="estructura">
     <>

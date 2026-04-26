@@ -82,7 +82,7 @@ export default function Page() {
                                                 <span className={`text-sm font-bold ${isToday(day) ? "text-[#701C32]" : "text-slate-500"}`}>{day}</span>
                                                 <div className="mt-1 flex flex-col gap-1">
                                                     {eventosDelMes.filter(e => new Date(e.fecha_inicio).getDate() === day).map(ev => (
-                                                        <div key={ev.id_evento} className="w-2 h-2 rounded-full" style={{ backgroundColor: ev.color }} />
+                                                        <div key={ev.id_evento} className="w-2 h-2 rounded-full" style={{ backgroundColor: ev.color || '#ccc' }} />
                                                     ))}
                                                 </div>
                                             </>
@@ -111,7 +111,7 @@ export default function Page() {
                             {eventosDelMes.slice(0, 3).map(ev => (
                                 <div key={ev.id_evento} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                                     <div className="flex items-center space-x-3 mb-2">
-                                        <div className="w-10 h-10 rounded-lg flex flex-col items-center justify-center text-white" style={{ backgroundColor: ev.color }}>
+                                        <div className="w-10 h-10 rounded-lg flex flex-col items-center justify-center text-white" style={{ backgroundColor: ev.color|| '#ccc' }}>
                                             <span className="text-xs font-black">{new Date(ev.fecha_inicio).getDate()}</span>
                                         </div>
                                         <h4 className="font-bold text-slate-800">{ev.titulo}</h4>

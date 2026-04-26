@@ -54,9 +54,13 @@ interface StatConfigItem {
 // 2. Obtener fecha formateada (Ej: "Lunes, 24 de Mayo")
 const getFormattedDate = () => {
   const date = new Date();
-  const options = { weekday: 'long', day: 'numeric', month: 'long' };
+  // Añadimos el tipo explícito aquí
+  const options: Intl.DateTimeFormatOptions = { 
+    weekday: 'long', 
+    day: 'numeric', 
+    month: 'long' 
+  };
   const formatted = new Intl.DateTimeFormat('es-PE', options).format(date);
-  // Capitalizar la primera letra
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 };
 
