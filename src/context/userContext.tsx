@@ -33,13 +33,22 @@ const decrypt = (cipherText: string) => {
   }
 };
 
-const setCookie = (name: string, value: string, days = 7) => {
-  const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  document.cookie = `${name}=${value}; expires=${expires}; path=/; SameSite=Lax`;
+const setCookie = (name: string, value: string, days?: number) => {
+  let cookie = `${name}=${value}; path=/; SameSite=Lax`;
+  if (typeof window !== "undefined" && window.location.protocol === "https:") {
+    cookie += "; Secure";
+  }
+
+  if (typeof days === "number") {
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    cookie += `; expires=${expires}`;
+  }
+
+  document.cookie = cookie;
 };
 
 const deleteCookie = (name: string) => {
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax`;
 };
 
 // --- Provider ---
@@ -52,11 +61,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Obtener los strings cifrados
-    const encRole = localStorage.getItem("userRole");
-    const encUser = localStorage.getItem("userName");
-    const encId = localStorage.getItem("userId");
-    const encPermisos = localStorage.getItem("userPermisos");
+    // 1. Obtener los strings cifrados desde sessionStorage
+    const encRole = sessionStorage.getItem("userRole");
+    const encUser = sessionStorage.getItem("userName");
+    const encId = sessionStorage.getItem("userId");
+    const encPermisos = sessionStorage.getItem("userPermisos");
 
     if (encRole && encUser && encId && encPermisos) {
       // 2. Desencriptar todo
@@ -87,16 +96,43 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setToken(newToken);
     setPermisos(newPermisos);
 
-    // Guardar en LocalStorage (TODO CIFRADO)
-    localStorage.setItem("userRole", encrypt(newRole || ""));
-    localStorage.setItem("userName", encrypt(newUser || ""));
-    localStorage.setItem("userId", encrypt(String(newId)));
-    localStorage.setItem("userPermisos", encrypt(JSON.stringify(newPermisos)));
+    // Guardar en sessionStorage: persiste solo mientras la sesión del navegador esté abierta
+    sessionStorage.setItem("userRole", encrypt(newRole || ""));
+    sessionStorage.setItem("userName", encrypt(newUser || ""));
+    sessionStorage.setItem("userId", encrypt(String(newId)));
+    sessionStorage.setItem("userPermisos", encrypt(JSON.stringify(newPermisos)));
 
-    // Cookies para el servidor/middleware
-    
+    // Cookie de rol para middleware y navegación en el servidor
     setCookie("userRole", newRole || "");
   };
+
+  const cleanupSession = () => {
+    if (typeof window === "undefined") return;
+
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/usuarios/logout`;
+
+    try {
+      fetch(url, {
+        method: "POST",
+        credentials: "include",
+        keepalive: true,
+      });
+    } catch (error) {
+      console.error("Error enviando logout en unload:", error);
+    }
+
+    sessionStorage.clear();
+    deleteCookie("userRole");
+  };
+
+  useEffect(() => {
+    const handleUnload = () => {
+      cleanupSession();
+    };
+
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
+  }, []);
 
   const logout = async () => {
     try {
@@ -116,8 +152,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setToken(null);
       setPermisos(null);
 
-      // 3. Limpiamos almacenamiento local
-      localStorage.clear();
+      // 3. Limpiamos sessionStorage porque este estado debe vivir solo en la sesión
+      sessionStorage.clear();
       
       // 4. Borramos la cookie de rol (la que NO es HttpOnly)
       deleteCookie("userRole");

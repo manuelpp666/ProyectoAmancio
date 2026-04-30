@@ -13,6 +13,9 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 import { ModalRegistrarCita } from "@/src/components/Citas/ModalRegistrarCitas";
+import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
+import { ModalModificarCita } from "@/src/components/Citas/ModalModificarCita";
+import { ModalDetalleSeguimiento } from "@/src/components/Citas/ModalDetalleSeguimiento";
 import { toast } from "sonner";
 
 export default function AgendaCitasPage() {
@@ -22,21 +25,32 @@ export default function AgendaCitasPage() {
     const [filtroFecha, setFiltroFecha] = useState("");
     const [selectedCita, setSelectedCita] = useState<any>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [selectedDeleteId, setSelectedDeleteId] = useState<number | null>(null);
+const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
     useEffect(() => {
         setFiltroFecha(new Date().toISOString().split('T')[0]);
     }, []);
-    const handleEliminarCita = async (id: number) => {
-        if (!confirm("¿Estás seguro de cancelar esta cita?")) return;
-        
+    const handleEliminarCita = (id: number) => {
+        setSelectedDeleteId(id);
+        setIsConfirmOpen(true);
+    };
+    const handleConfirmEliminarCita = async () => {
+        if (!selectedDeleteId) return;
+
         try {
-            const res = await apiFetch(`/conducta/citas/${id}/cancelar`, { method: "PATCH" });
+            const res = await apiFetch(`/conducta/citas/${selectedDeleteId}/cancelar`, { method: "PATCH" });
             if (res.ok) {
                 toast.success("Cita cancelada");
                 fetchCitas();
+            } else {
+                toast.error("Error al cancelar");
             }
         } catch (error) {
             toast.error("Error al cancelar");
+        } finally {
+            setSelectedDeleteId(null);
         }
     };
     const fetchCitas = async () => {
@@ -120,7 +134,7 @@ export default function AgendaCitasPage() {
                                         <h3 className="font-bold text-[#2C3E50] leading-tight">
                                             {cita.alumno_nombre || "Estudiante"}
                                         </h3>
-                                        
+
                                     </div>
                                 </div>
 
@@ -131,33 +145,36 @@ export default function AgendaCitasPage() {
                                     </p>
                                 </div>
                             </div>
-                                
+
                             <div className="mt-4 pt-4 border-t border-gray-50 flex justify-between items-center">
                                 <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase ${cita.estado === 'PROGRAMADA' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'
                                     }`}>
                                     {cita.estado}
                                 </span>
-                                <button 
-            onClick={() => { setSelectedCita(cita); /* Abrir modal detalle */ }}
-            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-            title="Ver detalles"
-        >
-            <Eye size={18} />
-        </button>
-        <button 
-            onClick={() => { setSelectedCita(cita); setIsEditModalOpen(true); }}
-            className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-            title="Modificar"
-        >
-            <Edit3 size={18} />
-        </button>
-        <button 
-            onClick={() => handleEliminarCita(cita.id_cita)}
-            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            title="Eliminar"
-        >
-            <Trash2 size={18} />
-        </button>
+                                <button
+                onClick={() => { 
+                    setSelectedCita(cita); 
+                    setIsDetailModalOpen(true); 
+                }}
+                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                title="Ver detalles"
+            >
+                <Eye size={18} />
+            </button>
+                                <button
+                                    onClick={() => { setSelectedCita(cita); setIsEditModalOpen(true); }}
+                                    className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                    title="Modificar"
+                                >
+                                    <Edit3 size={18} />
+                                </button>
+                                <button
+                                    onClick={() => handleEliminarCita(cita.id_cita)}
+                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="Eliminar"
+                                >
+                                    <Trash2 size={18} />
+                                </button>
                             </div>
                         </div>
                     ))}
@@ -174,8 +191,41 @@ export default function AgendaCitasPage() {
                     </button>
                 </div>
             )}
-
+            <ModalModificarCita
+                isOpen={isEditModalOpen}
+                cita={selectedCita}
+                onClose={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedCita(null);
+                }}
+                onSuccess={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedCita(null);
+                    fetchCitas(); // Refresca la lista
+                }}
+            />
+            <ModalDetalleSeguimiento
+                isOpen={isDetailModalOpen}
+                onClose={() => {
+                    setIsDetailModalOpen(false);
+                    setSelectedCita(null);
+                }}
+                idAlumno={selectedCita?.id_alumno} // Asegúrate de que el objeto cita tenga id_alumno
+                nombreAlumno={selectedCita?.alumno_nombre}
+            />
             {/* MODAL COMPONENTE */}
+            <ConfirmModal
+                isOpen={isConfirmOpen}
+                onClose={() => {
+                    setIsConfirmOpen(false);
+                    setSelectedDeleteId(null);
+                }}
+                onConfirm={handleConfirmEliminarCita}
+                title="Confirmar cancelación"
+                message="¿Estás seguro de cancelar esta cita? Esta acción no se puede deshacer."
+                confirmText="Sí, cancelar"
+                type="danger"
+            />
             <ModalRegistrarCita
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}

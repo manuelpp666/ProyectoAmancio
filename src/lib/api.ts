@@ -27,9 +27,9 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   });
 
   if (response.status === 401) {
-    localStorage.clear();
+    sessionStorage.clear();
     // Borramos la cookie de rol (la que sí podemos ver)
-    document.cookie = "userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie = "userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax";
     if (typeof window !== "undefined") {
       window.location.href = "/campus";
     }
