@@ -6,6 +6,7 @@ import { AsideCampus as SidebarEstudiante } from "@/src/components/Campus/Campus
 import { AsideDocente as SidebarDocente} from "@/src/components/Campus/CampusDocente/AsideDocente";
 import { AsidePanel as SidebarPanel } from "@/src/components/Campus/PanelControl/Aside";
 import { HeaderCampus as Header } from "@/src/components/Campus/HeaderCampus";
+import { AsidePsicologo as SidebarPsicologo } from "@/src/components/Campus/CampusPsicologo/AsidePsicologo";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   
@@ -26,6 +27,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (pathname.includes("/campus-estudiante")) currentRole = "ALUMNO";
     if (pathname.includes("/campus-docente")) currentRole = "DOCENTE";
     if (pathname.includes("/panel-control")) currentRole = "ADMIN";
+    if (pathname.includes("/campus-psicologo")) currentRole = "PSICOLOGO";
 
     // 4. Comparación con los valores correctos definidos en tu Context
     switch (currentRole) {
@@ -35,6 +37,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return <SidebarDocente isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />;
       case "ADMIN":
         return <SidebarPanel isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />;
+      case "PSICOLOGO":
+        return <SidebarPsicologo isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />;
       default:
         // Sidebar por defecto en caso de que no se detecte nada
         return <SidebarEstudiante isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />;

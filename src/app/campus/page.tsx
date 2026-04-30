@@ -10,7 +10,8 @@ const ROLE_ROUTES = {
   ADMIN: "/campus/panel-control",
   DOCENTE: "/campus/campus-docente/inicio-docente",
   ALUMNO: "/campus/campus-estudiante/inicio-campus",
-  AUXILIAR: "/campus/campus-auxiliar/inicio",
+  PSICOLOGO: "/campus/campus-psicologo",
+  AUXILIAR: "/campus/campus-auxiliar",
 };
 export default function LoginPage() {
   const router = useRouter();
