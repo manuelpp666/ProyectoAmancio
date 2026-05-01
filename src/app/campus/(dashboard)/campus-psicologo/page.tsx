@@ -4,13 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { 
   Calendar, 
-  Users, 
   AlertCircle, 
   ArrowRight, 
   Loader2, 
   CheckCircle2,
   Clock,
-  Activity
+  Info
 } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 
@@ -28,7 +27,6 @@ export default function InicioPsicologoPage() {
     const fetchData = async () => {
       if (!id_usuario) return;
       try {
-        // En una implementación real, estos endpoints deben existir en tu FastAPI
         const [resResumen, resCitas] = await Promise.all([
           apiFetch(`/conducta/resumen-psicologo`), 
           apiFetch(`/conducta/citas/agenda-diaria`)
@@ -57,7 +55,7 @@ export default function InicioPsicologoPage() {
   }
 
   const estadisticas = [
-    { label: "Citas para Hoy", val: citasHoy.length.toString(), icon: Calendar, color: "bg-blue-50 text-blue-600" },
+    { label: "Citas para Hoy", val: resumen.citas_pendientes.toString(), icon: Calendar, color: "bg-blue-50 text-blue-600" },
     { label: "Alumnos en Riesgo", val: resumen.alumnos_riesgo.toString(), icon: AlertCircle, color: "bg-red-50 text-red-600" },
     { label: "Atenciones del Mes", val: resumen.atenciones_mes.toString(), icon: CheckCircle2, color: "bg-green-50 text-green-600" },
   ];
@@ -66,7 +64,7 @@ export default function InicioPsicologoPage() {
     <div className="space-y-8 max-w-7xl mx-auto p-4 md:p-0">
       <div>
         <h1 className="text-2xl font-bold text-[#701C32]">Panel de Psicología</h1>
-        <p className="text-gray-500">Gestión de bienestar estudiantil y conducta</p>
+        <p className="text-gray-500">Resumen de bienestar y alertas de conducta</p>
       </div>
 
       {/* ESTADÍSTICAS RÁPIDAS */}
@@ -98,7 +96,7 @@ export default function InicioPsicologoPage() {
 
           <div className="space-y-4">
             {citasHoy.length > 0 ? (
-              citasHoy.slice(0, 4).map((cita: any) => (
+              citasHoy.slice(0, 5).map((cita: any) => (
                 <div key={cita.id_cita} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className="bg-[#2C3E50] text-white text-xs font-bold p-2 rounded text-center min-w-[60px]">
@@ -110,7 +108,7 @@ export default function InicioPsicologoPage() {
                     </div>
                   </div>
                   <Link 
-                    href={`/campus/campus-psicologo/agenda/${cita.id_cita}`}
+                    href={`/campus/campus-psicologo/agenda`}
                     className="p-2 hover:bg-gray-200 rounded-full text-gray-400"
                   >
                     <ArrowRight size={18} />
@@ -125,27 +123,30 @@ export default function InicioPsicologoPage() {
           </div>
         </div>
 
-        {/* RECIENTES / ACCIONES */}
-        <div className="bg-[#2C3E50] rounded-xl shadow-sm p-6 text-white">
-          <h2 className="font-bold text-lg mb-4 text-white">Acciones Rápidas</h2>
-          <div className="grid grid-cols-1 gap-3">
-            <Link href="/campus/campus-psicologo/agenda" className="bg-white/10 hover:bg-white/20 p-4 rounded-lg flex items-center justify-between transition-colors">
-              <span>Programar Nueva Cita</span>
-              <Calendar size={20} />
-            </Link>
-            <Link href="/campus/campus-psicologo/conducta/nuevo" className="bg-white/10 hover:bg-white/20 p-4 rounded-lg flex items-center justify-between transition-colors">
-              <span>Registrar Reporte de Conducta</span>
-              <Activity size={20} />
-            </Link>
-            <Link href="/campus/campus-psicologo/estudiantes" className="bg-white/10 hover:bg-white/20 p-4 rounded-lg flex items-center justify-between transition-colors">
-              <span>Buscar Expediente de Alumno</span>
-              <Users size={20} />
-            </Link>
-          </div>
-          
-          <div className="mt-8 p-4 bg-[#701C32] rounded-lg">
-            <p className="text-xs font-bold uppercase tracking-wider opacity-70 mb-1">Recordatorio</p>
-            <p className="text-sm">Recuerda completar los resultados de las reuniones al finalizar cada sesión para mantener el historial actualizado.</p>
+        {/* PANEL LATERAL: RECORDATORIO Y ESTADO */}
+        <div className="space-y-6">
+          <div className="bg-[#2C3E50] rounded-xl shadow-sm p-8 text-white h-full flex flex-col justify-center">
+            <div className="flex items-start gap-4">
+                <div className="bg-[#701C32] p-3 rounded-lg shadow-lg">
+                    <Info size={24} className="text-white" />
+                </div>
+                <div>
+                    <h2 className="font-bold text-xl mb-2 text-white">Recordatorio del Especialista</h2>
+                    <p className="text-gray-300 leading-relaxed">
+                        Es fundamental registrar el <span className="text-white font-bold text-sm">resultado de la reunión</span> inmediatamente después de cada sesión. 
+                        Esto garantiza que el historial psicológico esté actualizado para el seguimiento de conducta.
+                    </p>
+                </div>
+            </div>
+            
+            <div className="mt-8 pt-6 border-t border-white/10">
+                <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">Estado del Sistema:</span>
+                    <span className="flex items-center gap-2 text-green-400 font-medium">
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" /> Sincronizado
+                    </span>
+                </div>
+            </div>
           </div>
         </div>
       </div>

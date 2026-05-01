@@ -210,8 +210,8 @@ const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
                     setIsDetailModalOpen(false);
                     setSelectedCita(null);
                 }}
-                idAlumno={selectedCita?.id_alumno} // Asegúrate de que el objeto cita tenga id_alumno
-                nombreAlumno={selectedCita?.alumno_nombre}
+                idAlumno={selectedCita?.id_alumno ?? selectedCita?.alumno?.id_alumno ?? selectedCita?.idAlumno}
+                nombreAlumno={selectedCita?.alumno_nombre ?? selectedCita?.alumno?.nombres ?? selectedCita?.alumno?.nombre}
             />
             {/* MODAL COMPONENTE */}
             <ConfirmModal

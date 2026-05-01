@@ -42,13 +42,7 @@ export function AsidePsicologo({ isOpen, onClose }: { isOpen: boolean; onClose: 
           <Calendar size={20} /> Agenda de Citas
         </Link>
 
-        <Link
-          href="/campus/campus-psicologo/conducta"
-          onClick={onClose}
-          className="flex items-center gap-3 px-4 py-3 text-white/80 hover:bg-white/10 hover:text-white rounded-lg transition-colors group"
-        >
-          <Activity size={20} /> Reportes de Conducta
-        </Link>
+        
 
         <Link
           href="/campus/campus-psicologo/estudiantes"

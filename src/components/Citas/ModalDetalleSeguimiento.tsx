@@ -8,24 +8,34 @@ export function ModalDetalleSeguimiento({ isOpen, onClose, idAlumno, nombreAlumn
   const [data, setData] = useState<any>(null);
 
   useEffect(() => {
-    if (isOpen && idAlumno) {
-      fetchDetalle();
-    }
-  }, [isOpen, idAlumno]);
+    if (!isOpen) return;
 
-  const fetchDetalle = async () => {
-    setLoading(true);
-    try {
-      const res = await apiFetch(`/conducta/seguimiento/${idAlumno}`);
-      if (res.ok) {
-        setData(await res.json());
-      }
-    } catch (error) {
-      console.error("Error al cargar seguimiento");
-    } finally {
+    if (!idAlumno) {
+      console.error("ModalDetalleSeguimiento: falta idAlumno");
+      setData(null);
       setLoading(false);
+      return;
     }
-  };
+
+    const fetchDetalle = async () => {
+      setLoading(true);
+      setData(null);
+      try {
+        const res = await apiFetch(`/conducta/seguimiento/${idAlumno}`);
+        if (res.ok) {
+          setData(await res.json());
+        } else {
+          console.error("Error al cargar seguimiento", res.status, await res.text());
+        }
+      } catch (error) {
+        console.error("Error al cargar seguimiento", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDetalle();
+  }, [isOpen, idAlumno]);
 
   if (!isOpen) return null;
 
