@@ -1,4 +1,3 @@
-// src/context/UserContext.tsx
 "use client";
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import CryptoJS from "crypto-js";
@@ -18,7 +17,6 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-// --- Funciones Auxiliares ---
 const SECRET_KEY = process.env.NEXT_PUBLIC_PERMISOS_KEY || "fallback-key-segura";
 
 const encrypt = (data: string) => CryptoJS.AES.encrypt(data, SECRET_KEY).toString();
@@ -33,25 +31,18 @@ const decrypt = (cipherText: string) => {
   }
 };
 
-const setCookie = (name: string, value: string, days?: number) => {
-  let cookie = `${name}=${value}; path=/; SameSite=Lax`;
-  if (typeof window !== "undefined" && window.location.protocol === "https:") {
-    cookie += "; Secure";
-  }
-
-  if (typeof days === "number") {
-    const expires = new Date(Date.now() + days * 864e5).toUTCString();
-    cookie += `; expires=${expires}`;
-  }
-
-  document.cookie = cookie;
+const setCookie = (name: string, value: string) => {
+  // Eliminamos cualquier expiración para que sea de sesión
+  document.cookie = `${name}=${value}; path=/; SameSite=Lax; Secure=${window.location.protocol === "https:"}`;
 };
 
 const deleteCookie = (name: string) => {
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax`;
+  // Intentamos borrarla de las dos formas más comunes (con y sin dominio explícito)
+  const base = "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax";
+  document.cookie = `${name}${base}`;
+  document.cookie = `${name}${base}; domain=${window.location.hostname}`;
 };
 
-// --- Provider ---
 export function UserProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<Role>(null);
   const [username, setUsername] = useState<string | null>(null);
@@ -61,27 +52,79 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Obtener los strings cifrados desde sessionStorage
+    const initAuth = async () => {
+      const tabActive = sessionStorage.getItem("tab_session_active");
+
+      // CASO A: Pestaña nueva (Cerró la pestaña antes o abrió una nueva)
+      if (!tabActive) {
+        // 1. Limpiamos rastro local
+        sessionStorage.clear();
+        deleteCookie("userRole");
+
+        // 2. Intentamos limpiar la cookie HttpOnly del servidor 
+        // de forma silenciosa para que no haya rastro de sesiones viejas.
+        try {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/usuarios/logout`, {
+            method: "POST",
+            credentials: "include",
+          });
+        } catch (e) {
+          console.error("Error limpiando sesión previa:", e);
+        }
+
+        // 3. Marcamos esta pestaña como activa y terminamos carga
+        sessionStorage.setItem("tab_session_active", "true");
+        setLoading(false);
+      } 
+      // CASO B: Refresco de página (F5)
+      else {
+        const encRole = sessionStorage.getItem("userRole");
+        const encUser = sessionStorage.getItem("userName");
+        const encId = sessionStorage.getItem("userId");
+        const encPermisos = sessionStorage.getItem("userPermisos");
+
+        if (encRole && encUser && encId && encPermisos) {
+          const decRole = decrypt(encRole) as Role;
+          const decUser = decrypt(encUser);
+          const decId = decrypt(encId);
+          const decPermisos = decrypt(encPermisos);
+
+          if (decRole && decUser && decId && decPermisos) {
+            setRole(decRole);
+            setUsername(decUser);
+            setIdUsuario(Number(decId));
+            setPermisos(JSON.parse(decPermisos));
+          }
+        }
+        setLoading(false);
+      }
+    };
+
+    initAuth();
+  }, []);
+  
+  
+  
+  // EFECTO DE CARGA: Se ejecuta al entrar o al refrescar (F5)
+  useEffect(() => {
     const encRole = sessionStorage.getItem("userRole");
     const encUser = sessionStorage.getItem("userName");
     const encId = sessionStorage.getItem("userId");
     const encPermisos = sessionStorage.getItem("userPermisos");
 
     if (encRole && encUser && encId && encPermisos) {
-      // 2. Desencriptar todo
       const decRole = decrypt(encRole) as Role;
       const decUser = decrypt(encUser);
       const decId = decrypt(encId);
       const decPermisos = decrypt(encPermisos);
 
-      // 3. Validar integridad
       if (decRole && decUser && decId && decPermisos) {
         setRole(decRole);
         setUsername(decUser);
         setIdUsuario(Number(decId));
         setPermisos(JSON.parse(decPermisos));
       } else {
-        console.error("Integridad comprometida. Limpiando...");
+        // Si hay datos pero están corruptos, limpiar
         logout();
       }
     }
@@ -89,76 +132,37 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setUserData = (newRole: Role, newUser: string, newId: number, newToken: string, newPermisos: any) => {
-    // Actualizar estado
     setRole(newRole);
     setUsername(newUser);
     setIdUsuario(newId);
     setToken(newToken);
     setPermisos(newPermisos);
 
-    // Guardar en sessionStorage: persiste solo mientras la sesión del navegador esté abierta
+    // Persiste en sessionStorage (sobrevive a F5, muere al cerrar pestaña)
     sessionStorage.setItem("userRole", encrypt(newRole || ""));
     sessionStorage.setItem("userName", encrypt(newUser || ""));
     sessionStorage.setItem("userId", encrypt(String(newId)));
     sessionStorage.setItem("userPermisos", encrypt(JSON.stringify(newPermisos)));
 
-    // Cookie de rol para middleware y navegación en el servidor
+    // Cookie de sesión para el Middleware
     setCookie("userRole", newRole || "");
   };
 
-  const cleanupSession = () => {
-    if (typeof window === "undefined") return;
-
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/usuarios/logout`;
-
-    try {
-      fetch(url, {
-        method: "POST",
-        credentials: "include",
-        keepalive: true,
-      });
-    } catch (error) {
-      console.error("Error enviando logout en unload:", error);
-    }
-
-    sessionStorage.clear();
-    deleteCookie("userRole");
-  };
-
-  useEffect(() => {
-    const handleUnload = () => {
-      cleanupSession();
-    };
-
-    window.addEventListener("beforeunload", handleUnload);
-    return () => window.removeEventListener("beforeunload", handleUnload);
-  }, []);
-
   const logout = async () => {
     try {
-      // 1. Llamamos al backend para que borre la cookie HttpOnly
-      // Usamos fetch directamente o tu apiFetch
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/usuarios/logout`, {
         method: "POST",
-        credentials: "include", // CRUCIAL para que el navegador envíe la cookie que queremos borrar
+        credentials: "include",
       });
-    } catch (error) {
-      console.error("Error al cerrar sesión en el servidor:", error);
     } finally {
-      // 2. Limpiamos el estado de React
+      // Limpieza total y redirección
+      sessionStorage.clear();
+      deleteCookie("userRole");
       setRole(null);
       setUsername(null);
       setIdUsuario(null);
       setToken(null);
       setPermisos(null);
-
-      // 3. Limpiamos sessionStorage porque este estado debe vivir solo en la sesión
-      sessionStorage.clear();
-      
-      // 4. Borramos la cookie de rol (la que NO es HttpOnly)
-      deleteCookie("userRole");
-
-      // 5. Redirigimos al usuario
       window.location.href = "/campus"; 
     }
   };
