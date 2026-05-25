@@ -1,8 +1,9 @@
 // src/app/campus-estudiante/inicio-campus/notificaciones/page.tsx
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useUser } from "@/src/context/userContext";
-import { Megaphone, Star, Wallet, Calendar, CheckCheck, Clock, Loader2, HeartPulse } from "lucide-react";
+import { Megaphone, Star, Wallet, Calendar, CheckCheck, Clock, Loader2, HeartPulse, MessageSquare, ArrowLeft } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 // Helper para definir estilos e iconos según el tipo de notificación
 const getNotifStyle = (tipo: string) => {
@@ -12,12 +13,14 @@ const getNotifStyle = (tipo: string) => {
     case "pago": return { icono: Wallet, color: "text-red-600", bg: "bg-red-50" };
     case "evento": return { icono: Calendar, color: "text-purple-600", bg: "bg-purple-50" };
     case "cita": return { icono: HeartPulse, color: "text-blue-600", bg: "bg-blue-50" };
+    case "mensaje": return { icono: MessageSquare, color: "text-[#701C32]", bg: "bg-[#701C32]/10" };
     default: return { icono: Megaphone, color: "text-blue-600", bg: "bg-blue-50" };
   }
 };
 
 export default function NotificacionesPage() {
   const { id_usuario, loading } = useUser();
+  const router = useRouter();
   const [notificaciones, setNotificaciones] = useState([]);
   const [cargando, setCargando] = useState(true);
 
@@ -28,6 +31,9 @@ export default function NotificacionesPage() {
         const res = await apiFetch(`/gestion/notificaciones/${id_usuario}`);
         const data = await res.json();
         setNotificaciones(data.notificaciones || []);
+        // Marcamos como vistas: guardamos el momento de esta visita para el badge del header
+        localStorage.setItem(`notif_last_seen_${id_usuario}`, new Date().toISOString());
+        window.dispatchEvent(new Event("notif-seen"));
       } catch (error) {
         console.error("Error al cargar notificaciones:", error);
       } finally {
@@ -50,6 +56,12 @@ export default function NotificacionesPage() {
     <div className="max-w-4xl mx-auto space-y-6 pb-10">
       {/* CABECERA */}
       <div className="border-b border-gray-200 pb-6">
+        <button
+          onClick={() => router.back()}
+          className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-[#701C32] transition-colors mb-4"
+        >
+          <ArrowLeft size={18} /> Volver
+        </button>
         <h1 className="text-3xl font-bold text-[#701C32]">Notificaciones</h1>
         <p className="text-gray-500 text-sm mt-1">Mantente al día con lo que sucede en tu colegio.</p>
       </div>

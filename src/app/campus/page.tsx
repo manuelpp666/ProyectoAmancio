@@ -11,7 +11,7 @@ const ROLE_ROUTES = {
   DOCENTE: "/campus/campus-docente/inicio-docente",
   ALUMNO: "/campus/campus-estudiante/inicio-campus",
   PSICOLOGO: "/campus/campus-psicologo",
-  AUXILIAR: "/campus/campus-auxiliar",
+  AUXILIAR: "/campus/campus-auxiliar/inicio",
 };
 export default function LoginPage() {
   const router = useRouter();

@@ -6,10 +6,45 @@ import { useUser } from "@/src/context/userContext";
 import { apiFetch } from "@/src/lib/api";
 
 export function HeaderCampus({ onOpenMenu }: { onOpenMenu: () => void }) {
-  const { username, role, logout } = useUser();
+  const { username, role, id_usuario, logout } = useUser();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [nombreCompleto, setNombreCompleto] = useState<string | null>(null);
+  const [noVistas, setNoVistas] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // EFECTO: Contar notificaciones no vistas para el badge de la campana
+  useEffect(() => {
+    if (!id_usuario) return;
+
+    const calcularNoVistas = async () => {
+      try {
+        const res = await apiFetch(`/gestion/notificaciones/${id_usuario}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const notifs: any[] = data.notificaciones || [];
+        const lastSeenStr = localStorage.getItem(`notif_last_seen_${id_usuario}`);
+        const lastSeen = lastSeenStr ? new Date(lastSeenStr).getTime() : 0;
+        const nuevas = notifs.filter(n => {
+          const fecha = n.fecha ? new Date(n.fecha).getTime() : 0;
+          return fecha > lastSeen;
+        });
+        setNoVistas(nuevas.length);
+      } catch (error) {
+        console.error("Error al contar notificaciones:", error);
+      }
+    };
+
+    calcularNoVistas();
+    // Al visitar la página de notificaciones se limpia el badge
+    const onSeen = () => setNoVistas(0);
+    window.addEventListener("notif-seen", onSeen);
+    // Refresco periódico para captar mensajes/eventos nuevos
+    const intervalo = setInterval(calcularNoVistas, 60000);
+    return () => {
+      window.removeEventListener("notif-seen", onSeen);
+      clearInterval(intervalo);
+    };
+  }, [id_usuario]);
 
   // EFECTO: Buscar el nombre real en el backend usando el username (DNI)
   useEffect(() => {
@@ -52,6 +87,11 @@ export function HeaderCampus({ onOpenMenu }: { onOpenMenu: () => void }) {
       <div className="flex items-center gap-4 ml-auto">
         <Link href="/campus/perfil/notificaciones" className="relative text-gray-400 hover:text-[#701C32] transition-colors">
           <Bell size={22} />
+          {noVistas > 0 && (
+            <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-[#701C32] text-white text-[10px] font-bold rounded-full ring-2 ring-white">
+              {noVistas > 99 ? "99+" : noVistas}
+            </span>
+          )}
         </Link>
 
         {/* Contenedor del Perfil */}

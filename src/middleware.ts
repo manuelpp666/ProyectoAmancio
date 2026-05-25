@@ -21,8 +21,11 @@ export function middleware(request: NextRequest) {
   // 2. CASO: Hay token e intenta ir al Login (Evitar que vuelva a loguearse)
   if (pathname === '/campus') {
     let dest = '/campus/campus-estudiante/inicio-campus'; // Default
+    
     if (role === 'ADMIN') dest = '/campus/panel-control';
     if (role === 'DOCENTE') dest = '/campus/campus-docente/inicio-docente';
+    if (role === 'AUXILIAR') dest = '/campus/campus-auxiliar/inicio';
+    if (role === 'PSICOLOGO') dest = '/campus/campus-psicologo';
     
     return NextResponse.redirect(new URL(dest, request.url));
   }
@@ -34,6 +37,14 @@ export function middleware(request: NextRequest) {
   }
   
   if (pathname.startsWith('/campus/campus-docente') && role !== 'DOCENTE') {
+    return NextResponse.redirect(new URL('/prohibido', request.url));
+  }
+  
+  if (pathname.startsWith('/campus/campus-auxiliar') && role !== 'AUXILIAR') {
+    return NextResponse.redirect(new URL('/prohibido', request.url));
+  }
+  
+  if (pathname.startsWith('/campus/campus-psicologo') && role !== 'PSICOLOGO') {
     return NextResponse.redirect(new URL('/prohibido', request.url));
   }
   

@@ -9,6 +9,7 @@ export interface Seccion {
   id_anio_escolar?: string;
   nombre: string;
   vacantes?: number;
+  ocupadas?: number;
   grado?: Grado;
 }
 

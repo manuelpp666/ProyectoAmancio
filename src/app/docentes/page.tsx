@@ -10,7 +10,7 @@ async function getDocentes(): Promise<Docente[]> {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/docentes/`, {
       next: { revalidate: 60 },
       // Es buena idea añadir un timeout para que la web no se quede "colgada" esperando al back
-      signal: AbortSignal.timeout(7000) 
+      signal: AbortSignal.timeout(7000)
     });
 
     if (!res.ok) return [];
@@ -21,11 +21,31 @@ async function getDocentes(): Promise<Docente[]> {
   }
 }
 
-export default async function Page() {
-  const docentes = await getDocentes();
+// Configuración editable desde Contenido Web (sección 'docentes')
+async function getConfigDocentes(): Promise<Record<string, string>> {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/configuracion/docentes`, {
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(7000)
+    });
+    if (!res.ok) return {};
+    const data: { clave: string; valor: string }[] = await res.json();
+    return Object.fromEntries(data.map(i => [i.clave, i.valor]));
+  } catch {
+    return {};
+  }
+}
 
-  // Filtramos solo los docentes activos para la página pública
-  const docentesActivos = docentes.filter(d => d.usuario?.activo);
+export default async function Page() {
+  const [docentes, config] = await Promise.all([getDocentes(), getConfigDocentes()]);
+
+  const getVal = (clave: string, defecto: string) => config[clave]?.trim() || defecto;
+  const titulo = getVal('docentes_titulo', 'Nuestros Docentes');
+  const subtitulo = getVal('docentes_subtitulo', 'Contamos con un equipo de profesionales apasionados, dedicados a inspirar y guiar a cada estudiante en su camino hacia la excelencia.');
+  const heroImagen = config['docentes_imagen']?.trim() || "";
+
+  // Mostramos solo docentes activos y marcados como visibles en la web
+  const docentesActivos = docentes.filter(d => d.usuario?.activo && d.visible_web !== false);
 
   return (
     <div className="antialiased bg-white text-slate-800">
@@ -33,20 +53,41 @@ export default async function Page() {
 
       <main>
         {/* Hero Section */}
-        <section className="relative py-20 bg-[#FFF1E3]">
-          <div className="max-w-7xl mx-auto px-4 text-center relative z-10">
-            <h1 className="text-4xl md:text-5xl font-black text-[#701C32] mb-4 leading-tight">
-              Nuestros Docentes
+        <section className="relative py-28 overflow-hidden bg-gradient-to-br from-[#701C32] via-[#701C32] to-[#093E7A]">
+          {/* Imagen de fondo opcional */}
+          {heroImagen && (
+            <div className="absolute inset-0 z-0">
+              <img alt="" className="w-full h-full object-cover opacity-25" src={heroImagen} />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#701C32]/90 to-[#093E7A]/90"></div>
+            </div>
+          )}
+          {/* Formas decorativas difuminadas */}
+          <div className="absolute -top-16 -right-16 w-80 h-80 bg-white/10 rounded-full blur-3xl z-0"></div>
+          <div className="absolute -bottom-24 -left-10 w-96 h-96 bg-[#093E7A]/40 rounded-full blur-3xl z-0"></div>
+
+          <div className="max-w-7xl mx-auto px-4 text-center relative z-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/15 backdrop-blur-md border border-white/25 text-white font-bold text-xs uppercase tracking-widest rounded-full mb-5">
+              <span className="material-symbols-outlined text-base">school</span>
+              Plana Docente
+            </span>
+            <h1 className="text-4xl md:text-6xl font-black text-white mb-5 leading-tight drop-shadow-lg">
+              {titulo}
             </h1>
-            <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto font-light">
-              Contamos con un equipo de profesionales apasionados, dedicados a inspirar y guiar a cada estudiante en su camino hacia la excelencia.
+            <div className="w-24 h-1.5 bg-white/80 mx-auto rounded-full mb-6"></div>
+            <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto font-light leading-relaxed">
+              {subtitulo}
             </p>
           </div>
         </section>
 
         {/* Teachers Grid */}
-        <section className="py-24 px-4 bg-white">
+        <section className="py-20 px-4 bg-white">
           <div className="max-w-7xl mx-auto">
+            {docentesActivos.length > 0 && (
+              <p className="text-center text-sm font-bold text-slate-400 uppercase tracking-widest mb-12">
+                {docentesActivos.length} {docentesActivos.length === 1 ? 'docente' : 'docentes'} a tu servicio
+              </p>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
 
               {docentesActivos.map((docente) => {

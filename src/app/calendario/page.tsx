@@ -4,9 +4,12 @@ import Header from "@/src/components/Pagina-Web/Header";
 import Footer from "@/src/components/Pagina-Web/Footer";
 import ChatWidget from "@/src/components/utils/ChatbotWidget";
 import { useEventos } from "@/src/hooks/useEvento";
+import { useConfiguracion } from "@/src/hooks/useConfiguracion";
 
 export default function Page() {
     const { eventos } = useEventos('todos');
+    const { data: config } = useConfiguracion('calendario');
+    const getVal = (clave: string, defecto: string) => config.find(i => i.clave === clave)?.valor || defecto;
     const [viewDate, setViewDate] = useState(new Date());
 
     const meses = [
@@ -53,11 +56,22 @@ export default function Page() {
         <div className="bg-white text-slate-800">
             <Header />
 
-            <main className="py-12 px-4 max-w-7xl mx-auto">
-                <div className="mb-10">
-                    <h1 className="text-4xl font-black text-[#701C32] mb-2">Calendario Académico</h1>
-                    <p className="text-slate-500">Consulta las fechas importantes del año {year}.</p>
+            {/* Banner con degradado de marca */}
+            <section className="relative py-20 overflow-hidden bg-gradient-to-br from-[#701C32] via-[#701C32] to-[#093E7A]">
+                <div className="absolute -top-16 -right-16 w-80 h-80 bg-white/10 rounded-full blur-3xl z-0"></div>
+                <div className="absolute -bottom-24 -left-10 w-96 h-96 bg-[#093E7A]/40 rounded-full blur-3xl z-0"></div>
+                <div className="max-w-7xl mx-auto px-4 relative z-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
+                    <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/15 backdrop-blur-md border border-white/25 text-white font-bold text-xs uppercase tracking-widest rounded-full mb-4">
+                        <span className="material-symbols-outlined text-base">event</span>
+                        Año {year}
+                    </span>
+                    <h1 className="text-4xl md:text-5xl font-black text-white mb-3 drop-shadow-lg">{getVal('calendario_titulo', 'Calendario Académico')}</h1>
+                    <div className="w-20 h-1.5 bg-white/80 rounded-full mb-3"></div>
+                    <p className="text-white/90 max-w-2xl">{getVal('calendario_subtitulo', 'Consulta las fechas importantes y eventos del año escolar.')}</p>
                 </div>
+            </section>
+
+            <main className="py-12 px-4 max-w-7xl mx-auto">
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2">

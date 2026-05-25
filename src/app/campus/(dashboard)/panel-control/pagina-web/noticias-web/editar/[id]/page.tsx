@@ -74,7 +74,7 @@ export default function EditarNoticiaPage() {
   return (
     
     <RoleGuard modulo="contenido_web" subModulo="noticias">
-    <div className="min-h-screen bg-[#F6F7F8] flex flex-col">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
       {/* Header */}
       <header className="h-20 bg-white border-b border-gray-100 px-8 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">

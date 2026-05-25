@@ -21,6 +21,9 @@ export const usePermisos = () => {
     }
     // ---------------------------
 
+    // Super-admin: si tiene 'all', tiene acceso a todo (incluidos módulos nuevos)
+    if ((permisosObj as any).all === true) return true;
+
     const dataModulo = (permisosObj as any)[modulo];
 
     // Si el módulo no existe en el objeto

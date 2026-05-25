@@ -1,12 +1,12 @@
 // src/app/campus/(dashboard)/panel-control/pagina-web/page.tsx
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useConfiguracion } from '@/src/hooks/useConfiguracion';
 import ImageUpload from '@/src/components/utils/ImageUpload';
 import { uploadToCloudinary } from "@/src/components/utils/cloudinary";
 import * as LucideIcons from "lucide-react";
 import HeaderPanel from '@/src/components/Campus/PanelControl/Header';
-import { Save, Home, Users, Footprints, Loader2,ChevronRight} from 'lucide-react';
+import { Save, Home, Users, Footprints, Loader2, GraduationCap, CalendarDays, Newspaper, ClipboardList } from 'lucide-react';
 import { toast } from "sonner";
 import { apiFetch } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
@@ -23,6 +23,8 @@ const SECCIONES = [
   },
   {
     id: 'nosotros', label: 'Sobre Nosotros', icon: Users, campos: [
+      { clave: 'nosotros_header_titulo', label: 'Título de Cabecera', tipo: 'text' },
+      { clave: 'nosotros_header_desc', label: 'Descripción de Cabecera', tipo: 'textarea' },
       { clave: 'nosotros_titulo', label: 'Título Sección', tipo: 'text' },
       { clave: 'nosotros_contenido', label: 'Historia / Contenido', tipo: 'textarea' },
       { clave: 'nosotros_imagen', label: 'Imagen Historia', tipo: 'image' },
@@ -33,11 +35,40 @@ const SECCIONES = [
     ]
   },
   {
+    id: 'docentes', label: 'Docentes', icon: GraduationCap, campos: [
+      { clave: 'docentes_titulo', label: 'Título de la Página', tipo: 'text' },
+      { clave: 'docentes_subtitulo', label: 'Subtítulo / Descripción', tipo: 'textarea' },
+      { clave: 'docentes_imagen', label: 'Imagen de Fondo (Opcional)', tipo: 'image' },
+      { clave: 'docentes_visibilidad', label: 'Docentes visibles en la web', tipo: 'docentes_visibilidad' },
+    ]
+  },
+  {
+    id: 'calendario', label: 'Calendario', icon: CalendarDays, campos: [
+      { clave: 'calendario_titulo', label: 'Título de la Página', tipo: 'text' },
+      { clave: 'calendario_subtitulo', label: 'Subtítulo / Descripción', tipo: 'textarea' },
+    ]
+  },
+  {
+    id: 'noticias', label: 'Noticias', icon: Newspaper, campos: [
+      { clave: 'noticias_titulo', label: 'Título de la Página', tipo: 'text' },
+      { clave: 'noticias_subtitulo', label: 'Subtítulo / Descripción', tipo: 'textarea' },
+    ]
+  },
+  {
+    id: 'admision', label: 'Admisión', icon: ClipboardList, campos: [
+      { clave: 'admision_titulo', label: 'Título de la Página', tipo: 'text' },
+      { clave: 'admision_subtitulo', label: 'Subtítulo / Descripción', tipo: 'textarea' },
+    ]
+  },
+  {
     id: 'footer', label: 'Footer', icon: Footprints, campos: [
       { clave: 'footer_direccion', label: 'Dirección', tipo: 'text' },
       { clave: 'footer_correo', label: 'Email de Contacto', tipo: 'text' },
       { clave: 'footer_telefono', label: 'Teléfono', tipo: 'text' },
       { clave: 'footer_descripcion', label: 'Descripción Breve', tipo: 'textarea' },
+      { clave: 'footer_facebook', label: 'Enlace de Facebook (URL)', tipo: 'text' },
+      { clave: 'footer_youtube', label: 'Enlace de YouTube (URL)', tipo: 'text' },
+      { clave: 'footer_tiktok', label: 'Enlace de TikTok (URL)', tipo: 'text' },
     ]
   }
 ];
@@ -59,20 +90,24 @@ export default function GestionWebPage() {
       toast.error("Espera a que la imagen termine de subirse");
       return;
     }
-    const camposActuales = SECCIONES.find(s => s.id === tab)?.campos || [];
-    const promesas = camposActuales.map(campo => {
-      const valor = getVal(campo.clave);
-      return apiFetch(`/configuracion/${campo.clave}?seccion=${tab}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ valor })
-      });
-    });
+    const camposActuales = (SECCIONES.find(s => s.id === tab)?.campos || [])
+      .filter(campo => campo.tipo !== 'docentes_visibilidad');
     try {
-      await Promise.all(promesas);
+      await Promise.all(camposActuales.map(async (campo) => {
+        const valor = getVal(campo.clave);
+        const res = await apiFetch(`/configuracion/${campo.clave}?seccion=${tab}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ valor })
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || `Error ${res.status}`);
+        }
+      }));
       toast.success("¡Cambios guardados correctamente!");
-    } catch (error) {
-      toast.error("Error al guardar los cambios");
+    } catch (error: any) {
+      toast.error(error.message || "Error al guardar los cambios");
     }
   };
 
@@ -80,62 +115,50 @@ export default function GestionWebPage() {
     <RoleGuard modulo="contenido_web" subModulo="info_general">
     
     
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
-      <HeaderPanel />
-      {/* BARRA SUPERIOR (HEADER) */}
-      <div className="bg-white px-8">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-10">
-            <div className="text-2xl font-black text-[#701C32] tracking-tighter uppercase">
-              Editor Web
-            </div>
-            
-            {/* NAVEGACIÓN ESTILO TABS */}
-            <div className="hidden md:flex bg-slate-100 p-1 rounded-2xl">
-              {SECCIONES.map(s => (
-                <div
-                  key={s.id}
-                  onClick={() => setTab(s.id)}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm cursor-pointer transition-all ${
-                    tab === s.id 
-                    ? 'bg-white text-[#701C32] shadow-sm scale-100' 
-                    : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  <s.icon size={16} /> {s.label}
-                </div>
-              ))}
-            </div>
-          </div>
+    <div className="flex h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
+        <HeaderPanel />
 
-          <div 
+        {/* BARRA SUPERIOR ESTÁNDAR */}
+        <div className="h-16 border-b bg-white flex items-center justify-between px-8 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#093E7A]">language</span>
+            <h2 className="text-xl font-bold text-gray-800">Editor Web</h2>
+          </div>
+          <button
             onClick={handleSave}
-            className="flex items-center gap-2 bg-[#093E7A] text-white px-6 py-3 rounded-xl font-bold cursor-pointer hover:bg-[#072d59] transition-all shadow-lg shadow-blue-900/10 active:scale-95"
+            className="flex items-center gap-2 px-5 py-2 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d59] transition-all active:scale-95"
           >
-            <Save size={18} /> GUARDAR CAMBIOS
-          </div>
+            <Save size={16} /> Guardar Cambios
+          </button>
         </div>
-      </div>
 
-      {/* CUERPO DEL EDITOR */}
-      <div className="flex-1 p-6 md:p-12">
-        <div className="max-w-5xl mx-auto">
-          
-          {/* TÍTULO DE SECCIÓN */}
-          <div className="mb-10 flex items-center gap-3">
-            <div className="text-slate-400 font-medium">Panel de Control</div>
-            <ChevronRight size={16} className="text-slate-300" />
-            <div className="text-[#701C32] font-bold uppercase tracking-widest text-sm">
-              {SECCIONES.find(s => s.id === tab)?.label}
-            </div>
-          </div>
+        {/* TABS DE SECCIÓN */}
+        <div className="bg-white px-8 border-b shrink-0 flex gap-6 overflow-x-auto">
+          {SECCIONES.map(s => (
+            <button
+              key={s.id}
+              onClick={() => setTab(s.id)}
+              className={`py-4 px-2 text-sm font-bold whitespace-nowrap border-b-[3px] transition-all flex items-center gap-2 ${
+                tab === s.id
+                  ? 'text-[#093E7A] border-[#093E7A]'
+                  : 'text-gray-400 border-transparent hover:text-gray-600'
+              }`}
+            >
+              <s.icon size={16} /> {s.label}
+            </button>
+          ))}
+        </div>
 
-          {/* LISTADO DE CAMPOS EN CARDS */}
-          <div className="space-y-8">
+        {/* CUERPO DEL EDITOR */}
+        <div className="flex-1 overflow-y-auto p-8">
+          <div className="max-w-5xl mx-auto space-y-8">
             {SECCIONES.find(s => s.id === tab)?.campos.map(campo => (
-              <div key={campo.clave} className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-8 transition-all hover:shadow-md">
+              <div key={campo.clave} className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 transition-all hover:shadow-md">
                 
-                {campo.tipo === 'enfoques' || campo.tipo === 'niveles' ? (
+                {campo.tipo === 'docentes_visibilidad' ? (
+                  <EditorVisibilidadDocentes />
+                ) : campo.tipo === 'enfoques' || campo.tipo === 'niveles' ? (
                   <EditorListaDinamica
                     tipo={campo.tipo}
                     data={getJsonVal(campo.clave, [])}
@@ -160,6 +183,9 @@ export default function GestionWebPage() {
                           } finally {
                             setUploadingField(null);
                           }
+                        } else {
+                          // Imagen eliminada: limpiamos el campo para que se guarde vacío
+                          updateField(campo.clave, "");
                         }
                       }}
                     />
@@ -195,6 +221,107 @@ export default function GestionWebPage() {
       </div>
     </div>
     </RoleGuard>
+  );
+}
+
+interface DocenteVis {
+  id_docente: number;
+  nombres: string;
+  apellidos: string;
+  especialidad: string | null;
+  url_perfil: string | null;
+  visible_web?: boolean;
+  usuario?: { activo: boolean };
+}
+
+function EditorVisibilidadDocentes() {
+  const [docentes, setDocentes] = useState<DocenteVis[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    apiFetch(`/docentes/`)
+      .then(res => res.json())
+      .then((data) => setDocentes(Array.isArray(data) ? data : []))
+      .catch(() => toast.error("Error al cargar docentes"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const toggleVisible = async (id: number, nuevoValor: boolean) => {
+    setSavingId(id);
+    // Optimista
+    setDocentes(prev => prev.map(d => d.id_docente === id ? { ...d, visible_web: nuevoValor } : d));
+    try {
+      const res = await apiFetch(`/docentes/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visible_web: nuevoValor })
+      });
+      if (!res.ok) throw new Error();
+      toast.success(nuevoValor ? "Docente visible en la web" : "Docente oculto de la web");
+    } catch {
+      // Revertir
+      setDocentes(prev => prev.map(d => d.id_docente === id ? { ...d, visible_web: !nuevoValor } : d));
+      toast.error("No se pudo actualizar la visibilidad");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const visibles = docentes.filter(d => d.visible_web !== false).length;
+
+  return (
+    <div className="space-y-5 border-l-4 border-[#093E7A] pl-6 py-2">
+      <div className="flex justify-between items-center">
+        <label className="text-xs font-black uppercase text-[#701C32] tracking-widest">
+          Docentes visibles en la página pública
+        </label>
+        {!loading && (
+          <span className="text-[10px] bg-[#093E7A]/10 text-[#093E7A] px-3 py-1 rounded-full font-bold">
+            {visibles} de {docentes.length} visibles
+          </span>
+        )}
+      </div>
+      <p className="text-xs text-gray-400">Activa el interruptor de cada docente para mostrarlo u ocultarlo en la sección de Docentes de la web. Los cambios se guardan al instante.</p>
+
+      {loading ? (
+        <div className="flex items-center gap-2 text-gray-400 py-6">
+          <Loader2 className="animate-spin" size={20} /> <span className="text-sm font-bold">Cargando docentes...</span>
+        </div>
+      ) : docentes.length === 0 ? (
+        <p className="text-sm text-gray-400 italic py-6">No hay docentes registrados todavía.</p>
+      ) : (
+        <div className="grid gap-3">
+          {docentes.map(d => {
+            const visible = d.visible_web !== false;
+            const inactivo = d.usuario && d.usuario.activo === false;
+            const foto = d.url_perfil && d.url_perfil.trim() !== ""
+              ? d.url_perfil
+              : `https://ui-avatars.com/api/?name=${encodeURIComponent(d.nombres + ' ' + d.apellidos)}&background=093E7A&color=fff&size=128`;
+            return (
+              <div key={d.id_docente} className="flex items-center gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <img src={foto} alt="" className="w-11 h-11 rounded-full object-cover border border-gray-200" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-800 truncate">{d.nombres} {d.apellidos}</p>
+                  <p className="text-xs text-gray-400 truncate">
+                    {d.especialidad || 'Docente'}{inactivo ? ' · (usuario inactivo)' : ''}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={savingId === d.id_docente}
+                  onClick={() => toggleVisible(d.id_docente, !visible)}
+                  title={visible ? "Ocultar de la web" : "Mostrar en la web"}
+                  className={`relative w-12 h-6 rounded-full transition-colors shrink-0 disabled:opacity-50 ${visible ? 'bg-[#093E7A]' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${visible ? 'translate-x-6' : ''}`}></span>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 

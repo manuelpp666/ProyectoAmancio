@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 import { useReactToPrint } from "react-to-print";
 import { toast } from "sonner";
@@ -35,6 +35,21 @@ interface BloqueTiempo {
   duracion: number;
 }
 
+// Paleta para diferenciar visualmente los cursos en la grilla (mejora #8)
+const COLORES_CURSO = [
+  { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700" },
+  { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700" },
+  { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700" },
+  { bg: "bg-purple-50", border: "border-purple-200", text: "text-purple-700" },
+  { bg: "bg-rose-50", border: "border-rose-200", text: "text-rose-700" },
+  { bg: "bg-cyan-50", border: "border-cyan-200", text: "text-cyan-700" },
+];
+const colorCurso = (nombre: string) => {
+  let h = 0;
+  for (let i = 0; i < nombre.length; i++) h = (h * 31 + nombre.charCodeAt(i)) >>> 0;
+  return COLORES_CURSO[h % COLORES_CURSO.length];
+};
+
 export default function ConstructorHorariosPage() {
   const {
     anioPlanificacion,
@@ -49,7 +64,7 @@ export default function ConstructorHorariosPage() {
   const [materiasDisponibles, setMateriasDisponibles] = useState<MateriaDisponibleExt[]>([]);
   const [horasLectivas, setHorasLectivas] = useState<HoraLectiva[]>([]);
   const [horarioAsignado, setHorarioAsignado] = useState<HorarioAsignadoExt[]>([]);
-  const [bloquesDinamicos, setBloquesDinamicos] = useState<BloqueTiempo[]>([]);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
@@ -125,33 +140,49 @@ export default function ConstructorHorariosPage() {
     documentTitle: `Horario_${anioPlanificacion}_Seccion`,
   });
   
-  // --- 1. GENERADOR DINÁMICO DE BLOQUES SEGÚN NIVEL ---
-  useEffect(() => {
-    if (!seccionActiva || secciones.length === 0) return;
-    const seccion = secciones.find(s => s.id_seccion === seccionActiva);
-    const gradoNombre = seccion?.grado?.nombre?.toLowerCase() || "";
-    
-    const esSecundaria = gradoNombre.includes("secundaria");
-    const esPrimaria = !esSecundaria; 
-
+  // --- 1. GENERADOR DE BLOQUES: 50 min de 7:30 a 19:30 con recesos fijos
+  //        (mañana 10:50-11:10, tarde 17:30-17:50) ---
+  const bloquesDinamicos = useMemo<BloqueTiempo[]>(() => {
+    const toDate = (h: number, m: number) => new Date(2000, 0, 1, h, m);
+    const fmt = (d: Date) => d.toTimeString().substring(0, 5);
+    const recesos = [
+      { inicio: toDate(10, 50), fin: toDate(11, 10) },
+      { inicio: toDate(17, 30), fin: toDate(17, 50) },
+    ];
+    const end = toDate(19, 30);
+    const DURACION = 50;
     const bloques: BloqueTiempo[] = [];
-    let current = new Date(2000, 0, 1, 7, 30); // Inicio fijo: 7:30 AM
-    const endTime = esPrimaria ? new Date(2000, 0, 1, 18, 30) : new Date(2000, 0, 1, 19, 30);
-    const duration = esPrimaria ? 45 : 50;
+    let current = toDate(7, 30);
 
-    while (current < endTime) {
-      const next = new Date(current.getTime() + duration * 60000);
-      if (next > endTime) break;
+    while (current < end) {
+      // ¿Empieza un receso exactamente en este punto?
+      const receso = recesos.find(r => r.inicio.getTime() === current.getTime());
+      if (receso) {
+        bloques.push({
+          hora_inicio: fmt(receso.inicio),
+          hora_fin: fmt(receso.fin),
+          tipo: "receso",
+          duracion: (receso.fin.getTime() - receso.inicio.getTime()) / 60000,
+        });
+        current = receso.fin;
+        continue;
+      }
+      // Bloque de clase de 50 min, recortado si cruza un receso o el fin de jornada
+      let next = new Date(current.getTime() + DURACION * 60000);
+      const cruza = recesos.find(r => r.inicio.getTime() > current.getTime() && r.inicio.getTime() < next.getTime());
+      if (cruza) next = cruza.inicio;
+      if (next.getTime() > end.getTime()) next = end;
+      if (next.getTime() <= current.getTime()) break;
       bloques.push({
-        hora_inicio: current.toTimeString().substring(0, 5),
-        hora_fin: next.toTimeString().substring(0, 5),
+        hora_inicio: fmt(current),
+        hora_fin: fmt(next),
         tipo: "clase",
-        duracion: duration
+        duracion: (next.getTime() - current.getTime()) / 60000,
       });
       current = next;
     }
-    setBloquesDinamicos(bloques);
-  }, [seccionActiva, secciones]);
+    return bloques;
+  }, []);
 
   // --- 2. CARGA INICIAL (Secciones y Horas) ---
   useEffect(() => {
@@ -262,7 +293,15 @@ export default function ConstructorHorariosPage() {
     }
   };
 
-  if (loading) return <div className="p-10 text-center font-bold">Cargando Sistema de Horarios...</div>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-screen text-gray-400 bg-[#F8FAFC]">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#093E7A] mb-4"></div>
+      <p className="font-bold">Cargando sistema de horarios...</p>
+    </div>
+  );
+
+  const seccionActivaObj = secciones.find(s => s.id_seccion === seccionActiva);
+  const materiasCompletas = materiasDisponibles.filter(m => m.minutos_asignados >= m.minutos_semanales).length;
 
   return (
     
@@ -309,7 +348,7 @@ export default function ConstructorHorariosPage() {
           <div className="h-16 border-b bg-white flex items-center justify-between px-8 shrink-0 no-print">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[#093E7A]">calendar_month</span>
-              <h2 className="text-xl font-bold text-gray-800">Constructor 2026</h2>
+              <h2 className="text-xl font-bold text-gray-800">Constructor de Horarios{anioPlanificacion ? ` ${anioPlanificacion}` : ""}</h2>
               <div className="flex items-center gap-2 border-l pl-6">
                 <AnioSelector
                   value={anioPlanificacion}
@@ -335,12 +374,15 @@ export default function ConstructorHorariosPage() {
           </div>
 
           <div className="bg-white px-8 border-b shrink-0 flex gap-6 overflow-x-auto no-print">
-            {secciones?.map((sec) => (
+            {secciones.length === 0 ? (
+              <span className="py-4 text-sm font-medium text-gray-400 italic">
+                No hay secciones registradas para este año.
+              </span>
+            ) : secciones.map((sec) => (
               <button
                 key={sec.id_seccion}
-                // CORRECCIÓN TYPESCRIPT: as number
                 onClick={() => setSeccionActiva(sec.id_seccion as number)}
-                className={`py-4 px-2 text-sm font-bold whitespace-nowrap transition-all ${seccionActiva === sec.id_seccion ? "active-tab text-[#093E7A]" : "text-gray-400 border-b-[3px] border-transparent"
+                className={`py-4 px-2 text-sm font-bold whitespace-nowrap border-b-[3px] transition-all ${seccionActiva === sec.id_seccion ? "text-[#093E7A] border-[#093E7A]" : "text-gray-400 border-transparent hover:text-gray-600"
                   }`}
               >
                 {sec.grado?.nombre} - {sec.nombre}
@@ -351,10 +393,24 @@ export default function ConstructorHorariosPage() {
           <div className="flex-1 flex overflow-hidden">
             <div className="w-72 bg-white border-r flex flex-col shrink-0 no-print">
               <div className="p-4 border-b bg-gray-50/50">
-                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Carga Académica Disponible</h3>
+                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Carga Académica Disponible</h3>
+                {materiasDisponibles.length > 0 && (
+                  <div className="flex items-center justify-between text-[11px] font-bold">
+                    <span className="text-gray-500">Progreso de la sección</span>
+                    <span className={`px-2 py-0.5 rounded-full ${materiasCompletas === materiasDisponibles.length ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
+                      {materiasCompletas} / {materiasDisponibles.length} completas
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {materiasDisponibles.length === 0 && (
+                  <div className="text-center text-gray-400 py-10 px-2">
+                    <span className="material-symbols-outlined text-4xl mb-2">menu_book</span>
+                    <p className="text-xs font-medium">Esta sección no tiene cursos asignados. Asigna docentes en la pestaña "Asignar Docente".</p>
+                  </div>
+                )}
                 {materiasDisponibles.map((mat) => {
                   const p = Math.min((mat.minutos_asignados / mat.minutos_semanales) * 100, 100) || 0;
                   const lleno = p === 100;
@@ -393,7 +449,7 @@ export default function ConstructorHorariosPage() {
                 <div className="hidden print:block text-center mb-8">
                   <h1 className="text-3xl font-black text-[#093E7A]">HORARIO ESCOLAR {anioPlanificacion}</h1>
                   <p className="text-xl font-bold text-gray-500 uppercase tracking-widest">
-                    Sección: {secciones.find(s => s.id_seccion === seccionActiva)?.grado?.nombre} - {secciones.find(s => s.id_seccion === seccionActiva)?.nombre}
+                    Sección: {seccionActivaObj?.grado?.nombre} - {seccionActivaObj?.nombre}
                   </p>
                   <div className="mt-4 border-b-2 border-[#093E7A] w-1/4 mx-auto"></div>
                 </div>
@@ -414,13 +470,21 @@ export default function ConstructorHorariosPage() {
 
                       {diasSemana.map((dia) => {
                         const asignacion = horarioAsignado.find(h => h.dia_semana === dia && h.hora_inicio.substring(0,5) === bloque.hora_inicio);
+                        const celdaKey = `${dia}-${bloque.hora_inicio}`;
+                        const esDragOver = dragOverKey === celdaKey && bloque.tipo !== 'receso' && !asignacion;
+                        const color = asignacion ? colorCurso(asignacion.curso_nombre) : null;
 
                         return (
                           <div
-                            key={`${dia}-${bloque.hora_inicio}`}
-                            className={`time-slot p-2 transition-colors ${bloque.tipo === 'receso' ? 'bg-slate-50' : 'hover:bg-blue-50/30'}`}
-                            onDragOver={(e) => e.preventDefault()}
+                            key={celdaKey}
+                            className={`time-slot group p-2 transition-colors ${bloque.tipo === 'receso' ? 'bg-slate-50' : esDragOver ? 'bg-blue-100 ring-2 ring-inset ring-[#093E7A]' : 'hover:bg-blue-50/30'}`}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              if (bloque.tipo !== 'receso' && !asignacion) setDragOverKey(celdaKey);
+                            }}
+                            onDragLeave={() => setDragOverKey(prev => (prev === celdaKey ? null : prev))}
                             onDrop={(e) => {
+                              setDragOverKey(null);
                               const idCarga = e.dataTransfer.getData("id_carga");
                               if (idCarga && bloque.tipo !== 'receso') {
                                 handleDrop(idCarga, bloque.hora_inicio, bloque.hora_fin, dia, bloque.duracion);
@@ -431,20 +495,25 @@ export default function ConstructorHorariosPage() {
                               <div className="h-full flex items-center justify-center">
                                 <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest rotate-[-10deg]">Receso</span>
                               </div>
-                            ) : asignacion ? (
-                              <div className="group h-full w-full bg-[#F0F4F8] border border-[#D1DCE8] rounded-lg p-2 flex flex-col justify-between relative animate-in fade-in zoom-in duration-300">
+                            ) : asignacion && color ? (
+                              <div className={`group h-full w-full ${color.bg} border ${color.border} rounded-lg p-2 flex flex-col justify-between relative animate-in fade-in zoom-in duration-300`}>
                                 <div>
-                                  <p className="text-[10px] font-black text-[#093E7A] uppercase leading-tight">{asignacion.curso_nombre}</p>
-                                  <p className="text-[9px] text-[#093E7A]/70 mt-1">{asignacion.docente_nombre}</p>
+                                  <p className={`text-[10px] font-black ${color.text} uppercase leading-tight`}>{asignacion.curso_nombre}</p>
+                                  <p className={`text-[9px] ${color.text} opacity-70 mt-1`}>{asignacion.docente_nombre}</p>
                                 </div>
                                 <button
                                   onClick={() => eliminarAsignacion(asignacion.id_horario)}
-                                  className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-red-500 size-4 flex items-center justify-center no-print"
+                                  title="Quitar del horario"
+                                  className="absolute top-1 right-1 text-gray-400 hover:text-red-500 hover:bg-white/70 rounded size-5 flex items-center justify-center transition-colors no-print"
                                 >
-                                  <span className="material-symbols-outlined text-xs">close</span>
+                                  <span className="material-symbols-outlined text-[14px]">close</span>
                                 </button>
                               </div>
-                            ) : null}
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                <span className="material-symbols-outlined text-gray-200 text-base">add</span>
+                              </div>
+                            )}
                           </div>
                         );
                       })}

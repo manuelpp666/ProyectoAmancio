@@ -7,10 +7,14 @@ import { getYouTubeID } from "@/src/components/utils/youtube";
 import Link from "next/link";
 import { Search, ArrowRight, PlayCircle } from "lucide-react";
 import ChatWidget from "@/src/components/utils/ChatbotWidget";
+import { useConfiguracion } from "@/src/hooks/useConfiguracion";
 
 export default function Home() {
   const [noticias, setNoticias] = useState<NoticiaResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [busqueda, setBusqueda] = useState("");
+  const { data: config } = useConfiguracion('noticias');
+  const getVal = (clave: string, defecto: string) => config.find(i => i.clave === clave)?.valor || defecto;
 
   useEffect(() => {
     const fetchNoticias = async () => {
@@ -36,25 +40,41 @@ export default function Home() {
     return noticia.imagen_portada_url || "/placeholder-news.jpg";
   };
 
+  const noticiasFiltradas = noticias.filter(n =>
+    n.titulo.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
   return (
     <div className="bg-white text-slate-800">
       <Header />
 
+      {/* Banner con degradado de marca */}
+      <section className="relative py-24 overflow-hidden bg-gradient-to-br from-[#701C32] via-[#701C32] to-[#093E7A]">
+        <div className="absolute -top-16 -right-16 w-80 h-80 bg-white/10 rounded-full blur-3xl z-0"></div>
+        <div className="absolute -bottom-24 -left-10 w-96 h-96 bg-[#093E7A]/40 rounded-full blur-3xl z-0"></div>
+        <div className="max-w-3xl mx-auto px-4 text-center relative z-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/15 backdrop-blur-md border border-white/25 text-white font-bold text-xs uppercase tracking-widest rounded-full mb-5">
+            <span className="material-symbols-outlined text-base">campaign</span>
+            Actualidad
+          </span>
+          <h1 className="text-5xl font-black text-white mb-4 drop-shadow-lg">{getVal('noticias_titulo', 'Noticias Amancistas')}</h1>
+          <div className="w-24 h-1.5 bg-white/80 mx-auto rounded-full mb-5"></div>
+          <p className="text-white/90 max-w-2xl mx-auto mb-8">{getVal('noticias_subtitulo', 'Mantente al día con los comunicados, logros y actividades de nuestra comunidad.')}</p>
+          <div className="max-w-2xl mx-auto relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#093E7A] transition-colors" size={20} />
+            <input
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="w-full pl-12 pr-4 py-4 rounded-full border border-white/20 bg-white focus:ring-2 focus:ring-white/40 focus:border-transparent outline-none transition-all shadow-lg"
+              placeholder="Buscar noticias..."
+              type="text"
+            />
+          </div>
+        </div>
+      </section>
+
       <main className="py-16 px-4 bg-white min-h-screen">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-5xl font-black text-[#701C32] mb-6">Noticias Amancistas</h1>
-            <div className="w-24 h-1.5 bg-[#093E7A] mx-auto rounded-full mb-10"></div>
-
-            <div className="max-w-2xl mx-auto relative group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#093E7A] transition-colors" size={20} />
-              <input
-                className="w-full pl-12 pr-4 py-4 rounded-full border border-slate-200 focus:ring-2 focus:ring-[#093E7A] focus:border-transparent outline-none transition-all shadow-sm"
-                placeholder="Buscar noticias..."
-                type="text"
-              />
-            </div>
-          </div>
 
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -64,7 +84,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-              {noticias.map((noticia) => (
+              {noticiasFiltradas.map((noticia) => (
                 <article
                   key={noticia.id_noticia}
                   className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all border border-slate-100 flex flex-col"
@@ -113,6 +133,12 @@ export default function Home() {
                   </div>
                 </article>
               ))}
+              {noticiasFiltradas.length === 0 && (
+                <div className="col-span-full text-center py-20 text-slate-400">
+                  <span className="material-symbols-outlined text-5xl mb-3">search_off</span>
+                  <p className="font-medium">No se encontraron noticias{busqueda ? ` para "${busqueda}"` : ''}.</p>
+                </div>
+              )}
             </div>
           )}
         </div>

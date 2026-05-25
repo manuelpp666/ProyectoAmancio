@@ -19,9 +19,12 @@ import Header from "@/src/components/Pagina-Web/Header";
 import Footer from "@/src/components/Pagina-Web/Footer";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useConfiguracion } from "@/src/hooks/useConfiguracion";
 
 export default function AdmisionPage() {
   const router = useRouter();
+  const { data: config } = useConfiguracion('admision');
+  const getVal = (clave: string, defecto: string) => config.find(i => i.clave === clave)?.valor || defecto;
   const [loading, setLoading] = useState(false);
   const [grados, setGrados] = useState<Grado[]>([]);
   const [formData, setFormData] = useState({
@@ -131,8 +134,8 @@ export default function AdmisionPage() {
           <Link href="/" className="text-white/80 hover:text-white flex items-center justify-center mb-6 transition-colors">
             <ArrowLeft size={20} className="mr-2" /> Volver al inicio
           </Link>
-          <h1 className="text-4xl md:text-5xl font-black text-white mb-4">Proceso de Admisión</h1>
-          <p className="text-[#FFF1E3] text-lg font-light">Completa los datos para iniciar la postulación de tu menor hijo(a).</p>
+          <h1 className="text-4xl md:text-5xl font-black text-white mb-4">{getVal('admision_titulo', 'Proceso de Admisión')}</h1>
+          <p className="text-[#FFF1E3] text-lg font-light">{getVal('admision_subtitulo', 'Completa los datos para iniciar la postulación de tu menor hijo(a).')}</p>
         </div>
       </section>
 

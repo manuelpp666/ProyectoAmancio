@@ -49,7 +49,12 @@ export default function GestionContenidoPage() {
 
   };
 
-  if (loading) return <p className="p-8">Cargando noticias...</p>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-screen text-gray-400 bg-[#F8FAFC]">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#093E7A] mb-4"></div>
+      <p className="font-bold">Cargando noticias...</p>
+    </div>
+  );
 
   return (
     
@@ -63,36 +68,36 @@ export default function GestionContenidoPage() {
           {/* Header/Tabs Section */}
           <HeaderPanel />
 
+          {/* BARRA SUPERIOR ESTÁNDAR */}
+          <div className="h-16 border-b bg-white flex items-center justify-between px-8 shrink-0 gap-4">
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="material-symbols-outlined text-[#093E7A]">newspaper</span>
+              <h2 className="text-xl font-bold text-gray-800">Gestión de Noticias</h2>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="relative w-64 group">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#093E7A] transition-colors">
+                  <Search size={16} strokeWidth={2.5} />
+                </div>
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar noticia..."
+                  className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A] transition-all text-sm"
+                />
+              </div>
+              <Link href="/campus/panel-control/pagina-web/noticias-web/nueva-noticia">
+                <button className="flex items-center gap-2 px-5 py-2 bg-[#093E7A] text-white rounded-lg hover:bg-[#062d59] transition-all font-bold text-sm shadow-sm active:scale-95">
+                  <Plus size={18} strokeWidth={3} />
+                  Nueva Noticia
+                </button>
+              </Link>
+            </div>
+          </div>
+
           {/* Content Container */}
           <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
-
-            {/* Page Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-              <div>
-                <h3 className="text-3xl font-black text-gray-900 tracking-tight">Artículos y Multimedia</h3>
-                <p className="text-sm text-gray-500 mt-1 font-medium">Administra las noticias, comunicados y videos del portal principal.</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="relative w-full sm:w-80 group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#093E7A] transition-colors">
-                    <Search size={18} strokeWidth={2.5} />
-                  </div>
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Buscar por título o contenido..."
-                    className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#093E7A]/5 focus:border-[#093E7A] transition-all font-medium text-sm shadow-sm"
-                  />
-                </div>
-                <Link href="/campus/panel-control/pagina-web/noticias-web/nueva-noticia">
-                  <button className="flex items-center gap-2 px-5 py-2.5 bg-[#093E7A] text-white rounded-xl hover:bg-[#062d59] transition-all font-black text-sm shadow-lg shadow-[#093E7A]/20 active:scale-95">
-                    <Plus size={20} strokeWidth={3} />
-                    NUEVA NOTICIA
-                  </button>
-                </Link>
-              </div>
-            </div>
 
             {/* STATS CARDS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

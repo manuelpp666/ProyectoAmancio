@@ -38,6 +38,7 @@ interface PermissionCardProps {
   label: string;
   description: string;
   statusText: string;
+  route: string;
 }
 
 interface StatConfigItem {
@@ -49,6 +50,7 @@ interface StatConfigItem {
   colorClass: string;
   bgClass: string;
   permissionPath: string;
+  route: string;
 }
 
 // 2. Obtener fecha formateada (Ej: "Lunes, 24 de Mayo")
@@ -101,7 +103,8 @@ const STATS_CONFIG: StatConfigItem[] = [
     icon: Users,
     colorClass: 'text-blue-600',
     bgClass: 'bg-blue-50',
-    permissionPath: 'gestion_estudiantes'
+    permissionPath: 'gestion_estudiantes',
+    route: '/campus/panel-control/gestion-estudiantes'
   },
   {
     id: 'gestion_personal',
@@ -111,7 +114,8 @@ const STATS_CONFIG: StatConfigItem[] = [
     icon: Briefcase,
     colorClass: 'text-purple-600',
     bgClass: 'bg-purple-50',
-    permissionPath: 'gestion_personal'
+    permissionPath: 'gestion_personal',
+    route: '/campus/panel-control/gestion-personal'
   },
   {
     id: 'tramites_finanzas',
@@ -121,7 +125,8 @@ const STATS_CONFIG: StatConfigItem[] = [
     icon: FileText,
     colorClass: 'text-emerald-600',
     bgClass: 'bg-emerald-50',
-    permissionPath: 'tramites_finanzas'
+    permissionPath: 'tramites_finanzas',
+    route: '/campus/panel-control/tramites/configuracion'
   },
   {
     id: 'academico',
@@ -131,7 +136,8 @@ const STATS_CONFIG: StatConfigItem[] = [
     icon: BookOpen,
     colorClass: 'text-amber-600',
     bgClass: 'bg-amber-50',
-    permissionPath: 'academico'
+    permissionPath: 'academico',
+    route: '/campus/panel-control/gestion-academica'
   },
   {
     id: 'contenido_web',
@@ -141,7 +147,8 @@ const STATS_CONFIG: StatConfigItem[] = [
     icon: Globe,
     colorClass: 'text-indigo-600',
     bgClass: 'bg-indigo-50',
-    permissionPath: 'contenido_web'
+    permissionPath: 'contenido_web',
+    route: '/campus/panel-control/pagina-web'
   },
   {
     id: 'chatbot',
@@ -151,41 +158,54 @@ const STATS_CONFIG: StatConfigItem[] = [
     icon: Bot,
     colorClass: 'text-rose-600',
     bgClass: 'bg-rose-50',
-    permissionPath: 'chatbot'
+    permissionPath: 'chatbot',
+    route: '/campus/panel-control/chatbot'
   }
 ];
 
 export default function DashboardPage() {
   const { role, username, permisos, loading } = useUser();
-  const [postulantesCount, setPostulantesCount] = useState(0);
-
-  // Estado simulado para los valores de las tarjetas (idealmente lo llenas con un fetch)
-  const [metrics, setMetrics] = useState({
-    estudiantes: "1,250",
-    docentes: "84",
-    noticias: "45"
-  });
+  const [adminNombre, setAdminNombre] = useState("");
+  const [metrics, setMetrics] = useState({ postulantes: 0, docentes: 0, noticias: 0 });
+  const [loadingMetrics, setLoadingMetrics] = useState(true);
+  const postulantesCount = metrics.postulantes;
 
   useEffect(() => {
-    if (role?.toUpperCase() === "ADMIN") {
-      const fetchPostulantes = async () => {
-        try {
-          const res = await apiFetch("/alumnos/solicitudes-pendientes");
-          if (res.ok) {
-            const data = await res.json();
-            setPostulantesCount(data.length);
-          }
-        } catch (error) {
-          console.error("Error cargando conteo de postulantes:", error);
-        }
-      };
+    if (role?.toUpperCase() !== "ADMIN") return;
 
-      // Solo llamar a la API si tiene el permiso de gestión de estudiantes
-      if (hasPermission(permisos, "gestion_estudiantes")) {
-        fetchPostulantes();
-      }
+    // Nombre del administrador para el saludo
+    if (username) {
+      apiFetch(`/perfil/mi-perfil/${username}`)
+        .then(res => (res.ok ? res.json() : null))
+        .then(data => {
+          if (data?.datos) {
+            setAdminNombre(`${data.datos.nombres ?? ""} ${data.datos.apellidos ?? ""}`.trim());
+          }
+        })
+        .catch(() => {});
     }
-  }, [role, permisos]);
+
+    // Métricas en vivo del sistema
+    const fetchMetrics = async () => {
+      setLoadingMetrics(true);
+      try {
+        const [resPost, resDoc, resNot] = await Promise.all([
+          hasPermission(permisos, "gestion_estudiantes") ? apiFetch("/alumnos/solicitudes-pendientes") : Promise.resolve(null),
+          apiFetch("/docentes/"),
+          apiFetch("/web/noticias/"),
+        ]);
+        const postulantes = resPost && resPost.ok ? (await resPost.json()).length : 0;
+        const docentes = resDoc.ok ? (await resDoc.json()).length : 0;
+        const noticias = resNot.ok ? (await resNot.json()).length : 0;
+        setMetrics({ postulantes, docentes, noticias });
+      } catch (error) {
+        console.error("Error cargando métricas:", error);
+      } finally {
+        setLoadingMetrics(false);
+      }
+    };
+    fetchMetrics();
+  }, [role, username, permisos]);
 
   if (loading) {
     return (
@@ -197,19 +217,27 @@ export default function DashboardPage() {
 
   if (role?.toUpperCase() !== "ADMIN") return null;
 
+  // Tarjetas de métricas en vivo (según permisos)
+  const metricCards = [
+    { label: "Postulantes pendientes", value: metrics.postulantes, icon: UserPlus, color: "text-orange-600", bg: "bg-orange-50", show: hasPermission(permisos, "gestion_estudiantes") },
+    { label: "Docentes registrados", value: metrics.docentes, icon: Briefcase, color: "text-purple-600", bg: "bg-purple-50", show: hasPermission(permisos, "gestion_personal") },
+    { label: "Noticias publicadas", value: metrics.noticias, icon: Newspaper, color: "text-indigo-600", bg: "bg-indigo-50", show: hasPermission(permisos, "contenido_web") },
+  ].filter(m => m.show);
+
   return (
     <div className="bg-[#F8FAFC] text-slate-800 min-h-screen">
       <div className="w-full h-full space-y-6 pb-8">
         <div className="p-4 md:p-8 space-y-8 w-full">
 
-          {/* 1. WELCOME BANNER DINÁMICO */}
+          {/* 1. SALUDO CON NOMBRE Y FECHA */}
           <div className="relative overflow-hidden bg-gradient-to-r from-[#701C32] to-[#922a44] rounded-2xl p-8 shadow-lg shadow-[#701C32]/10">
             <div className="relative z-10">
-              <h3 className="text-white text-2xl font-black italic">
-                {getGreeting()}
+              <p className="text-white/70 text-sm font-bold uppercase tracking-widest mb-1">{getFormattedDate()}</p>
+              <h3 className="text-white text-3xl font-black">
+                {getGreeting()}, {adminNombre || username || "Administrador"} 👋
               </h3>
-              <p className="text-white/80 mt-1 max-w-md">
-                {getFormattedDate()}. Revisa las actualizaciones del sistema.
+              <p className="text-white/80 mt-2 max-w-md">
+                Bienvenido a tu panel de administración. Aquí tienes un resumen del sistema.
               </p>
             </div>
             <div className="absolute right-[-20px] bottom-[-20px] opacity-10">
@@ -217,20 +245,43 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 2. STATS GRID DINÁMICO BASADO EN PERMISOS */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {STATS_CONFIG
-              .filter(stat => hasPermission(permisos, stat.permissionPath))
-              .map((stat) => (
-                <PermissionCard
-                  key={stat.id}
-                  icon={React.createElement(stat.icon, { className: stat.colorClass })}
-                  bg={stat.bgClass}
-                  label={stat.label}
-                  description={stat.description}
-                  statusText={stat.statusText}
-                />
+          {/* 2. MÉTRICAS EN VIVO */}
+          {metricCards.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {metricCards.map((m) => (
+                <div key={m.label} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-5">
+                  <div className={`p-4 ${m.bg} ${m.color} rounded-2xl shrink-0`}>
+                    {React.createElement(m.icon, { className: "w-7 h-7" })}
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">{m.label}</p>
+                    <h4 className="text-3xl font-black text-gray-900 mt-1">
+                      {loadingMetrics ? <span className="text-gray-300">…</span> : m.value}
+                    </h4>
+                  </div>
+                </div>
               ))}
+            </div>
+          )}
+
+          {/* 3. MÓDULOS DEL SISTEMA (accesos rápidos) */}
+          <div>
+            <h3 className="text-lg font-black text-gray-900 mb-4">Módulos del sistema</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {STATS_CONFIG
+                .filter(stat => hasPermission(permisos, stat.permissionPath))
+                .map((stat) => (
+                  <PermissionCard
+                    key={stat.id}
+                    icon={React.createElement(stat.icon, { className: stat.colorClass })}
+                    bg={stat.bgClass}
+                    label={stat.label}
+                    description={stat.description}
+                    statusText={stat.statusText}
+                    route={stat.route}
+                  />
+                ))}
+            </div>
           </div>
 
           {/* Banner de Solicitudes (Solo si tiene permiso de estudiantes) */}
@@ -270,27 +321,32 @@ export default function DashboardPage() {
   );
 }
 
-// Componente auxiliar mantenido igual, pero recibe el icono ya renderizado
-function PermissionCard({ icon, bg, label, description, statusText }: PermissionCardProps) {
+// Tarjeta de módulo: ahora es un acceso directo (Link) a su sección
+function PermissionCard({ icon, bg, label, description, statusText, route }: PermissionCardProps) {
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl hover:border-[#09397c]/20 transition-all duration-300 flex flex-col justify-between h-full group">
-      <div>
-        <div className="flex items-start justify-between mb-4">
-          <div className={`p-3 ${bg} rounded-xl group-hover:scale-110 transition-transform`}>
-            {/* Agregamos una aserción de tipo para acceder a props.className de forma segura */}
-            {React.cloneElement(icon as React.ReactElement<any>, { 
-              className: `w-6 h-6 ${(icon.props as any).className || ""}` 
-            })}
+    <Link href={route} className="block group h-full">
+      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl hover:border-[#09397c]/20 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-full">
+        <div>
+          <div className="flex items-start justify-between mb-4">
+            <div className={`p-3 ${bg} rounded-xl group-hover:scale-110 transition-transform`}>
+              {/* Agregamos una aserción de tipo para acceder a props.className de forma segura */}
+              {React.cloneElement(icon as React.ReactElement<any>, {
+                className: `w-6 h-6 ${(icon.props as any).className || ""}`
+              })}
+            </div>
+            <span className="flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1.5 rounded-md uppercase tracking-wider">
+              <ShieldCheck className="w-3 h-3" />
+              {statusText}
+            </span>
           </div>
-          <span className="flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1.5 rounded-md uppercase tracking-wider">
-            <ShieldCheck className="w-3 h-3" />
-            {statusText}
-          </span>
+
+          <h4 className="text-gray-900 text-base font-black tracking-tight mb-1">{label}</h4>
+          <p className="text-gray-500 text-xs font-medium leading-relaxed">{description}</p>
         </div>
-        
-        <h4 className="text-gray-900 text-base font-black tracking-tight mb-1">{label}</h4>
-        <p className="text-gray-500 text-xs font-medium leading-relaxed">{description}</p>
+        <div className="mt-4 flex items-center gap-1 text-[#09397c] text-xs font-black opacity-0 group-hover:opacity-100 transition-opacity">
+          Entrar <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import HeaderPanel from "@/src/components/Campus/PanelControl/Header";
 import { Plus, ChevronRight, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -26,6 +26,16 @@ export default function CalendarioPage() {
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState("");
+
+  const leyenda = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const ev of eventos) {
+      if (ev.tipo_evento && !seen.has(ev.tipo_evento)) {
+        seen.set(ev.tipo_evento, ev.color || '#093E7A');
+      }
+    }
+    return Array.from(seen.entries()).map(([nombre, color]) => ({ nombre, color }));
+  }, [eventos]);
 
   // Modales
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -84,44 +94,42 @@ export default function CalendarioPage() {
       <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
         <HeaderPanel />
 
+        {/* BARRA SUPERIOR ESTÁNDAR */}
+        <div className="h-16 border-b bg-white flex items-center justify-between px-8 shrink-0 gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#093E7A]">calendar_month</span>
+              <h2 className="text-xl font-bold text-gray-800">Calendario Anual</h2>
+            </div>
+            <div className="h-6 w-px bg-gray-200 mx-2"></div>
+            <AnioSelector
+              value={anioSeleccionado}
+              onChange={setAnioSeleccionado}
+              anios={anios}
+              loading={loadingAnios}
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              placeholder="Buscar evento..."
+              className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#093E7A]/20 outline-none"
+              onChange={(e) => setFiltro(e.target.value)}
+            />
+            <button
+              onClick={() => { setEventoActivo(null); setIsModalOpen(true); }}
+              className="flex items-center gap-2 px-5 py-2 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-colors"
+            >
+              <Plus size={18} /> Agregar Evento
+            </button>
+          </div>
+        </div>
+
         <div className="flex-1 overflow-y-auto p-8 space-y-12 custom-scrollbar">
           <section className="max-w-6xl mx-auto w-full">
 
-            {/* HEADER DE SECCIÓN CON SELECTOR */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
-              <div>
-                <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">
-                  Gestión de Eventos
-                </h3>
-                <div className="flex items-center gap-3 mt-2">
-
-                  <AnioSelector
-                    value={anioSeleccionado}
-                    onChange={setAnioSeleccionado}
-                    anios={anios}
-                    loading={loadingAnios}
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  placeholder="Buscar evento..."
-                  className="px-4 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-[#093E7A]/20 outline-none"
-                  onChange={(e) => setFiltro(e.target.value)}
-                />
-                <button
-                  onClick={() => { setEventoActivo(null); setIsModalOpen(true); }}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-[#093E7A] text-white rounded-xl hover:bg-[#072d5a] transition-colors"
-                >
-                  <Plus size={18} /> Agregar Evento
-                </button>
-              </div>
-            </div>
-
             {/* TABLA DE EVENTOS */}
-            <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -161,6 +169,18 @@ export default function CalendarioPage() {
               </div>
 
             </div>
+
+            {leyenda.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-5 items-center bg-[#FFF1E3]/40 p-5 rounded-2xl border border-[#FFF1E3]">
+                <span className="text-xs font-black text-[#701C32] uppercase tracking-widest">Leyenda:</span>
+                {leyenda.map(item => (
+                  <div key={item.nombre} className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: item.color }}></span>
+                    <span className="text-xs font-bold text-gray-700">{item.nombre}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         </div>
       </div>

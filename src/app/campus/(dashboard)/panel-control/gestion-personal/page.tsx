@@ -28,6 +28,7 @@ export default function GestionPersonalPage() {
     gestion_personal: false,
     tramites_finanzas: false,
     chatbot: false,
+    mensajeria: false,
     academico: { estructura: false, horarios: false, docentes: false, estudiantes: false, cursos: false },
     contenido_web: { info_general: false, noticias: false, calendario: false }
   };
@@ -200,16 +201,15 @@ export default function GestionPersonalPage() {
               <tr>
                 <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase">Personal</th>
                 <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase">DNI / Usuario</th>
-                <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase">Sueldo (S/)</th>
                 <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase text-center">Estado</th>
                 <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
-                <tr><td colSpan={5} className="py-10 text-center text-gray-400">Cargando datos...</td></tr>
+                <tr><td colSpan={4} className="py-10 text-center text-gray-400">Cargando datos...</td></tr>
               ) : personal.length === 0 ? (
-                <tr><td colSpan={5} className="py-10 text-center text-gray-400">No hay personal registrado en esta área.</td></tr>
+                <tr><td colSpan={4} className="py-10 text-center text-gray-400">No hay personal registrado en esta área.</td></tr>
               ) : (
                 personal.map(p => (
                   <tr key={p.id} className={`hover:bg-gray-50 transition-colors ${!p.usuario.activo ? 'opacity-60 bg-gray-50' : ''}`}>
@@ -218,7 +218,6 @@ export default function GestionPersonalPage() {
                       <div className="text-xs text-gray-500">{p.email || 'Sin correo'} | {p.telefono || 'Sin teléfono'}</div>
                     </td>
                     <td className="px-6 py-4 text-sm font-medium text-gray-600">{p.dni}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-[#093E7A]">S/ {Number(p.sueldo).toFixed(2)}</td>
                     <td className="px-6 py-4 text-center">
                       <span className={`px-3 py-1 text-xs font-bold rounded-full ${p.usuario.activo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                         {p.usuario.activo ? 'ACTIVO' : 'DADO DE BAJA'}
@@ -238,7 +237,7 @@ export default function GestionPersonalPage() {
                       {activeTab === "admin" && (
                         <button
                           onClick={() => openPermisos(p)}
-                          className="p-2 text-amber-500 hover:bg-amber-50 rounded-lg transition-colors"
+                          className="p-2 text-[#701C32] hover:bg-[#701C32]/10 rounded-lg transition-colors"
                           title="Gestionar Permisos"
                         >
                           <ShieldCheck size={18} />
@@ -321,15 +320,15 @@ export default function GestionPersonalPage() {
       {isPermisosModalOpen && selectedUser && (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="bg-amber-500 px-6 py-4 text-white flex justify-between items-center shrink-0">
+            <div className="bg-[#701C32] px-6 py-4 text-white flex justify-between items-center shrink-0">
               <div className="flex items-center gap-3">
                 <ShieldCheck size={24} />
                 <div>
                   <h3 className="font-bold text-lg">Gestionar Privilegios</h3>
-                  <p className="text-xs text-amber-100 font-medium">Configurando a: {selectedUser.nombres} {selectedUser.apellidos}</p>
+                  <p className="text-xs text-[#FFF1E3]/80 font-medium">Configurando a: {selectedUser.nombres} {selectedUser.apellidos}</p>
                 </div>
               </div>
-              <button onClick={() => setIsPermisosModalOpen(false)} className="hover:text-amber-200"><X size={24} /></button>
+              <button onClick={() => setIsPermisosModalOpen(false)} className="hover:text-[#FFF1E3]"><X size={24} /></button>
             </div>
 
             <div className="p-8 overflow-y-auto bg-gray-50/50">
@@ -364,6 +363,11 @@ export default function GestionPersonalPage() {
                     label="Gestionar Chatbot AI"
                     checked={selectedUser.permisos?.chatbot || false}
                     onChange={(val) => setSelectedUser({ ...selectedUser, permisos: { ...selectedUser.permisos, chatbot: val } })}
+                  />
+                  <PermissionToggle
+                    label="Mensajería Interna"
+                    checked={selectedUser.permisos?.mensajeria || false}
+                    onChange={(val) => setSelectedUser({ ...selectedUser, permisos: { ...selectedUser.permisos, mensajeria: val } })}
                   />
                 </div>
 
@@ -442,7 +446,7 @@ export default function GestionPersonalPage() {
                 </button>
                 <button
                   onClick={() => handleSavePermisos(selectedUser.permisos)}
-                  className="flex-1 py-3 bg-amber-500 text-white font-bold rounded-xl shadow-lg shadow-amber-200 hover:bg-amber-600 transition-all"
+                  className="flex-1 py-3 bg-[#701C32] text-white font-bold rounded-xl shadow-lg shadow-[#701C32]/30 hover:bg-[#5a1628] transition-all"
                 >
                   Guardar Cambios de Acceso
                 </button>
@@ -476,7 +480,7 @@ function SubPermissionCheck({ label, checked, onChange }: { label: string, check
     <div className="flex items-center gap-3">
       <input
         type="checkbox"
-        className="w-4 h-4 accent-amber-500"
+        className="w-4 h-4 accent-[#701C32]"
         checked={checked || false}
         onChange={(e) => onChange(e.target.checked)}
       />

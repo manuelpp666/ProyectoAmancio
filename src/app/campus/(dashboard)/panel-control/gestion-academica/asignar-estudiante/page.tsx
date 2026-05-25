@@ -38,7 +38,9 @@ export default function AsignacionEstudiantesPage() {
   const [isLoading, setIsLoading] = useState(false);
   //Estados de modal de confirmacion
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [pendingAsignacion, setPendingAsignacion] = useState<{ alumno: AlumnoMatriculado, seccionId: number } | null>(null);
+  const [pendingAsignacion, setPendingAsignacion] = useState<{ alumno: AlumnoMatriculado, seccionId: number, seccionNombre: string } | null>(null);
+  // Matrículas que YA tenían sección al cargar (las "asignadas desde antes")
+  const [asignadosOriginalmente, setAsignadosOriginalmente] = useState<Set<number>>(new Set());
 
   // 1. CARGA INICIAL
   useEffect(() => {
@@ -107,6 +109,14 @@ export default function AsignacionEstudiantesPage() {
             id_grado: m.id_grado
           }));
         setAlumnos(alumnosMapeados);
+        // Guardamos qué matrículas ya venían con sección desde el servidor
+        setAsignadosOriginalmente(
+          new Set(
+            alumnosMapeados
+              .filter((a: AlumnoMatriculado) => a.id_seccion !== null && a.id_seccion !== undefined)
+              .map((a: AlumnoMatriculado) => a.id_matricula)
+          )
+        );
       }
     } catch (error) {
       console.error(error);
@@ -143,6 +153,22 @@ export default function AsignacionEstudiantesPage() {
     return hoy >= inicio && hoy <= fin;
   }, [anioActualObj]);
 
+  // ¿El año académico ya comenzó? (hoy >= fecha de inicio de clases)
+  const anioYaComenzo = useMemo(() => {
+    if (!anioActualObj?.fecha_inicio) return false;
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const [y, m, d] = anioActualObj.fecha_inicio.split('-').map(Number);
+    const inicio = new Date(y, m - 1, d);
+    return hoy >= inicio;
+  }, [anioActualObj]);
+
+  // Un alumno está bloqueado si el año ya comenzó y ya estaba asignado desde antes
+  const estaBloqueado = useCallback(
+    (alumno: AlumnoMatriculado) => anioYaComenzo && asignadosOriginalmente.has(alumno.id_matricula),
+    [anioYaComenzo, asignadosOriginalmente]
+  );
+
   const nivelesVisibles = niveles.filter(n => {
     if (!anioActualObj) return false;
     const nombre = n.nombre.toLowerCase();
@@ -156,8 +182,8 @@ export default function AsignacionEstudiantesPage() {
   // --- DRAG & DROP ---
 
   const handleDragStart = (alumno: AlumnoMatriculado) => {
-    if (!isPeriodoInscripcionActivo) {
-      toast.error("El año académico ya comenzó. No se permite mover alumnos entre secciones.");
+    if (estaBloqueado(alumno)) {
+      toast.error("El año académico ya comenzó: este alumno ya está asignado y no puede moverse ni desasignarse.");
       return;
     }
     setDraggedStudent(alumno);
@@ -169,18 +195,17 @@ export default function AsignacionEstudiantesPage() {
 
   const handleDropToSection = (seccionId: number) => {
     if (!draggedStudent) return;
+    const alumno = draggedStudent;
+    setDraggedStudent(null);
 
     if (!seccionesEditando[seccionId]) {
       toast.warning("Habilita la edición ('Editar Selección') para modificar esta sección.");
-      setDraggedStudent(null);
       return;
     }
 
-    if (!isPeriodoInscripcionActivo) {
-      // Si el año ya comenzó, guardamos lo que el usuario quiere hacer y abrimos modal
-      setPendingAsignacion({ alumno: draggedStudent, seccionId });
-      setShowConfirmModal(true);
-      setDraggedStudent(null); // Limpiamos el drag
+    // Defensa: un alumno bloqueado nunca debería llegar aquí
+    if (estaBloqueado(alumno)) {
+      toast.error("El año académico ya comenzó: no puedes mover a un alumno ya asignado.");
       return;
     }
 
@@ -189,17 +214,18 @@ export default function AsignacionEstudiantesPage() {
     const limiteVacantes = seccionObj?.vacantes ?? 0;
     if (seccionObj && alumnosEnSeccion >= limiteVacantes) {
       toast.error("¡Sección sin vacantes!");
-      setDraggedStudent(null);
       return;
     }
 
-    const nuevosAlumnos = alumnos.map(a =>
-      a.id_matricula === draggedStudent.id_matricula
-        ? { ...a, id_seccion: seccionId }
-        : a
-    );
-    setAlumnos(nuevosAlumnos);
-    setDraggedStudent(null);
+    // Si el año ya comenzó, es una asignación nueva: advertimos indicando la sección
+    if (anioYaComenzo) {
+      setPendingAsignacion({ alumno, seccionId, seccionNombre: seccionObj?.nombre ?? "" });
+      setShowConfirmModal(true);
+      return;
+    }
+
+    // Año aún no comienza: asignación directa (edición libre)
+    ejecutarAsignacion(alumno, seccionId);
   };
 
   const ejecutarAsignacion = (alumno: AlumnoMatriculado, seccionId: number) => {
@@ -212,26 +238,24 @@ export default function AsignacionEstudiantesPage() {
 
   const handleDropToUnassigned = () => {
     if (!draggedStudent) return;
-    if (!isPeriodoInscripcionActivo) {
-      toast.error("No se puede retirar al alumno de la sección porque el año académico ya está en curso o el periodo de edición ha finalizado.");
-      setDraggedStudent(null);
+    const alumno = draggedStudent;
+    setDraggedStudent(null);
+
+    if (estaBloqueado(alumno)) {
+      toast.error("No puedes desasignar a este alumno: el año académico ya comenzó y ya estaba asignado.");
       return;
     }
-    if (draggedStudent.id_seccion !== null) {
-      if (!seccionesEditando[draggedStudent.id_seccion]) {
-        toast.warning("La sección de origen está bloqueada.");
-        setDraggedStudent(null);
-        return;
-      }
+    if (alumno.id_seccion !== null && !seccionesEditando[alumno.id_seccion]) {
+      toast.warning("La sección de origen está bloqueada.");
+      return;
     }
 
     const nuevosAlumnos = alumnos.map(a =>
-      a.id_matricula === draggedStudent.id_matricula
+      a.id_matricula === alumno.id_matricula
         ? { ...a, id_seccion: null }
         : a
     );
     setAlumnos(nuevosAlumnos);
-    setDraggedStudent(null);
   };
 
   // --- CONFIRMAR CAMBIOS ---
@@ -265,10 +289,6 @@ export default function AsignacionEstudiantesPage() {
   };
 
   const handleHabilitarEdicion = (seccionId: number) => {
-    if (!isPeriodoInscripcionActivo) {
-      toast.error("No se puede editar: Periodo de inscripción cerrado.");
-      return;
-    }
     setSeccionesEditando(prev => ({ ...prev, [seccionId]: true }));
   };
 
@@ -324,6 +344,14 @@ export default function AsignacionEstudiantesPage() {
                     Inscripciones Cerradas
                   </span>
                 )}
+
+                {/* INDICADOR DE AÑO EN CURSO (bloqueo de movimientos) */}
+                {anioYaComenzo && (
+                  <span className="ml-1 flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-1 rounded border border-amber-200 text-[10px] font-bold uppercase tracking-wide">
+                    <span className="material-symbols-outlined text-[12px]">lock</span>
+                    Año en curso · solo asignación
+                  </span>
+                )}
               </div>
             </div>
             {anioActualObj && (
@@ -371,9 +399,9 @@ export default function AsignacionEstudiantesPage() {
                     {alumnosFiltrados.map((alumno) => (
                       <div
                         key={alumno.id_matricula}
-                        draggable={isPeriodoInscripcionActivo} // Bloquea drag si está cerrado
+                        draggable
                         onDragStart={() => handleDragStart(alumno)}
-                        className={`p-4 bg-white hover:bg-gray-50 cursor-grab active:cursor-grabbing group flex items-center gap-4 transition-colors ${!isPeriodoInscripcionActivo ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
+                        className="p-4 bg-white hover:bg-gray-50 cursor-grab active:cursor-grabbing group flex items-center gap-4 transition-colors"
                       >
                         <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center border border-gray-200">
                           <span className="material-symbols-outlined text-gray-400">person</span>
@@ -484,10 +512,10 @@ export default function AsignacionEstudiantesPage() {
                               <p className="text-[10px] font-bold text-gray-400 uppercase leading-none">Vacantes</p>
                             </div>
                           </div>
-                          {!isPeriodoInscripcionActivo && (
+                          {anioYaComenzo && (
                             <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded text-[10px] text-amber-700 flex items-center gap-2">
-                              <span className="material-symbols-outlined text-sm">warning</span>
-                              Edición deshabilitada por fecha académica.
+                              <span className="material-symbols-outlined text-sm">lock</span>
+                              El año ya comenzó: puedes asignar nuevos alumnos, pero los ya asignados (🔒) no se pueden mover ni desasignar.
                             </div>
                           )}
                           <div className="flex-1 bg-white border border-gray-100 rounded-lg p-2 mb-4 overflow-y-auto max-h-48 min-h-[100px]">
@@ -500,19 +528,27 @@ export default function AsignacionEstudiantesPage() {
                               </div>
                             ) : (
                               <div className="space-y-1">
-                                {alumnosEnSeccion.map(a => (
+                                {alumnosEnSeccion.map(a => {
+                                  const bloqueado = estaBloqueado(a);
+                                  return (
                                   <div key={a.id_matricula}
-                                    draggable={isPeriodoInscripcionActivo && estaEditando}
+                                    draggable={estaEditando && !bloqueado}
                                     onDragStart={() => handleDragStart(a)}
-                                    className={`text-xs p-2 bg-gray-50 rounded border border-gray-100 truncate cursor-grab flex justify-between items-center ${!isPeriodoInscripcionActivo ? 'cursor-not-allowed opacity-60' : ''
+                                    title={bloqueado ? "Alumno asignado antes del inicio de clases: no se puede mover ni desasignar" : undefined}
+                                    className={`text-xs p-2 rounded border truncate flex justify-between items-center gap-2 ${bloqueado
+                                      ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
+                                      : estaEditando ? 'bg-gray-50 border-gray-100 cursor-grab' : 'bg-gray-50 border-gray-100'
                                       }`}
                                   >
-                                    <span>{a.nombres} {a.apellidos}</span>
-                                    {isPeriodoInscripcionActivo && estaEditando && (
-                                      <span className="material-symbols-outlined text-[10px] text-gray-400">drag_handle</span>
-                                    )}
+                                    <span className="truncate">{a.nombres} {a.apellidos}</span>
+                                    {bloqueado ? (
+                                      <span className="material-symbols-outlined text-[14px] text-gray-400 shrink-0">lock</span>
+                                    ) : estaEditando ? (
+                                      <span className="material-symbols-outlined text-[10px] text-gray-400 shrink-0">drag_handle</span>
+                                    ) : null}
                                   </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             )}
                           </div>
@@ -561,10 +597,10 @@ export default function AsignacionEstudiantesPage() {
             ejecutarAsignacion(pendingAsignacion.alumno, pendingAsignacion.seccionId);
           }
         }}
-        title="Asignación Extemporánea"
-        message={`El año académico ya ha iniciado. ¿Está seguro de asignar a ${pendingAsignacion?.alumno.nombres} a esta sección? Una vez asignado, no podrá ser movido a otra aula.`}
-        confirmText="Sí, asignar estudiante"
-        type="warning" // Usamos warning para que combine con el color ámbar
+        title="Asignación con el año en curso"
+        message={`El año académico ya comenzó. Vas a asignar a ${pendingAsignacion?.alumno.nombres} ${pendingAsignacion?.alumno.apellidos} a la sección "${pendingAsignacion?.seccionNombre}". Después de confirmar, este alumno NO podrá moverse a otra sección ni desasignarse. ¿Deseas continuar?`}
+        confirmText="Sí, asignar a esta sección"
+        type="warning"
       />
     </>
     </RoleGuard>

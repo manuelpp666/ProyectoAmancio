@@ -60,6 +60,25 @@ export default function GestionAcademicaPage() {
   const [isCopiarModalOpen, setIsCopiarModalOpen] = useState(false);
   const [anioOrigenCopiar, setAnioOrigenCopiar] = useState("");
 
+  // --- ACORDEÓN DE NIVELES (colapsar/expandir) ---
+  const [nivelesColapsados, setNivelesColapsados] = useState<Set<number>>(new Set());
+  const toggleNivel = (idNivel: number) => {
+    setNivelesColapsados(prev => {
+      const next = new Set(prev);
+      if (next.has(idNivel)) next.delete(idNivel); else next.add(idNivel);
+      return next;
+    });
+  };
+
+  // Formatea "2026-03-01" -> "01 mar 2026"
+  const formatearFecha = (iso?: string) => {
+    if (!iso) return "—";
+    const [y, m, d] = iso.split("-");
+    const meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+    if (!y || !m || !d) return iso;
+    return `${d} ${meses[parseInt(m, 10) - 1] || ""} ${y}`;
+  };
+
   // Validaciones
   const fechasCrearValidas = nuevoAnioData.fecha_inicio && nuevoAnioData.fecha_fin
     ? new Date(nuevoAnioData.fecha_fin) > new Date(nuevoAnioData.fecha_inicio) : false;
@@ -125,6 +144,23 @@ export default function GestionAcademicaPage() {
     return hoy < fechaInicio;
   };
 
+  // ¿Las inscripciones del año seleccionado están abiertas hoy?
+  const inscripcionesAbiertas = () => {
+    if (!anioObj?.inicio_inscripcion || !anioObj?.fin_inscripcion) return false;
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    const inicio = new Date(anioObj.inicio_inscripcion);
+    const fin = new Date(anioObj.fin_inscripcion);
+    return hoy >= inicio && hoy <= fin;
+  };
+
+  // Días que faltan para que cierren las inscripciones (incluye hoy)
+  const diasRestantesInscripcion = () => {
+    if (!anioObj?.fin_inscripcion) return 0;
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    const fin = new Date(anioObj.fin_inscripcion); fin.setHours(0, 0, 0, 0);
+    return Math.max(0, Math.round((fin.getTime() - hoy.getTime()) / 86400000) + 1);
+  };
+
   const getNivelesVisibles = () => {
     if (loadingAnios || !anioObj) return niveles;
     const esVerano = anioObj.tipo === "VERANO";
@@ -142,6 +178,23 @@ export default function GestionAcademicaPage() {
     const nombreNivel = nivel?.nombre.toLowerCase() || "";
     if (nombreNivel.includes("primaria")) return ["Azul", "Amarillo", "Rojo", "Verde", "Naranja"];
     return ["A", "B", "C", "D", "E", "F"];
+  };
+
+  // Totales para la tira de resumen (basados en los niveles visibles)
+  const getResumen = () => {
+    const idsNivelesVisibles = new Set(getNivelesVisibles().map(n => n.id_nivel));
+    const gradosVisibles = grados.filter(g => idsNivelesVisibles.has(g.id_nivel));
+    const idsGradosVisibles = new Set(gradosVisibles.map(g => g.id_grado));
+    const seccionesVisibles = secciones.filter(s => idsGradosVisibles.has(s.id_grado));
+    const totalVacantes = seccionesVisibles.reduce((acc, s) => acc + (s.vacantes ?? 0), 0);
+    const totalOcupadas = seccionesVisibles.reduce((acc, s) => acc + (s.ocupadas ?? 0), 0);
+    return {
+      niveles: idsNivelesVisibles.size,
+      grados: gradosVisibles.length,
+      secciones: seccionesVisibles.length,
+      vacantes: totalVacantes,
+      ocupadas: totalOcupadas,
+    };
   };
 
   // =========================================================
@@ -283,14 +336,14 @@ export default function GestionAcademicaPage() {
           <HeaderPanel />
 
           {/* BARRA SUPERIOR */}
-          <div className="h-16 border-b bg-white flex items-center justify-between px-8">
-            <div className="flex items-center gap-4">
+          <div className="min-h-16 border-b bg-white flex flex-wrap items-center justify-between gap-y-3 px-8 py-3">
+            <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#093E7A]">account_tree</span>
                 <h2 className="text-xl font-bold text-gray-800">Estructura Escolar</h2>
               </div>
-              <div className="h-6 w-px bg-gray-200 mx-2"></div>
-              
+              <div className="hidden md:block h-6 w-px bg-gray-200 mx-2"></div>
+
               {/* SELECTOR DE AÑOS Y BOTÓN DE NUEVO AÑO */}
               <div className="flex items-center gap-3">
                 <AnioSelector
@@ -299,23 +352,27 @@ export default function GestionAcademicaPage() {
                   anios={anios}
                   loading={loadingAnios}
                 />
-                <button 
-                  onClick={() => setIsCrearAnioModalOpen(true)} 
-                  className="flex items-center gap-1 px-4 py-2 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-all ml-2"
+                <button
+                  onClick={() => setIsCrearAnioModalOpen(true)}
+                  className="flex items-center gap-1 px-4 py-2 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-all"
                 >
                   <span className="material-symbols-outlined text-sm">add</span> Nuevo Año
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3">
               {anioObj && (
-                <div className={`flex items-center gap-3 text-sm font-medium ${anioObj.activo ? 'text-green-600' : 'text-red-500'}`}>
-                  <span className={`flex items-center gap-1`}>
-                    <span className={`size-2 rounded-full ${anioObj.activo ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                    {anioObj.activo ? "Año en Curso (Vigente)" : "Año Finalizado / Inactivo"}
-                  </span>
-                </div>
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${anioObj.tipo === "VERANO" ? "bg-orange-100 text-orange-700" : "bg-blue-100 text-blue-700"}`}>
+                  <span className="material-symbols-outlined text-sm">{anioObj.tipo === "VERANO" ? "sunny" : "school"}</span>
+                  {anioObj.tipo === "VERANO" ? "Ciclo Verano" : "Año Regular"}
+                </span>
+              )}
+              {anioObj && (
+                <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${anioObj.activo ? 'text-green-600' : 'text-red-500'}`}>
+                  <span className={`size-2 rounded-full ${anioObj.activo ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                  {anioObj.activo ? "Año en Curso (Vigente)" : "Año Finalizado / Inactivo"}
+                </span>
               )}
             </div>
           </div>
@@ -323,6 +380,22 @@ export default function GestionAcademicaPage() {
           {/* CONTENIDO PRINCIPAL SCROLLABLE */}
           <div className="flex-1 overflow-y-auto p-8 space-y-8">
 
+            {!anioSeleccionado ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <span className="material-symbols-outlined text-gray-300 text-6xl mb-4">calendar_add_on</span>
+                <h3 className="text-lg font-black text-gray-700">Selecciona un año académico</h3>
+                <p className="text-sm text-gray-500 max-w-md mt-1">
+                  Elige un año en el selector superior para administrar su estructura, o crea uno nuevo para empezar.
+                </p>
+                <button
+                  onClick={() => setIsCrearAnioModalOpen(true)}
+                  className="mt-5 flex items-center gap-1 px-5 py-2.5 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-all"
+                >
+                  <span className="material-symbols-outlined text-sm">add</span> Crear Nuevo Año
+                </button>
+              </div>
+            ) : (
+            <>
             {/* Gestión Año */}
             <section className="space-y-4">
               <div>
@@ -341,8 +414,8 @@ export default function GestionAcademicaPage() {
                     <p className="text-xs text-gray-400 mt-1">Fechas de inicio y fin de clases.</p>
                     {anioObj && (
                       <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-800 font-medium space-y-1">
-                        <div className="flex justify-between"><span>Inicio:</span> <span className="font-bold">{anioObj.fecha_inicio}</span></div>
-                        <div className="flex justify-between"><span>Fin:</span> <span className="font-bold">{anioObj.fecha_fin}</span></div>
+                        <div className="flex justify-between"><span>Inicio:</span> <span className="font-bold">{formatearFecha(anioObj.fecha_inicio)}</span></div>
+                        <div className="flex justify-between"><span>Fin:</span> <span className="font-bold">{formatearFecha(anioObj.fecha_fin)}</span></div>
                       </div>
                     )}
                   </div>
@@ -357,17 +430,34 @@ export default function GestionAcademicaPage() {
                 </div>
 
                 {/* INSCRIPCIONES */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between">
+                <div className={`bg-white p-6 rounded-xl shadow-sm border flex flex-col justify-between transition-colors ${inscripcionesAbiertas() ? 'border-green-300 ring-1 ring-green-200' : 'border-gray-200'}`}>
                   <div className="mb-4">
-                    <h4 className="font-bold text-gray-800 flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[#093E7A]">how_to_reg</span>
-                      Inscripciones / Matrícula
-                    </h4>
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="font-bold text-gray-800 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[#093E7A]">how_to_reg</span>
+                        Inscripciones / Matrícula
+                      </h4>
+                      {inscripcionesAbiertas() && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-[11px] font-bold whitespace-nowrap">
+                          <span className="relative flex size-2">
+                            <span className="absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75 animate-ping"></span>
+                            <span className="relative inline-flex size-2 rounded-full bg-green-500"></span>
+                          </span>
+                          Abiertas
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-400 mt-1">Periodo habilitado para nuevas matrículas.</p>
                     {anioObj && anioObj.inicio_inscripcion && anioObj.fin_inscripcion ? (
                       <div className="mt-3 p-3 bg-green-50 border border-green-100 rounded-lg text-xs text-green-800 font-medium space-y-1">
-                        <div className="flex justify-between"><span>Inicio:</span> <span className="font-bold">{anioObj.inicio_inscripcion}</span></div>
-                        <div className="flex justify-between"><span>Fin:</span> <span className="font-bold">{anioObj.fin_inscripcion}</span></div>
+                        <div className="flex justify-between"><span>Inicio:</span> <span className="font-bold">{formatearFecha(anioObj.inicio_inscripcion)}</span></div>
+                        <div className="flex justify-between"><span>Fin:</span> <span className="font-bold">{formatearFecha(anioObj.fin_inscripcion)}</span></div>
+                        {inscripcionesAbiertas() && (
+                          <div className="flex justify-between pt-1 border-t border-green-100 text-green-700">
+                            <span>Estado:</span>
+                            <span className="font-bold">Cierran en {diasRestantesInscripcion()} día(s)</span>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-500 italic text-center">
@@ -411,6 +501,32 @@ export default function GestionAcademicaPage() {
               </div>
             </section>
 
+            {/* Tira de resumen */}
+            {!isLoading && getNivelesVisibles().length > 0 && (() => {
+              const r = getResumen();
+              const pct = r.vacantes > 0 ? Math.round((r.ocupadas / r.vacantes) * 100) : 0;
+              const items = [
+                { label: "Niveles", valor: r.niveles, icon: "domain" },
+                { label: "Grados", valor: r.grados, icon: "stairs" },
+                { label: "Secciones", valor: r.secciones, icon: "groups" },
+                { label: "Vacantes", valor: r.vacantes, icon: "event_seat" },
+                { label: "Ocupación", valor: `${r.ocupadas}/${r.vacantes} (${pct}%)`, icon: "person_check" },
+              ];
+              return (
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  {items.map((it) => (
+                    <div key={it.label} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3 shadow-sm">
+                      <span className="material-symbols-outlined text-[#093E7A] bg-blue-50 rounded-lg p-2">{it.icon}</span>
+                      <div className="min-w-0">
+                        <p className="text-[11px] uppercase font-bold text-gray-400 tracking-wide">{it.label}</p>
+                        <p className="text-base font-black text-gray-800 truncate">{it.valor}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
             {/* Listado de Niveles */}
             <section className="space-y-4">
               <h3 className="text-xl font-black text-gray-900">Niveles Educativos ({anioObj?.tipo || '...'})</h3>
@@ -425,17 +541,33 @@ export default function GestionAcademicaPage() {
                   <p className="text-gray-500">No hay niveles configurados para este tipo de año.</p>
                 </div>
               ) : (
-                getNivelesVisibles().map((nivel) => (
+                getNivelesVisibles().map((nivel) => {
+                  const gradosNivel = grados.filter(g => g.id_nivel === nivel.id_nivel);
+                  const idsGrados = new Set(gradosNivel.map(g => g.id_grado));
+                  const seccionesNivel = secciones.filter(s => idsGrados.has(s.id_grado));
+                  const colapsado = nivelesColapsados.has(nivel.id_nivel);
+
+                  return (
                   <div key={nivel.id_nivel} className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden mb-6">
-                    <div className="px-6 py-4 bg-gray-50 flex items-center justify-between border-b border-gray-200">
+                    <button
+                      onClick={() => toggleNivel(nivel.id_nivel)}
+                      className="w-full px-6 py-4 bg-gray-50 flex items-center justify-between border-b border-gray-200 hover:bg-gray-100 transition-colors text-left"
+                    >
                       <div className="flex items-center gap-3">
                         <span className="material-symbols-outlined text-[#093E7A] fill-icon">domain</span>
                         <h4 className="font-black text-gray-800 uppercase tracking-wide">{nivel.nombre}</h4>
+                        <span className="text-xs font-semibold text-gray-400 normal-case">
+                          {gradosNivel.length} grados · {seccionesNivel.length} secciones
+                        </span>
                       </div>
-                    </div>
+                      <span className={`material-symbols-outlined text-gray-400 transition-transform ${colapsado ? "" : "rotate-180"}`}>
+                        expand_more
+                      </span>
+                    </button>
+                    {!colapsado && (
                     <div className="p-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {grados.filter(g => g.id_nivel === nivel.id_nivel).map((grado) => {
+                        {gradosNivel.map((grado) => {
                           const seccionesDelGrado = secciones.filter(s => s.id_grado === grado.id_grado);
                           const gradoConSecciones = { ...grado, secciones: seccionesDelGrado };
 
@@ -451,10 +583,14 @@ export default function GestionAcademicaPage() {
                         })}
                       </div>
                     </div>
+                    )}
                   </div>
-                ))
+                  );
+                })
               )}
             </section>
+            </>
+            )}
           </div>
         </div>
       </div>
@@ -463,9 +599,12 @@ export default function GestionAcademicaPage() {
       {isCrearAnioModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div className="p-6 border-b bg-[#093E7A] text-white">
-              <h3 className="font-black text-lg">Crear Nuevo Año Académico</h3>
-              <p className="text-xs opacity-80">El año se creará en el sistema y aparecerá en el selector.</p>
+            <div className="p-6 border-b bg-[#093E7A] text-white flex justify-between items-start">
+              <div>
+                <h3 className="font-black text-lg">Crear Nuevo Año Académico</h3>
+                <p className="text-xs opacity-80">El año se creará en el sistema y aparecerá en el selector.</p>
+              </div>
+              <button onClick={() => setIsCrearAnioModalOpen(false)} className="text-white/70 hover:text-white transition-colors"><span className="material-symbols-outlined">close</span></button>
             </div>
             <form onSubmit={handleCrearAnio} className="p-6 space-y-4">
               <div>
@@ -514,9 +653,12 @@ export default function GestionAcademicaPage() {
       {isEditarAnioModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div className="p-6 border-b bg-[#093E7A] text-white">
-              <h3 className="font-black text-lg">Editar Año Académico</h3>
-              <p className="text-xs opacity-80">Modificando el año {anioSeleccionado}</p>
+            <div className="p-6 border-b bg-[#093E7A] text-white flex justify-between items-start">
+              <div>
+                <h3 className="font-black text-lg">Editar Año Académico</h3>
+                <p className="text-xs opacity-80">Modificando el año {anioSeleccionado}</p>
+              </div>
+              <button onClick={() => setIsEditarAnioModalOpen(false)} className="text-white/70 hover:text-white transition-colors"><span className="material-symbols-outlined">close</span></button>
             </div>
             <form onSubmit={handleEditarAnio} className="p-6 space-y-4">
               <div>
@@ -560,9 +702,12 @@ export default function GestionAcademicaPage() {
       {isInscripcionModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div className="p-6 border-b bg-[#093E7A] text-white">
-              <h3 className="font-black text-lg">Configurar Inscripciones</h3>
-              <p className="text-xs opacity-80">Periodo para {anioSeleccionado}</p>
+            <div className="p-6 border-b bg-[#093E7A] text-white flex justify-between items-start">
+              <div>
+                <h3 className="font-black text-lg">Configurar Inscripciones</h3>
+                <p className="text-xs opacity-80">Periodo para {anioSeleccionado}</p>
+              </div>
+              <button onClick={() => setIsInscripcionModalOpen(false)} className="text-white/70 hover:text-white transition-colors"><span className="material-symbols-outlined">close</span></button>
             </div>
             <form onSubmit={handleGuardarInscripcion} className="p-6 space-y-4">
               <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 text-xs text-blue-800 mb-4">
@@ -622,9 +767,12 @@ export default function GestionAcademicaPage() {
       {isCopiarModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div className="p-6 border-b">
-              <h3 className="font-black text-lg text-gray-800">Copiar Estructura</h3>
-              <p className="text-xs text-gray-500">Replica secciones de un año anterior.</p>
+            <div className="p-6 border-b flex justify-between items-start">
+              <div>
+                <h3 className="font-black text-lg text-gray-800">Copiar Estructura</h3>
+                <p className="text-xs text-gray-500">Replica secciones de un año anterior.</p>
+              </div>
+              <button onClick={() => setIsCopiarModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors"><span className="material-symbols-outlined">close</span></button>
             </div>
             <div className="p-6 space-y-4">
               <div className="bg-yellow-50 text-yellow-800 p-3 rounded-lg text-xs border border-yellow-100">

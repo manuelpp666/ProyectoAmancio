@@ -7,6 +7,7 @@ export interface PermisosAdmin {
   gestion_personal?: boolean;
   tramites_finanzas?: boolean;
   chatbot?: boolean;
+  mensajeria?: boolean;
   academico?: {
     estructura?: boolean;
     horarios?: boolean;

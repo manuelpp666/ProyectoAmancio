@@ -8,6 +8,7 @@ export interface Docente {
   telefono: string;
   email: string;
   dni: string;
+  visible_web?: boolean; // Controla si aparece en la web pública
   id_usuario?: number | null; // El "?" significa que es opcional
   usuario?: {
         activo: boolean;

@@ -25,7 +25,7 @@ export const ConfirmModal = ({
 
     const colors = {
         danger: "bg-[#701C32] hover:bg-[#5a1628]",
-        warning: "bg-amber-600 hover:bg-amber-700"
+        warning: "bg-[#093E7A] hover:bg-[#072d5a]"
     };
 
     return createPortal(

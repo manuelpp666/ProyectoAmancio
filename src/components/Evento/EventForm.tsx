@@ -107,12 +107,20 @@ export default function EventForm({ evento, defaultAnio, onClose, onSuccess }: E
                 </div>
             </div>
 
-            <input
-                placeholder="Tipo (ej: Examen, Ceremonia, Feriado)"
-                className="w-full p-2 border rounded-xl text-sm"
+            <select
+                className="w-full p-2 border rounded-xl text-sm bg-white"
                 value={formData.tipo_evento}
                 onChange={e => setFormData({ ...formData, tipo_evento: e.target.value })}
-            />
+            >
+                <option value="">-- Tipo de evento --</option>
+                <option value="Inicio de Clases">Inicio de Clases</option>
+                <option value="Festividades">Festividades</option>
+                <option value="Ceremonia">Ceremonia</option>
+                <option value="Feriado">Feriado</option>
+                <option value="Actividad">Actividad</option>
+                <option value="Actividad Escolar">Actividad Escolar</option>
+                <option value="Vacaciones">Vacaciones</option>
+            </select>
 
             <textarea
                 placeholder="Descripción breve..."

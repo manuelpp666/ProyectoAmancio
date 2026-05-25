@@ -18,6 +18,10 @@ export default function DetalleNoticiaPage() {
         const fetchNoticia = async () => {
             try {
                 const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/noticias/${id}`);
+                if (!response.ok) {
+                    setNoticia(null);
+                    return;
+                }
                 const data = await response.json();
                 setNoticia(data);
             } catch (error) {

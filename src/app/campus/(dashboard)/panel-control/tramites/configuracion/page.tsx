@@ -53,6 +53,11 @@ export default function GestionFinancieraPage() {
   // Estados para el Modal de Confirmación
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [pagoAConfirmar, setPagoAConfirmar] = useState<number | null>(null);
+
+  // Estados para editar/eliminar pago
+  const [isEditPagoOpen, setIsEditPagoOpen] = useState(false);
+  const [currentPagoId, setCurrentPagoId] = useState<number | null>(null);
+  const [editPagoData, setEditPagoData] = useState({ concepto: "", monto: 0, mora: 0, fecha_vencimiento: "", estado: "PENDIENTE" });
   
   const abrirModalDictamen = (solicitud: Solicitud) => {
     setRespuestaAdmin("");
@@ -66,7 +71,7 @@ export default function GestionFinancieraPage() {
 
   //Estados para los filtros
   const [filtroTipoPago, setFiltroTipoPago] = useState("TODOS");
-  const [criterioFecha, setCriterioFecha] = useState<"pago" | "vencimiento">("pago");
+  const [criterioFecha, setCriterioFecha] = useState<"pago" | "vencimiento">("vencimiento");
   const [anioFiltro, setAnioFiltro] = useState(new Date().getFullYear());
 
   // 2. Esta función es la que realmente llama a la API (se pasa al onConfirm del modal)
@@ -314,6 +319,40 @@ export default function GestionFinancieraPage() {
     } catch (e) { toast.error("Error de conexión"); }
   };
 
+  const openEditPago = (p: any) => {
+    setEditPagoData({
+      concepto: p.concepto,
+      monto: Number(p.monto),
+      mora: Number(p.mora),
+      fecha_vencimiento: p.fecha_vencimiento ? p.fecha_vencimiento.split("T")[0] : "",
+      estado: p.estado
+    });
+    setCurrentPagoId(p.id_pago);
+    setIsEditPagoOpen(true);
+  };
+
+  const handleEditPago = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await apiFetch(`/finance/pagos/${currentPagoId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...editPagoData, monto_total: editPagoData.monto + editPagoData.mora })
+      });
+      if (res.ok) { toast.success("Pago actualizado"); setIsEditPagoOpen(false); fetchPagos(); }
+      else toast.error("Error al actualizar el pago");
+    } catch { toast.error("Error de conexión"); }
+  };
+
+  const handleDeletePago = async (id: number) => {
+    if (!confirm("¿Estás seguro de eliminar este pago? Esta acción no se puede deshacer.")) return;
+    try {
+      const res = await apiFetch(`/finance/pagos/${id}`, { method: "DELETE" });
+      if (res.ok) { toast.success("Pago eliminado"); fetchPagos(); }
+      else toast.error("Error al eliminar el pago");
+    } catch { toast.error("Error de conexión"); }
+  };
+
   // Extracción dinámica de categorías para el filtro de Recaudación
   const categoriasUnicas = Array.from(new Set(tiposPago.map(tp => tp.categoria)));
 
@@ -368,26 +407,55 @@ export default function GestionFinancieraPage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {tramites.filter(t => t.nombre.toLowerCase().includes(busqueda.toLowerCase())).sort((a, b) => a.periodo_academico.localeCompare(b.periodo_academico)).map(t => (
-                  <div key={t.id_tipo_tramite} className="bg-white p-6 rounded-xl border shadow-sm relative">
-                    <div className="flex justify-between mb-4">
-                      <span className="material-symbols-outlined text-[#093E7A] bg-blue-50 p-2 rounded-full">description</span>
-                      <span className={`text-[9px] font-black px-2 py-1 rounded border ${t.periodo_academico === 'VERANO' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                        t.periodo_academico === 'REGULAR' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                          'bg-gray-50 text-gray-600 border-gray-100'
-                        }`}>
-                        {t.periodo_academico}
-                      </span>
-                      <button onClick={() => openEdit(t)} className="text-gray-400 hover:text-blue-600">
-                        <span className="material-symbols-outlined text-sm">edit</span>
-                      </button>
-                    </div>
-                    <h3 className="font-bold text-gray-800">{t.nombre}</h3>
-                    <p className="text-2xl font-black text-[#093E7A] mt-1">S/ {Number(t.costo).toFixed(2)}</p>
-                    {t.costo === 0 && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-bold uppercase">Gratuito / Administrativo</span>}
-                  </div>
-                ))}
+              <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase">Nombre del Trámite</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase">Periodo</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase">Alcance</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase text-center">Costo</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {isLoading ? (
+                      <tr><td colSpan={5} className="p-10 text-center text-gray-400 italic">Cargando trámites...</td></tr>
+                    ) : tramites.filter(t => t.nombre.toLowerCase().includes(busqueda.toLowerCase())).sort((a, b) => a.periodo_academico.localeCompare(b.periodo_academico)).length === 0 ? (
+                      <tr><td colSpan={5} className="p-10 text-center text-gray-400 italic">No hay trámites registrados</td></tr>
+                    ) : tramites.filter(t => t.nombre.toLowerCase().includes(busqueda.toLowerCase())).sort((a, b) => a.periodo_academico.localeCompare(b.periodo_academico)).map(t => (
+                      <tr key={t.id_tipo_tramite} className="hover:bg-gray-50 transition-colors">
+                        <td className="p-4">
+                          <p className="font-bold text-gray-800">{t.nombre}</p>
+                          {t.requisitos && <p className="text-xs text-gray-400 mt-0.5 truncate max-w-xs">{t.requisitos}</p>}
+                        </td>
+                        <td className="p-4">
+                          <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                            t.periodo_academico === 'VERANO' ? 'bg-orange-100 text-orange-600' :
+                            t.periodo_academico === 'REGULAR' ? 'bg-blue-100 text-blue-600' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
+                            {t.periodo_academico}
+                          </span>
+                        </td>
+                        <td className="p-4 text-sm text-gray-600">
+                          {t.alcance === 'TODOS' ? 'Todos los grados' : 'Grados específicos'}
+                        </td>
+                        <td className="p-4 text-center">
+                          {t.costo === 0
+                            ? <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded font-bold uppercase">Gratuito</span>
+                            : <span className="font-black text-[#093E7A]">S/ {Number(t.costo).toFixed(2)}</span>
+                          }
+                        </td>
+                        <td className="p-4 text-right">
+                          <button onClick={() => openEdit(t)} className="text-gray-400 hover:text-blue-600 p-1 rounded transition-colors">
+                            <span className="material-symbols-outlined text-sm">edit</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
@@ -493,7 +561,10 @@ export default function GestionFinancieraPage() {
                         </td>
                         <td className="p-4 font-bold text-gray-800">{p.nombre}</td>
                         <td className="p-4 text-xs font-medium text-gray-600">
-                          {dI} de {nombreMes(mI)} a {dF} de {nombreMes(mF)}
+                          {p.categoria === 'PENSION'
+                            ? <span>Vence el <span className="font-black text-[#093E7A]">día {dF}</span> de cada mes</span>
+                            : `${dI} de ${nombreMes(mI)} a ${dF} de ${nombreMes(mF)}`
+                          }
                         </td>
                         <td className="p-4 text-center font-black text-[#093E7A]">S/ {Number(p.costo).toFixed(2)}</td>
                         <td className="p-4 flex justify-end gap-2">
@@ -562,7 +633,7 @@ export default function GestionFinancieraPage() {
                       onClick={() => setCriterioFecha("vencimiento")}
                       className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-all ${criterioFecha === 'vencimiento' ? 'bg-white shadow text-[#093E7A]' : 'text-gray-500'}`}
                     >
-                      VENCIMIENTOS
+                      PENDIENTES
                     </button>
                   </div>
                 </div>
@@ -603,70 +674,72 @@ export default function GestionFinancieraPage() {
                 <table className="w-full text-left border-collapse">
                   <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="p-4 text-xs font-bold text-gray-500 uppercase">F. Pago</th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase">F. Venc.</th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase">Concepto</th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase">Monto</th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase">Estado</th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase">Ref. BCP</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase text-right">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y text-sm">
-                    {pagos.map((p: any) => {
-                      // --- LÓGICA DE VENCIMIENTO ---
+                    {isLoading ? (
+                      <tr><td colSpan={6} className="p-10 text-center text-gray-400">Cargando pagos...</td></tr>
+                    ) : pagos.length === 0 ? (
+                      <tr><td colSpan={6} className="p-10 text-center text-gray-400 italic">No hay pagos para los filtros seleccionados.</td></tr>
+                    ) : pagos.map((p: any) => {
                       const hoy = new Date();
-                      hoy.setHours(0, 0, 0, 0); // Normalizamos a medianoche para comparar solo fechas
+                      hoy.setHours(0, 0, 0, 0);
                       const fechaVenc = p.fecha_vencimiento ? new Date(p.fecha_vencimiento) : null;
                       const estaVencido = p.estado === "PENDIENTE" && fechaVenc && fechaVenc < hoy;
 
                       return (
-                        <tr key={p.id_pago} className={estaVencido ? "bg-red-50/30" : ""}>
-                          <td className="p-4">
-                            {p.fecha_pago ? new Date(p.fecha_pago).toLocaleDateString() : '---'}
-                          </td>
-
-                          {/* CELDA DE VENCIMIENTO CON ESTILO DINÁMICO */}
+                        <tr key={p.id_pago} className={`transition-colors ${estaVencido ? "bg-red-50/30 hover:bg-red-50/50" : "hover:bg-gray-50"}`}>
                           <td className="p-4">
                             <div className="flex flex-col">
                               <span className={`font-medium ${estaVencido ? 'text-red-600' : 'text-gray-600'}`}>
                                 {p.fecha_vencimiento ? new Date(p.fecha_vencimiento).toLocaleDateString() : '---'}
                               </span>
-                              {estaVencido && (
-                                <span className="text-[9px] font-black text-red-500 uppercase leading-none">
-                                  Vencido
-                                </span>
-                              )}
+                              {p.fecha_pago && <span className="text-[10px] text-green-600">Pagado: {new Date(p.fecha_pago).toLocaleDateString()}</span>}
+                              {estaVencido && <span className="text-[9px] font-black text-red-500 uppercase leading-none">Vencido</span>}
                             </div>
                           </td>
 
-                          <td className="p-4 font-medium">{p.concepto}</td>
-                          <td className="p-4 font-bold text-gray-800">S/ {Number(p.monto_total).toFixed(2)}</td>
+                          <td className="p-4 font-medium text-gray-800">{p.concepto}</td>
+                          <td className="p-4 font-bold text-gray-800">
+                            S/ {Number(p.monto_total).toFixed(2)}
+                            {Number(p.mora) > 0 && <span className="block text-[10px] text-orange-500">Mora: S/ {Number(p.mora).toFixed(2)}</span>}
+                          </td>
 
                           <td className="p-4">
-                            <span className={`px-2 py-1 rounded-full text-[10px] font-black ${p.estado === 'PAGADO' ? 'bg-green-100 text-green-700' :
+                            <span className={`px-2 py-1 rounded-full text-[10px] font-black ${
+                              p.estado === 'PAGADO' ? 'bg-green-100 text-green-700' :
                               estaVencido ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
-                              }`}>
+                            }`}>
                               {estaVencido ? 'VENCIDO' : p.estado}
                             </span>
                           </td>
 
-                          <td className="p-4 text-xs text-gray-400 font-mono">{p.codigo_operacion_bcp || 'N/A'}</td>
+                          <td className="p-4 text-xs text-gray-400 font-mono">{p.codigo_operacion_bcp || '---'}</td>
 
                           <td className="p-4">
-                            {p.estado === "PENDIENTE" ? (
-                              <button
-                                onClick={() => prepararConfirmacionManual(p.id_pago)}
-                                className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded font-bold uppercase transition-colors text-white ${estaVencido ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
-                                  }`}
-                              >
-                                <span className="material-symbols-outlined text-xs">
-                                  {estaVencido ? 'priority_high' : 'check_circle'}
-                                </span>
-                                Confirmar Pago
+                            <div className="flex items-center justify-end gap-1">
+                              {p.estado === "PENDIENTE" && (
+                                <button
+                                  onClick={() => prepararConfirmacionManual(p.id_pago)}
+                                  title="Confirmar pago"
+                                  className={`p-1.5 rounded-lg transition-colors ${estaVencido ? 'text-red-500 hover:text-red-700 hover:bg-red-50' : 'text-green-500 hover:text-green-700 hover:bg-green-50'}`}
+                                >
+                                  <span className="material-symbols-outlined text-sm">{estaVencido ? 'priority_high' : 'check_circle'}</span>
+                                </button>
+                              )}
+                              <button onClick={() => openEditPago(p)} title="Editar" className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                <span className="material-symbols-outlined text-sm">edit</span>
                               </button>
-                            ) : (
-                              <span className="text-xs text-gray-400 font-mono">{p.codigo_operacion_bcp || 'N/A'}</span>
-                            )}
+                              <button onClick={() => handleDeletePago(p.id_pago)} title="Eliminar" className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                                <span className="material-symbols-outlined text-sm">delete</span>
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -837,30 +910,44 @@ export default function GestionFinancieraPage() {
                 <input required type="text" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" value={formDataTipoPago.nombre} onChange={e => setFormDataTipoPago({...formDataTipoPago, nombre: e.target.value})} />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Válido Desde / Inicio</label>
-                  <div className="flex gap-2">
-                    <select className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-sm outline-none" value={mesInicio} onChange={e => setMesInicio(e.target.value)}>
-                      {meses.map(m => <option key={m.num} value={m.num}>{m.nom}</option>)}
-                    </select>
-                    <select className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-sm outline-none" value={diaInicio} onChange={e => setDiaInicio(e.target.value)}>
-                      {dias.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
+              {formDataTipoPago.categoria === 'PENSION' ? (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
+                  <label className="block text-xs font-bold text-blue-700 uppercase">Día de vencimiento mensual</label>
+                  <p className="text-xs text-blue-500">El sistema genera un pago por cada mes del año escolar activo. Este es el día límite de cada mes.</p>
+                  <select
+                    className="w-full bg-white border border-blue-200 rounded-lg px-4 py-2 text-sm outline-none font-bold text-[#093E7A]"
+                    value={diaFin}
+                    onChange={e => { setDiaFin(e.target.value); setMesInicio("01"); setDiaInicio("01"); setMesFin("01"); }}
+                  >
+                    {dias.map(d => <option key={d} value={d}>Día {d} de cada mes</option>)}
+                  </select>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Válido Desde / Inicio</label>
+                    <div className="flex gap-2">
+                      <select className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-sm outline-none" value={mesInicio} onChange={e => setMesInicio(e.target.value)}>
+                        {meses.map(m => <option key={m.num} value={m.num}>{m.nom}</option>)}
+                      </select>
+                      <select className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-sm outline-none" value={diaInicio} onChange={e => setDiaInicio(e.target.value)}>
+                        {dias.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Válido Hasta / Vence</label>
+                    <div className="flex gap-2">
+                      <select className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-sm outline-none" value={mesFin} onChange={e => setMesFin(e.target.value)}>
+                        {meses.map(m => <option key={m.num} value={m.num}>{m.nom}</option>)}
+                      </select>
+                      <select className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-sm outline-none" value={diaFin} onChange={e => setDiaFin(e.target.value)}>
+                        {dias.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Válido Hasta / Vence</label>
-                  <div className="flex gap-2">
-                    <select className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-sm outline-none" value={mesFin} onChange={e => setMesFin(e.target.value)}>
-                      {meses.map(m => <option key={m.num} value={m.num}>{m.nom}</option>)}
-                    </select>
-                    <select className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-2 text-sm outline-none" value={diaFin} onChange={e => setDiaFin(e.target.value)}>
-                      {dias.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                  </div>
-                </div>
-              </div>
+              )}
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -876,19 +963,73 @@ export default function GestionFinancieraPage() {
                 </div>
               </div>
               
-              {formDataTipoPago.accion_vencimiento === "APLICAR_MORA" && formDataTipoPago.categoria === "PENSION" && (
+              {formDataTipoPago.accion_vencimiento === "APLICAR_MORA" && (formDataTipoPago.categoria === "PENSION" || formDataTipoPago.categoria === "MODULO") && (
                 <div>
                   <label className="block text-xs font-bold text-orange-500 uppercase mb-1">Monto de Mora (S/)</label>
                   <input required type="number" min="0" step="0.01" className="w-full bg-orange-50 border border-orange-200 rounded-lg px-4 py-2 text-sm outline-none" value={formDataTipoPago.mora} onChange={e => setFormDataTipoPago({...formDataTipoPago, mora: parseFloat(e.target.value)})} />
                 </div>
               )}
-              {formDataTipoPago.categoria !== "PENSION" && (
-                 <p className="text-xs text-gray-400 italic">* Nota: La mora automática del sistema está configurada para aplicar únicamente a Pensiones.</p>
+              {formDataTipoPago.categoria !== "PENSION" && formDataTipoPago.categoria !== "MODULO" && (
+                 <p className="text-xs text-gray-400 italic">* Nota: La mora automática del sistema está configurada para aplicar únicamente a Pensiones y Módulos.</p>
               )}
               
               <div className="pt-4 flex gap-3">
                 <button type="button" onClick={() => setIsModalTipoPagoOpen(false)} className="flex-1 py-2.5 bg-gray-100 text-gray-500 font-bold rounded-lg text-sm hover:bg-gray-200 transition-colors">Cancelar</button>
                 <button type="submit" className="flex-1 py-2.5 bg-[#093E7A] text-white font-bold rounded-lg text-sm hover:bg-[#072d5a] transition-colors">Guardar Plantilla</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL EDITAR PAGO --- */}
+      {isEditPagoOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="bg-[#093E7A] p-4 flex justify-between items-center text-white">
+              <h3 className="font-bold">Editar Pago</h3>
+              <button onClick={() => setIsEditPagoOpen(false)}><span className="material-symbols-outlined">close</span></button>
+            </div>
+            <form onSubmit={handleEditPago} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Concepto</label>
+                <input required type="text" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
+                  value={editPagoData.concepto} onChange={e => setEditPagoData({ ...editPagoData, concepto: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Monto (S/)</label>
+                  <input required type="number" min="0" step="0.01" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
+                    value={editPagoData.monto} onChange={e => setEditPagoData({ ...editPagoData, monto: parseFloat(e.target.value) || 0 })} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Mora (S/)</label>
+                  <input type="number" min="0" step="0.01" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
+                    value={editPagoData.mora} onChange={e => setEditPagoData({ ...editPagoData, mora: parseFloat(e.target.value) || 0 })} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fecha Vencimiento</label>
+                  <input type="date" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
+                    value={editPagoData.fecha_vencimiento} onChange={e => setEditPagoData({ ...editPagoData, fecha_vencimiento: e.target.value })} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Estado</label>
+                  <select className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
+                    value={editPagoData.estado} onChange={e => setEditPagoData({ ...editPagoData, estado: e.target.value })}>
+                    <option value="PENDIENTE">PENDIENTE</option>
+                    <option value="PAGADO">PAGADO</option>
+                    <option value="ANULADO">ANULADO</option>
+                  </select>
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-lg px-4 py-2 text-sm text-gray-600 border">
+                Total: <span className="font-black text-[#093E7A]">S/ {(editPagoData.monto + editPagoData.mora).toFixed(2)}</span>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setIsEditPagoOpen(false)} className="flex-1 py-2.5 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200">Cancelar</button>
+                <button type="submit" className="flex-1 py-2.5 bg-[#093E7A] text-white font-bold rounded-xl hover:bg-[#072d5a]">Guardar Cambios</button>
               </div>
             </form>
           </div>

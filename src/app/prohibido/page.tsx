@@ -15,14 +15,15 @@ export default function ForbiddenPage() {
       return;
     }
 
-    const routes = {
+    const routes: Record<string, string> = {
       ADMIN: "/campus/panel-control",
       DOCENTE: "/campus/campus-docente/inicio-docente",
       ALUMNO: "/campus/campus-estudiante/inicio-campus",
       AUXILIAR: "/campus/campus-auxiliar/inicio",
+      PSICOLOGO: "/campus/campus-psicologo",
     };
 
-    const destination = routes[role as keyof typeof routes] || "/campus/campus-estudiante/inicio-campus";
+    const destination = routes[role] || "/campus/campus-estudiante/inicio-campus";
     router.push(destination);
   };
 
