@@ -30,9 +30,10 @@ export default function NotificacionesPage() {
       try {
         const res = await apiFetch(`/gestion/notificaciones/${id_usuario}`);
         const data = await res.json();
-        setNotificaciones(data.notificaciones || []);
-        // Marcamos como vistas: guardamos el momento de esta visita para el badge del header
-        localStorage.setItem(`notif_last_seen_${id_usuario}`, new Date().toISOString());
+        const lista = data.notificaciones || [];
+        setNotificaciones(lista);
+        // Marcamos como vistas: guardamos la cantidad vista para el badge del header
+        localStorage.setItem(`notif_seen_count_${id_usuario}`, String(lista.length));
         window.dispatchEvent(new Event("notif-seen"));
       } catch (error) {
         console.error("Error al cargar notificaciones:", error);

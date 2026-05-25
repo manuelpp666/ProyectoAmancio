@@ -22,13 +22,9 @@ export function HeaderCampus({ onOpenMenu }: { onOpenMenu: () => void }) {
         if (!res.ok) return;
         const data = await res.json();
         const notifs: any[] = data.notificaciones || [];
-        const lastSeenStr = localStorage.getItem(`notif_last_seen_${id_usuario}`);
-        const lastSeen = lastSeenStr ? new Date(lastSeenStr).getTime() : 0;
-        const nuevas = notifs.filter(n => {
-          const fecha = n.fecha ? new Date(n.fecha).getTime() : 0;
-          return fecha > lastSeen;
-        });
-        setNoVistas(nuevas.length);
+        const seenCount = Number(localStorage.getItem(`notif_seen_count_${id_usuario}`) || "0");
+        const nuevas = Math.max(0, notifs.length - seenCount);
+        setNoVistas(nuevas);
       } catch (error) {
         console.error("Error al contar notificaciones:", error);
       }
