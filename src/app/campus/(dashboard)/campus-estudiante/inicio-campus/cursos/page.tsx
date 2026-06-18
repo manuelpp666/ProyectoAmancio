@@ -99,46 +99,54 @@ export default function CursosPage() {
 
       {/* GRILLA DE CURSOS */}
       {loadingCursos ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-64 bg-gray-100 animate-pulse rounded-xl"></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-72 bg-gray-100 animate-pulse rounded-2xl"></div>
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {cursos.length > 0 ? (
             cursos.map((curso) => (
-              <div
+              <Link
                 key={curso.id_curso}
-                className="group bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
+                href={`/campus/campus-estudiante/inicio-campus/cursos/mis-cursos/${curso.id_curso}?anio=${anioSeleccionado}`}
+                className="group bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 hover:border-[#701C32]/20 transition-all duration-300 flex flex-col h-full overflow-hidden"
               >
-                <div className="h-32 w-full flex items-center justify-center mb-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl text-gray-400 group-hover:text-[#701C32] transition-colors">
-                  <BookOpen size={48} strokeWidth={1.5} />
+                {/* Cabecera de la tarjeta */}
+                <div className="relative h-28 w-full bg-[#701C32] flex items-center justify-center overflow-hidden">
+                  <div className="absolute -right-6 -top-8 w-28 h-28 rounded-full bg-white/10"></div>
+                  <div className="absolute -left-8 -bottom-10 w-24 h-24 rounded-full bg-white/5"></div>
+                  <BookOpen size={44} strokeWidth={1.5} className="text-[#FFF1E3] relative z-10 group-hover:scale-110 transition-transform duration-300" />
+                  <span className="absolute top-3 right-3 text-[9px] font-black bg-white/15 text-white px-2.5 py-1 rounded-full backdrop-blur-sm tracking-wider">
+                    {anioSeleccionado}
+                  </span>
                 </div>
 
-                <div className="flex flex-col flex-1">
-                  <h3 className="font-black text-gray-800 text-sm mb-2 line-clamp-2 min-h-[40px]">
+                <div className="flex flex-col flex-1 p-5">
+                  <h3 className="font-black text-gray-800 text-sm mb-3 line-clamp-2 min-h-[40px] group-hover:text-[#701C32] transition-colors">
                     {curso.nombre || curso.curso_nombre}
                   </h3>
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="w-6 h-6 rounded-full bg-[#701C32]/10 flex items-center justify-center text-[10px] font-bold text-[#701C32]">
-                      {curso.docente_nombres[0]}
+                    <div className="w-8 h-8 rounded-full bg-[#FFF1E3] border border-[#F8EBDD] flex items-center justify-center text-[10px] font-black text-[#701C32] shrink-0">
+                      {(curso.docente_nombres?.[0] || "?")}{(curso.docente_apellidos?.[0] || "")}
                     </div>
-                    <p className="text-[11px] text-gray-500 font-medium">
-                      {curso.docente_nombres} {curso.docente_apellidos}
-                    </p>
+                    <div className="min-w-0">
+                      <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wide">Docente</p>
+                      <p className="text-[11px] text-gray-600 font-bold truncate">
+                        {curso.docente_nombres} {curso.docente_apellidos}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="mt-auto pt-4 border-t border-gray-50 flex justify-end">
-                    <Link
-                      href={`/campus/campus-estudiante/inicio-campus/cursos/mis-cursos/${curso.id_curso}?anio=${anioSeleccionado}`}
-                      className="text-[12px] font-black text-[#701C32] flex items-center gap-1 group-hover:gap-2 transition-all"
-                    >
+                  <div className="mt-auto pt-4 border-t border-gray-50 flex justify-between items-center">
+                    <span className="text-[10px] text-gray-400 font-medium">Aula virtual</span>
+                    <span className="text-[12px] font-black text-[#701C32] flex items-center gap-1 group-hover:gap-2 transition-all">
                       ENTRAR <ArrowRight size={14} />
-                    </Link>
+                    </span>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))
           ) : (
             <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-400">

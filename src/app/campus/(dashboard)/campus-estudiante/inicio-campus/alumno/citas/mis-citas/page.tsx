@@ -1,9 +1,16 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { ChevronDown, Loader2, Calendar, ArrowLeft, BookmarkCheck, Clock } from "lucide-react";
+import { ChevronDown, Loader2, Calendar, ArrowLeft, BookmarkCheck, Clock, XCircle, CalendarClock } from "lucide-react";
 import { useUser } from "@/src/context/userContext";
 import Link from "next/link";
 import { apiFetch } from "@/src/lib/api";
+
+const ESTILOS_ESTADO: Record<string, { badge: string; icono: string }> = {
+  COMPLETADA: { badge: "bg-emerald-100 text-emerald-700", icono: "bg-emerald-50 text-emerald-600" },
+  PROGRAMADA: { badge: "bg-blue-100 text-blue-700", icono: "bg-blue-50 text-blue-600" },
+  REPROGRAMADA: { badge: "bg-amber-100 text-amber-700", icono: "bg-amber-50 text-amber-600" },
+  CANCELADA: { badge: "bg-red-100 text-red-600", icono: "bg-red-50 text-red-500" },
+};
 
 export default function HistorialCitasPage() {
   const { id_usuario, loading: userLoading } = useUser();
@@ -12,23 +19,26 @@ export default function HistorialCitasPage() {
   const [citas, setCitas] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  
   const fetchAnios = useCallback(async (uid: number) => {
     try {
-      // Necesitarás crear este endpoint o usar uno similar al de reportes
-      const res = await apiFetch(`/conducta/usuario/${uid}/anios-reportes`);
+      const res = await apiFetch(`/conducta/usuario/${uid}/anios-citas`);
+      if (!res.ok) return;
       const data = await res.json();
-      if (data.length > 0) setAniosConCitas(data);
+      if (Array.isArray(data) && data.length > 0) {
+        setAniosConCitas(data);
+        // Seleccionar el año más reciente con citas por defecto
+        setAnioSeleccionado(String(data[0]));
+      }
     } catch (e) { console.error(e); }
   }, []);
 
   const fetchCitasPorAnio = useCallback(async (uid: number, anio: string) => {
     setLoading(true);
     try {
-     
       const res = await apiFetch(`/conducta/usuario/${uid}/historial-citas?anio=${anio}`);
+      if (!res.ok) throw new Error();
       const data = await res.json();
-      setCitas(data || []);
+      setCitas(Array.isArray(data) ? data : []);
     } catch (e) {
       setCitas([]);
     } finally {
@@ -37,16 +47,19 @@ export default function HistorialCitasPage() {
   }, []);
 
   useEffect(() => {
-    if (!userLoading && id_usuario) {
-      fetchAnios(Number(id_usuario));
+    if (!userLoading && id_usuario) fetchAnios(Number(id_usuario));
+  }, [id_usuario, userLoading, fetchAnios]);
+
+  useEffect(() => {
+    if (!userLoading && id_usuario && anioSeleccionado) {
       fetchCitasPorAnio(Number(id_usuario), anioSeleccionado);
     }
-  }, [id_usuario, anioSeleccionado, userLoading, fetchCitasPorAnio, fetchAnios]);
+  }, [id_usuario, anioSeleccionado, userLoading, fetchCitasPorAnio]);
 
   return (
     <div className="max-w-[1200px] mx-auto space-y-6 pb-8 px-4">
-      <Link href="/campus/campus-estudiante/inicio-campus/alumno/conducta" className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[#701C32] w-fit">
-        <ArrowLeft size={16} /> Volver
+      <Link href="/campus/campus-estudiante/inicio-campus/alumno/citas" className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[#701C32] w-fit">
+        <ArrowLeft size={16} /> Volver a citas
       </Link>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-6">
@@ -55,50 +68,57 @@ export default function HistorialCitasPage() {
           <p className="text-gray-500 text-sm">Historial de reuniones y seguimiento</p>
         </div>
 
-        {/* SELECT DE AÑO (Mismo estilo que reportes) */}
-        <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-2xl border border-gray-100">
-          <div className="pl-3 text-gray-400"><Calendar size={18} /></div>
-          <div className="relative">
-            <select
-              value={anioSeleccionado}
-              onChange={(e) => setAnioSeleccionado(e.target.value)}
-              className="appearance-none bg-transparent text-gray-700 text-sm py-2 pl-2 pr-10 focus:outline-none font-black cursor-pointer"
-            >
-              {aniosConCitas.map(anio => (
-                <option key={anio} value={anio}>Año {anio}</option>
-              ))}
-            </select>
-            <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        {/* SELECT DE AÑO: solo años con citas registradas */}
+        {aniosConCitas.length > 0 && (
+          <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-2xl border border-gray-100">
+            <div className="pl-3 text-gray-400"><Calendar size={18} /></div>
+            <div className="relative">
+              <select
+                value={anioSeleccionado}
+                onChange={(e) => setAnioSeleccionado(e.target.value)}
+                className="appearance-none bg-transparent text-gray-700 text-sm py-2 pl-2 pr-10 focus:outline-none font-black cursor-pointer"
+              >
+                {aniosConCitas.map(anio => (
+                  <option key={anio} value={anio}>Año {anio}</option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="animate-spin text-[#701C32]" size={40} /></div>
       ) : citas.length > 0 ? (
         <div className="grid gap-4">
-          {citas.map((c, i) => (
-            <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 flex flex-col md:flex-row justify-between md:items-center gap-4 shadow-sm">
-              <div className="flex gap-4 items-start">
-                <div className={`mt-1 p-2 rounded-lg ${c.estado === 'COMPLETADA' ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'}`}>
-                  <BookmarkCheck size={20} />
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-gray-100 text-gray-500">{c.fecha}</span>
-                    <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${c.estado === 'COMPLETADA' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
-                      {c.estado}
-                    </span>
+          {citas.map((c, i) => {
+            const estilos = ESTILOS_ESTADO[c.estado] || ESTILOS_ESTADO.PROGRAMADA;
+            return (
+              <div key={c.id_cita || i} className="bg-white p-6 rounded-2xl border border-gray-100 flex flex-col md:flex-row justify-between md:items-center gap-4 shadow-sm">
+                <div className="flex gap-4 items-start">
+                  <div className={`mt-1 p-2 rounded-lg ${estilos.icono}`}>
+                    {c.estado === "CANCELADA" ? <XCircle size={20} /> : c.estado === "REPROGRAMADA" ? <CalendarClock size={20} /> : <BookmarkCheck size={20} />}
                   </div>
-                  <h4 className="font-bold text-gray-800 text-lg">{c.motivo}</h4>
-                  {c.resultado && <p className="text-sm text-gray-500 italic">" {c.resultado} "</p>}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-gray-100 text-gray-500">{c.fecha}</span>
+                      <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${estilos.badge}`}>
+                        {c.estado}
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-gray-800 text-lg">{c.motivo}</h4>
+                    {c.resultado && <p className="text-sm text-gray-500 italic">" {c.resultado} "</p>}
+                  </div>
                 </div>
+                {c.hora && (
+                  <div className="flex items-center gap-2 text-gray-400 font-bold text-sm bg-gray-50 px-4 py-2 rounded-xl w-fit">
+                    <Clock size={16} /> {c.hora}
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-2 text-gray-400 font-bold text-sm bg-gray-50 px-4 py-2 rounded-xl w-fit">
-                <Clock size={16} /> {c.hora}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-24 bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200">

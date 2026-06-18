@@ -24,6 +24,7 @@ export default function ConductaAlumnoPage() {
 
   const fetchEstadoConducta = useCallback(async (uid: number) => {
     setLoading(true);
+    setError(null);
     try {
       const res = await apiFetch(`/conducta/usuario/${uid}/estado-conducta`);
       if (!res.ok) throw new Error("No se pudo obtener la información de conducta");
@@ -47,6 +48,21 @@ export default function ConductaAlumnoPage() {
       <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
         <Loader2 className="animate-spin text-[#701C32]" size={48} />
         <p className="text-gray-500 animate-pulse">Consultando expediente...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-4 text-center px-4">
+        <AlertCircle className="text-red-500" size={48} />
+        <p className="text-gray-600">{error}</p>
+        <button
+          onClick={() => fetchEstadoConducta(Number(id_usuario))}
+          className="bg-[#701C32] text-white px-6 py-2 rounded-xl font-bold hover:bg-[#5a1628] transition-colors"
+        >
+          Reintentar
+        </button>
       </div>
     );
   }
@@ -99,34 +115,34 @@ export default function ConductaAlumnoPage() {
             />
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex gap-4 flex-wrap">
             <div className="flex items-center gap-2 text-xs font-bold text-gray-500 bg-gray-50 px-3 py-1 rounded-lg">
               <CheckCircle2 size={14} className="text-emerald-500" /> 100-75: Excelente
             </div>
             <div className="flex items-center gap-2 text-xs font-bold text-gray-500 bg-gray-50 px-3 py-1 rounded-lg">
               <AlertTriangle size={14} className="text-amber-500" /> 74-40: Regular
             </div>
+            <div className="flex items-center gap-2 text-xs font-bold text-gray-500 bg-gray-50 px-3 py-1 rounded-lg">
+              <AlertCircle size={14} className="text-red-500" /> 39-0: En riesgo
+            </div>
           </div>
         </div>
       </div>
 
-      {/* HISTORIAL DE REPORTES */}
+      {/* ÚLTIMO REPORTE Y ACCESO AL HISTORIAL */}
       <div className="space-y-4">
-        <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-          <History size={20} /> Historial de Incidencias
-        </h3>
-
-        {/* ÚLTIMO REPORTE Y ACCESO AL HISTORIAL */}
+        <div className="flex justify-between items-center">
+          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <History size={20} /> Última Incidencia
+          </h3>
+          <Link
+            href="/campus/campus-estudiante/inicio-campus/alumno/conducta/mis-reportes"
+            className="text-sm font-bold text-[#701C32] hover:underline flex items-center gap-1"
+          >
+            Ver historial completo <ArrowRight size={16} />
+          </Link>
+        </div>
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold text-gray-800">Última Incidencia</h3>
-            <Link
-              href="/campus/campus-estudiante/inicio-campus/alumno/conducta/mis-reportes"
-              className="text-sm font-bold text-[#701C32] hover:underline flex items-center gap-1"
-            >
-              Ver historial completo <ArrowRight size={16} />
-            </Link>
-          </div>
 
           {ultimoReporte ? (
             <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-5">

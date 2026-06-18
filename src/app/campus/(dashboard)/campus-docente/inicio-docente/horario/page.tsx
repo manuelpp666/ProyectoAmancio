@@ -1,16 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, CalendarX } from "lucide-react";
 import { useUser } from "@/src/context/userContext";
-import { toast } from "sonner";
-import { HoraLectiva } from "@/src/interfaces/academic";
 import { TablaHorario } from "@/src/components/Horario/TablaHorario";
 import { useHorario } from "@/src/hooks/useHorario";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
-import { apiFetch } from "@/src/lib/api";
 
-export default function HorarioAlumnoPage() {
+export default function HorarioDocentePage() {
 
   const {
     anioPlanificacion: anioSeleccionado,
@@ -19,27 +15,13 @@ export default function HorarioAlumnoPage() {
     loadingAnios
   } = useAnioAcademico();
   const { id_usuario, loading: userLoading } = useUser();
-  const [bloquesHoras, setBloquesHoras] = useState<HoraLectiva[]>([]);
-  const [error, setError] = useState<string | null>(null);
 
   // Usamos el hook para obtener el horario automáticamente
-  const { data: horario, loading: horarioLoading } = useHorario(Number(id_usuario), anioSeleccionado);
-  // 1. Cargar Configuración Inicial (Años y Bloques de Horas)
-  useEffect(() => {
-    const fetchConfig = async () => {
-      try {
-        // 1. Solo pedimos las horas, los años ya vienen del hook
-        const resHoras = await apiFetch(`/horarios/horas`);
-        const dataHoras = await resHoras.json();
-        setBloquesHoras(dataHoras);
-      } catch (err) {
-        toast.error("Error al cargar la estructura del horario");
-      }
-    };
-    fetchConfig();
-  }, []);
+  const { data: horario, loading: horarioLoading, error } = useHorario(Number(id_usuario), anioSeleccionado);
 
-  if (userLoading || loadingAnios || (horarioLoading && bloquesHoras.length === 0)) {
+  const tieneHorario = Array.isArray(horario) && horario.length > 0;
+
+  if (userLoading || loadingAnios) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
         <Loader2 className="animate-spin text-[#701C32]" size={48} />
@@ -67,7 +49,7 @@ export default function HorarioAlumnoPage() {
         </div>
       </div>
 
-      {error && (
+      {error && !horarioLoading && (
         <div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-xl flex items-center gap-3">
           <AlertCircle size={20} />
           <p className="text-sm font-medium">{error}</p>
@@ -75,11 +57,23 @@ export default function HorarioAlumnoPage() {
       )}
 
       {/* TABLA DE HORARIO */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <TablaHorario horario={horario} bloques={bloquesHoras} />
+      {horarioLoading ? (
+        <div className="h-96 bg-gray-100 animate-pulse rounded-2xl"></div>
+      ) : tieneHorario ? (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <TablaHorario horario={horario} />
+          </div>
         </div>
-      </div>
+      ) : !error ? (
+        <div className="bg-white rounded-2xl p-14 text-center border-2 border-dashed border-gray-200">
+          <CalendarX size={44} className="mx-auto text-gray-300 mb-4" />
+          <h3 className="text-lg font-bold text-gray-800 mb-1">Sin horario asignado</h3>
+          <p className="text-gray-500 text-sm">
+            Aún no se han registrado clases en tu horario para este año escolar.
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

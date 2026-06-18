@@ -32,6 +32,6 @@ export interface Cita {
   motivo: string;
   fecha: string;
   hora: string;
-  estado: "PROGRAMADA" | "COMPLETADA" | "CANCELADA";
+  estado: "PROGRAMADA" | "REPROGRAMADA" | "COMPLETADA" | "CANCELADA";
   es_hoy: boolean;
 }

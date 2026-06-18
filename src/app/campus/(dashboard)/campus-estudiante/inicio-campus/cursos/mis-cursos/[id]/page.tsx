@@ -3,14 +3,16 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, BookOpen, Calendar, ClipboardList,
-  GraduationCap, FileText, CheckCircle2, Clock, AlertCircle
+  GraduationCap, FileText, CheckCircle2, Clock, AlertCircle, FolderOpen
 } from "lucide-react";
 import { useUser } from "@/src/context/userContext";
 import ModalEntregaTarea from "@/src/components/Tarea/ModalEntregaTarea";
 import { toast } from "sonner";
-import { DetalleCurso, Tarea, ResumenNotas } from "@/src/interfaces/academic";
+import { DetalleCurso, Tarea } from "@/src/interfaces/academic";
 import { apiFetch } from "@/src/lib/api";
+import { registrarCursoVisitado } from "@/src/lib/cursosRecientes";
 
+const NOMBRES_BIMESTRE = ["I Bimestre", "II Bimestre", "III Bimestre", "IV Bimestre"];
 
 export default function DetalleCursoPage() {
   const { id } = useParams();
@@ -19,46 +21,44 @@ export default function DetalleCursoPage() {
   const anio = searchParams.get("anio");
   const { id_usuario, loading: userLoading } = useUser();
 
-  // UNIFICAMOS A UN SOLO ESTADO: data
   const [data, setData] = useState<DetalleCurso | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tareaSeleccionada, setTareaSeleccionada] = useState<Tarea | null>(null);
 
-  // 1. FUNCIÓN PARA AGRUPAR TAREAS POR BIMESTRE
-  const tareasPorBimestre = data?.tareas.reduce((acc: any, tarea: Tarea) => {
+  // Agrupar tareas por bimestre (1 al 4)
+  const tareasPorBimestre: Record<number, Tarea[]> = (data?.tareas || []).reduce((acc: any, tarea: Tarea) => {
     const bim = tarea.bimestre || 1;
     if (!acc[bim]) acc[bim] = [];
     acc[bim].push(tarea);
     return acc;
   }, {});
 
-  // CALCULAR PROMEDIO DINÁMICO (Basado en tareas calificadas)
-  const promedioCalculado = data?.tareas.reduce((acc, tarea) => {
-    // Solo contamos tareas que tienen nota y peso
-    if (tarea.nota !== undefined && tarea.nota !== null) {
-      return acc + (Number(tarea.nota) * (tarea.peso / 100));
-    }
-    return acc;
-  }, 0);
-
-  // Determinar qué promedio mostrar (el oficial del backend o el calculado si el oficial es 0)
-  const promedioAMostrar = data?.notas?.promedio_final && data.notas.promedio_final > 0
-    ? data.notas.promedio_final
-    : promedioCalculado;
-
   const fetchDetalle = useCallback(async () => {
     if (!id_usuario || !id || !anio) return;
 
     setLoading(true);
-    setError(null); // Limpiar errores previos
+    setError(null);
     try {
       const res = await apiFetch(`/gestion/curso-detalle/${id}/${id_usuario}?anio=${anio}`);
 
-      if (!res.ok) throw new Error("No se pudo obtener el detalle del curso");
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || "No se pudo obtener el detalle del curso");
+      }
 
       const result = await res.json();
-      setData(result); // ACTUALIZAMOS EL ESTADO CORRECTO
+      setData(result);
+
+      // Registrar visita para "Visitados recientemente" del inicio
+      if (result?.curso_nombre) {
+        registrarCursoVisitado(id_usuario, {
+          id_curso: Number(id),
+          nombre: result.curso_nombre,
+          docente: result.docente_nombre || "",
+          anio: anio
+        });
+      }
     } catch (err: any) {
       console.error("Error:", err);
       setError(err.message);
@@ -101,7 +101,7 @@ export default function DetalleCursoPage() {
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
-      {/* Botón Volver y Header */}
+      {/* Botón Volver */}
       <button
         onClick={() => router.back()}
         className="flex items-center gap-2 text-gray-500 hover:text-[#701C32] transition-colors font-medium"
@@ -109,39 +109,62 @@ export default function DetalleCursoPage() {
         <ArrowLeft size={20} /> Volver a mis cursos
       </button>
 
-      <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
-        <h1 className="text-3xl font-black text-gray-800">{data.curso_nombre}</h1>
-        <p className="text-gray-500 flex items-center gap-2 mt-1"><GraduationCap size={18} /> {data.docente_nombre}</p>
+      {/* HEADER DEL CURSO: nombre + docente */}
+      <div className="bg-[#701C32] rounded-3xl p-8 md:p-10 text-white shadow-lg relative overflow-hidden">
+        <div className="absolute -right-12 -top-12 w-52 h-52 rounded-full bg-white/5 pointer-events-none"></div>
+        <div className="absolute right-20 -bottom-16 w-40 h-40 rounded-full bg-white/5 pointer-events-none"></div>
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/15 rounded-full text-[10px] font-bold tracking-widest mb-4 uppercase backdrop-blur-sm">
+              <BookOpen size={12} /> Curso · {anio}
+            </div>
+            <h1 className="text-3xl md:text-4xl font-black leading-tight">{data.curso_nombre}</h1>
+            <p className="text-white/85 flex items-center gap-2 mt-3 text-sm md:text-base">
+              <GraduationCap size={18} className="text-[#FFF1E3]" />
+              <span className="font-bold">{data.docente_nombre || "Docente por asignar"}</span>
+            </p>
+          </div>
+          <div className="hidden md:flex w-20 h-20 rounded-2xl bg-white/10 border border-white/15 items-center justify-center shrink-0">
+            <BookOpen size={36} className="text-[#FFF1E3]" />
+          </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Columna Izquierda: Tareas */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-              <ClipboardList className="text-[#701C32]" /> Tareas del Curso
-            </h2>
-            <span className="text-xs font-medium text-gray-400">{data.tareas.length} total</span>
-          </div>
+      {/* CONTENIDO DEL CURSO: dividido en 4 bimestres */}
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <ClipboardList className="text-[#701C32]" /> Contenido del curso
+          </h2>
+          <span className="text-xs font-medium text-gray-400">
+            {data.tareas.length} actividad{data.tareas.length === 1 ? "" : "es"} en total
+          </span>
+        </div>
 
-          {data.tareas.length > 0 ? (
-            // Recorremos los bimestres del 1 al 4
-            [1, 2, 3, 4].map((bimestreNum) => {
-              const tareasDelBimestre = tareasPorBimestre[bimestreNum] || [];
+        {[1, 2, 3, 4].map((bimestreNum) => {
+          const tareasDelBimestre = tareasPorBimestre[bimestreNum] || [];
 
-              // Si no hay tareas en este bimestre, no mostramos el título del bimestre (opcional)
-              if (tareasDelBimestre.length === 0) return null;
-
-              return (
-                <div key={bimestreNum} className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="h-px flex-1 bg-gray-100"></div>
-                    <span className="text-xs font-black text-gray-400 uppercase tracking-widest bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
-                      Bimestre {bimestreNum}
-                    </span>
-                    <div className="h-px flex-1 bg-gray-100"></div>
+          return (
+            <div key={bimestreNum} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              {/* Cabecera del bimestre */}
+              <div className="flex items-center justify-between px-6 py-4 bg-gray-50/70 border-b border-gray-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#701C32] text-white flex items-center justify-center text-xs font-black">
+                    {["I", "II", "III", "IV"][bimestreNum - 1]}
                   </div>
+                  <h3 className="text-sm font-black text-gray-800 uppercase tracking-wide">
+                    {NOMBRES_BIMESTRE[bimestreNum - 1]}
+                  </h3>
+                </div>
+                <span className="text-[11px] font-bold text-gray-400 bg-white px-3 py-1 rounded-full border border-gray-100">
+                  {tareasDelBimestre.length} actividad{tareasDelBimestre.length === 1 ? "" : "es"}
+                </span>
+              </div>
 
+              {/* Tareas del bimestre */}
+              <div className="p-5">
+                {tareasDelBimestre.length > 0 ? (
                   <div className="grid gap-4">
                     {tareasDelBimestre.map((tarea: Tarea) => {
                       const idReal = tarea.id_tarea;
@@ -158,10 +181,7 @@ export default function DetalleCursoPage() {
                                 ? `/virtual/tareas/${idReal}/${id_usuario}`
                                 : `/virtual/tareas/${idReal}`;
 
-                              // 2. USAMOS apiFetch en lugar de fetch nativo
                               const res = await apiFetch(endpoint);
-
-                              if (!res.ok) throw new Error("Error al obtener detalle");
                               if (!res.ok) throw new Error("Error al obtener detalle");
 
                               const tareaCompleta = await res.json();
@@ -214,69 +234,29 @@ export default function DetalleCursoPage() {
                       );
                     })}
                   </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="text-center py-12 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
-              <p className="text-gray-400 text-sm">No hay tareas publicadas aún.</p>
-            </div>
-          )}
-        </div>
-        {/* MODAL DE ENTREGA */}
-        {tareaSeleccionada && (
-          <ModalEntregaTarea
-            tarea={tareaSeleccionada}
-            idUsuario={id_usuario}
-            onClose={() => setTareaSeleccionada(null)}
-            onRefresh={fetchDetalle}
-          />
-        )}
-
-        {/* Columna Derecha: Calificaciones Bimestrales */}
-        <div className="space-y-6">
-          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            <BookOpen className="text-[#701C32]" /> Calificaciones
-          </h2>
-          <div className="bg-[#701C32] rounded-3xl p-6 text-white shadow-lg shadow-[#701C32]/20">
-            <p className="text-white/60 text-sm font-medium">Promedio Actual del Curso</p>
-            <div className="text-5xl font-black mt-1">
-              {promedioAMostrar?.toFixed(2) || "0.00"}
-            </div>
-
-            {/* Indicador visual de progreso */}
-            <div className="mt-4 w-full bg-white/10 h-2 rounded-full overflow-hidden">
-              <div
-                className="bg-green-400 h-full transition-all duration-1000"
-                style={{ width: `${(promedioAMostrar! / 20) * 100}%` }} // Asumiendo escala 0-20
-              />
-            </div>
-
-            <div className="mt-8 space-y-4">
-              {[1, 2, 3, 4].map((bim) => {
-                // Cálculo de promedio por bimestre
-                const tareasBim = tareasPorBimestre[bim] || [];
-                const promedioBim = tareasBim.reduce((acc: number, t: Tarea) => {
-                  if (t.nota !== null && t.nota !== undefined) return acc + (Number(t.nota) * (t.peso / 100));
-                  return acc;
-                }, 0);
-
-                const notaOficial = data.notas?.[`nota_bimestre${bim}` as keyof ResumenNotas];
-
-                return (
-                  <div key={bim} className="flex justify-between items-center border-b border-white/10 pb-2 text-sm">
-                    <span className="text-white/70">Bimestre {bim}</span>
-                    <span className="font-bold">
-                      {/* Muestra la oficial, si no existe, muestra la calculada */}
-                      {notaOficial || (promedioBim > 0 ? promedioBim.toFixed(1) : "--")}
-                    </span>
+                ) : (
+                  <div className="text-center py-8 bg-gray-50/60 rounded-xl border-2 border-dashed border-gray-200">
+                    <FolderOpen size={28} className="mx-auto text-gray-300 mb-2" />
+                    <p className="text-gray-400 text-xs font-medium">
+                      Aún no hay contenido publicado en este bimestre.
+                    </p>
                   </div>
-                );
-              })}
+                )}
+              </div>
             </div>
-          </div>
-        </div>
+          );
+        })}
       </div>
+
+      {/* MODAL DE ENTREGA */}
+      {tareaSeleccionada && (
+        <ModalEntregaTarea
+          tarea={tareaSeleccionada}
+          idUsuario={id_usuario}
+          onClose={() => setTareaSeleccionada(null)}
+          onRefresh={fetchDetalle}
+        />
+      )}
     </div>
   );
 }

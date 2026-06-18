@@ -1,12 +1,42 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Home, BookOpen, MessageSquare, User, ArrowLeftRight, ChevronDown, X } from "lucide-react";
+
+const BASE = "/campus/campus-estudiante/inicio-campus";
 
 export function AsideCampus({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
 
-  const [isTramitesOpen, setIsTramitesOpen] = useState(false);
-  const [isAlumnoOpen, setIsAlumnoOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Detectar la sección activa según la ruta actual
+  const esActivo = (ruta: string, exacto = false) =>
+    exacto ? pathname === ruta : pathname === ruta || pathname.startsWith(`${ruta}/`);
+
+  const enAlumno = esActivo(`${BASE}/alumno`);
+  const enTramites = esActivo(`${BASE}/tramites`);
+
+  // Los dropdowns inician abiertos si la ruta actual está dentro de ellos
+  const [isTramitesOpen, setIsTramitesOpen] = useState(enTramites);
+  const [isAlumnoOpen, setIsAlumnoOpen] = useState(enAlumno);
+
+  // Abrir automáticamente el dropdown correspondiente al navegar dentro de su sección
+  useEffect(() => {
+    if (enAlumno) setIsAlumnoOpen(true);
+    if (enTramites) setIsTramitesOpen(true);
+  }, [enAlumno, enTramites]);
+
+  // Estilos reutilizando los mismos colores del diseño actual
+  const claseLink = (activo: boolean) =>
+    `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors group ${
+      activo ? "bg-white/10 text-white font-bold" : "text-white/80 hover:bg-white/10 hover:text-white"
+    }`;
+
+  const claseSubLink = (activo: boolean) =>
+    `block py-2 text-sm transition-colors border-l-2 pl-4 -ml-px ${
+      activo ? "text-white font-bold border-white" : "text-white/60 hover:text-white border-transparent"
+    }`;
 
   return (
     <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#701C32] text-white flex flex-col h-screen transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
@@ -18,22 +48,27 @@ export function AsideCampus({ isOpen, onClose }: { isOpen: boolean; onClose: () 
         <button onClick={onClose} className="lg:hidden text-white/80"><X size={24} /></button>
       </div>
       <nav className="flex-1 py-6 space-y-2 px-3 overflow-y-auto custom-scrollbar">
-        <Link href="/campus/campus-estudiante/inicio-campus" onClick={onClose} className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg">
-          <Home size={20} /> Inicio
-        </Link>
         <Link
-          href="/campus/campus-estudiante/inicio-campus/cursos"
+          href={BASE}
           onClick={onClose}
-          className="flex items-center gap-3 px-4 py-3 text-white/80 hover:bg-white/10 hover:text-white rounded-lg transition-colors group"
+          className={claseLink(esActivo(BASE, true))}
+        >
+          <Home size={20} className="group-hover:text-white" /> Inicio
+        </Link>
+
+        <Link
+          href={`${BASE}/cursos`}
+          onClick={onClose}
+          className={claseLink(esActivo(`${BASE}/cursos`))}
         >
           <BookOpen size={20} className="group-hover:text-white" />
           Cursos
         </Link>
 
         <Link
-          href="/campus/campus-estudiante/inicio-campus/mensajeria"
+          href={`${BASE}/mensajeria`}
           onClick={onClose}
-          className="flex items-center gap-3 px-4 py-3 text-white/80 hover:bg-white/10 hover:text-white rounded-lg transition-colors group"
+          className={claseLink(esActivo(`${BASE}/mensajeria`))}
         >
           <MessageSquare size={20} className="group-hover:text-white" />
           Mensajería
@@ -45,7 +80,7 @@ export function AsideCampus({ isOpen, onClose }: { isOpen: boolean; onClose: () 
         <div className="space-y-1">
           <button
             onClick={() => setIsAlumnoOpen(!isAlumnoOpen)}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all text-left group ${isAlumnoOpen ? "bg-white/10 text-white" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all text-left group ${isAlumnoOpen || enAlumno ? "bg-white/10 text-white" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
           >
             <div className="flex items-center gap-3">
               <User size={20} className="group-hover:text-white" />
@@ -54,13 +89,13 @@ export function AsideCampus({ isOpen, onClose }: { isOpen: boolean; onClose: () 
             <ChevronDown size={16} className={`transition-transform duration-300 ${isAlumnoOpen ? "rotate-180" : ""}`} />
           </button>
 
-          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isAlumnoOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"}`}>
-            <div className="pl-11 pr-4 py-1 space-y-1">
-              <Link href="/campus/campus-estudiante/inicio-campus/alumno/conducta" className="block py-2 text-sm text-white/60 hover:text-white transition-colors">Conducta</Link>
-              <Link href="/campus/campus-estudiante/inicio-campus/alumno/citas" className="block py-2 text-sm text-white/60 hover:text-white transition-colors">Citas psicología</Link>
-              <Link href="/campus/campus-estudiante/inicio-campus/alumno/notas" className="block py-2 text-sm text-white/60 hover:text-white transition-colors">Notas</Link>
-              <Link href="/campus/campus-estudiante/inicio-campus/alumno" className="block py-2 text-sm text-white/60 hover:text-white transition-colors">Horario</Link>
-              
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isAlumnoOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0"}`}>
+            <div className="ml-7 pr-4 py-1 space-y-1 border-l border-white/10">
+              <Link href={`${BASE}/alumno/conducta`} onClick={onClose} className={claseSubLink(esActivo(`${BASE}/alumno/conducta`))}>Conducta</Link>
+              <Link href={`${BASE}/alumno/citas`} onClick={onClose} className={claseSubLink(esActivo(`${BASE}/alumno/citas`))}>Citas psicología</Link>
+              <Link href={`${BASE}/alumno/notas`} onClick={onClose} className={claseSubLink(esActivo(`${BASE}/alumno/notas`))}>Notas</Link>
+              <Link href={`${BASE}/alumno`} onClick={onClose} className={claseSubLink(esActivo(`${BASE}/alumno`, true))}>Horario</Link>
+              <Link href={`${BASE}/alumno/matricula`} onClick={onClose} className={claseSubLink(esActivo(`${BASE}/alumno/matricula`))}>Matrícula</Link>
             </div>
           </div>
         </div>
@@ -68,7 +103,7 @@ export function AsideCampus({ isOpen, onClose }: { isOpen: boolean; onClose: () 
         <div className="space-y-1">
           <button
             onClick={() => setIsTramitesOpen(!isTramitesOpen)}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all text-left group ${isTramitesOpen ? "bg-white/10 text-white" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all text-left group ${isTramitesOpen || enTramites ? "bg-white/10 text-white" : "text-white/80 hover:bg-white/10 hover:text-white"}`}
           >
             <div className="flex items-center gap-3">
               <ArrowLeftRight size={20} className="group-hover:text-white" />
@@ -79,17 +114,14 @@ export function AsideCampus({ isOpen, onClose }: { isOpen: boolean; onClose: () 
 
           {/* Contenedor de Miniopciones */}
           <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isTramitesOpen ? "max-h-56 opacity-100" : "max-h-0 opacity-0"}`}>
-            <div className="pl-11 pr-4 py-1 space-y-1">
-              {/* --- NUEVO LINK AGREGADO AQUÍ --- */}
-              <Link href="/campus/campus-estudiante/inicio-campus/tramites/solicitud" onClick={onClose} className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
+            <div className="ml-7 pr-4 py-1 space-y-1 border-l border-white/10">
+              <Link href={`${BASE}/tramites/solicitud`} onClick={onClose} className={claseSubLink(esActivo(`${BASE}/tramites/solicitud`))}>
                 Solicitud de trámite
               </Link>
-              {/* ------------------------------- */}
-              
-              <Link href="/campus/campus-estudiante/inicio-campus/tramites" onClick={onClose} className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
+              <Link href={`${BASE}/tramites`} onClick={onClose} className={claseSubLink(esActivo(`${BASE}/tramites`, true))}>
                 Estado de cuenta
               </Link>
-              <Link href="/campus/campus-estudiante/inicio-campus/tramites/manual" onClick={onClose} className="block py-2 text-sm text-white/60 hover:text-white transition-colors">
+              <Link href={`${BASE}/tramites/manual`} onClick={onClose} className={claseSubLink(esActivo(`${BASE}/tramites/manual`))}>
                 Manual de pagos
               </Link>
             </div>
