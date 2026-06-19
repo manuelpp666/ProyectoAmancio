@@ -17,7 +17,7 @@ export default function MensajeriaPage() {
   );
 
   return (
-    <div className="h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex relative">
+    <div className="h-full bg-white overflow-hidden flex relative">
       <ListaContactos 
         contactos={chat.contactos}
         chatActivoID={chat.chatActivoID}

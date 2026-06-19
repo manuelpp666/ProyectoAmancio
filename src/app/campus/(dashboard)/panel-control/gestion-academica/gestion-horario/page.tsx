@@ -294,7 +294,7 @@ export default function ConstructorHorariosPage() {
   };
 
   if (loading) return (
-    <div className="flex flex-col items-center justify-center h-screen text-gray-400 bg-[#F8FAFC]">
+    <div className="flex flex-col items-center justify-center h-full text-gray-400 bg-[#F8FAFC]">
       <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#093E7A] mb-4"></div>
       <p className="font-bold">Cargando sistema de horarios...</p>
     </div>
@@ -339,7 +339,7 @@ export default function ConstructorHorariosPage() {
   }
 `}} />
 
-      <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
+      <div className="flex h-full overflow-hidden bg-[#F8FAFC]">
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="no-print">
             <HeaderPanel />

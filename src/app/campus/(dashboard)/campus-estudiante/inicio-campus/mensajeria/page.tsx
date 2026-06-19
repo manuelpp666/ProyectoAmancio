@@ -17,15 +17,15 @@ export default function MensajeriaPage() {
   );
 
   return (
-    <div className="h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-      <div className="h-16 border-b bg-white flex items-center gap-2 px-6 shrink-0">
+    <div className="flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
+      <div className="h-16 border-b bg-white flex items-center gap-2 px-8 shrink-0">
         <MessageSquare className="text-[#701C32]" size={22} />
         <div>
           <h2 className="text-xl font-bold text-gray-800 leading-tight">Mensajería</h2>
           <p className="text-[11px] text-gray-400">Conversa con tus docentes, compañeros y el área de psicología</p>
         </div>
       </div>
-      <div className="flex-1 overflow-hidden flex relative">
+      <div className="flex-1 overflow-hidden bg-white border-t border-gray-100 flex relative">
         <ListaContactos
           contactos={chat.contactos}
           chatActivoID={chat.chatActivoID}

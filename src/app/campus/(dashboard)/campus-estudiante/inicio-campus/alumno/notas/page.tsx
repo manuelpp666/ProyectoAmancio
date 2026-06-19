@@ -4,8 +4,11 @@ import { useEffect, useState, useCallback } from "react";
 import { useUser } from "@/src/context/userContext";
 import {
   BookOpen, Loader2, AlertCircle, GraduationCap, ClipboardList,
-  Star, FileText, ChevronDown
+  FileText, ChevronDown, Calendar, CalendarOff, FolderOpen
 } from "lucide-react";
+
+const NOMBRES_BIMESTRE = ["I Bimestre", "II Bimestre", "III Bimestre", "IV Bimestre"];
+const ROMANOS = ["I", "II", "III", "IV"];
 import { apiFetch } from "@/src/lib/api";
 import { ResumenNota } from "@/src/interfaces/datos_alumno";
 import { toast } from "sonner";
@@ -94,12 +97,17 @@ export default function MisCalificacionesPage() {
 
   const curso = resumen.find(c => c.id_curso.toString() === cursoSeleccionado);
 
-  const notasBimestre = curso ? [
-    { label: "Bimestre I", valor: curso.nota_bimestre1 },
-    { label: "Bimestre II", valor: curso.nota_bimestre2 },
-    { label: "Bimestre III", valor: curso.nota_bimestre3 },
-    { label: "Bimestre IV", valor: curso.nota_bimestre4 },
-  ] : [];
+  const notasPorBimestre: (number | null | undefined)[] = curso
+    ? [curso.nota_bimestre1, curso.nota_bimestre2, curso.nota_bimestre3, curso.nota_bimestre4]
+    : [];
+
+  // Agrupar las evaluaciones por bimestre
+  const tareasPorBimestre: Record<number, TareaNota[]> = tareas.reduce((acc, t) => {
+    const bim = t.bimestre || 1;
+    if (!acc[bim]) acc[bim] = [];
+    acc[bim].push(t);
+    return acc;
+  }, {} as Record<number, TareaNota[]>);
 
   const colorNota = (valor?: number | null) => {
     const n = Number(valor || 0);
@@ -185,64 +193,88 @@ export default function MisCalificacionesPage() {
             </div>
           </div>
 
-          {/* LISTA DE NOTAS POR BIMESTRE */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 bg-gray-50/70 border-b border-gray-100 flex items-center gap-2">
-              <Star size={16} className="text-[#701C32]" />
-              <h3 className="text-sm font-black text-gray-800 uppercase tracking-wide">Notas por bimestre</h3>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {notasBimestre.map((b) => (
-                <div key={b.label} className="flex items-center justify-between px-6 py-4 hover:bg-gray-50/50 transition-colors">
-                  <span className="text-sm font-bold text-gray-600">{b.label}</span>
-                  <span className={`text-xl font-black ${colorNota(b.valor)}`}>
-                    {Number(b.valor || 0) > 0 ? Number(b.valor).toFixed(1) : "--"}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* LISTA DE EVALUACIONES CALIFICADAS */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 bg-gray-50/70 border-b border-gray-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ClipboardList size={16} className="text-[#701C32]" />
-                <h3 className="text-sm font-black text-gray-800 uppercase tracking-wide">Detalle de evaluaciones</h3>
-              </div>
+          {/* NOTAS POR BIMESTRE (estilo cursos, sin Contenido de clase) */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-2">
+              <ClipboardList size={18} className="text-[#701C32]" />
+              <h3 className="text-lg font-bold text-gray-800">Notas por bimestre</h3>
               {loadingDetalle && <Loader2 size={16} className="animate-spin text-[#701C32]" />}
             </div>
 
-            {loadingDetalle ? (
-              <div className="p-10 text-center text-gray-400 text-sm">Cargando evaluaciones...</div>
-            ) : tareas.length > 0 ? (
-              <div className="divide-y divide-gray-50">
-                {tareas
-                  .sort((a, b) => a.bimestre - b.bimestre)
-                  .map((t) => (
-                    <div key={t.id_tarea} className="flex items-center justify-between px-6 py-4 hover:bg-gray-50/50 transition-colors gap-4">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-[#FFF1E3] border border-[#F8EBDD] flex items-center justify-center text-[#701C32] shrink-0">
-                          <FileText size={16} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-gray-700 truncate">{t.titulo}</p>
-                          <p className="text-[11px] text-gray-400">
-                            Bimestre {t.bimestre} · Peso {t.peso}%
-                          </p>
-                        </div>
+            {[1, 2, 3, 4].map((bimestreNum) => {
+              const tareasDelBimestre = (tareasPorBimestre[bimestreNum] || []);
+              const notaBim = notasPorBimestre[bimestreNum - 1];
+
+              return (
+                <div key={bimestreNum} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  {/* Cabecera del bimestre con su promedio */}
+                  <div className="flex items-center justify-between px-6 py-4 bg-gray-50/70 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-[#701C32] text-white flex items-center justify-center text-xs font-black">
+                        {ROMANOS[bimestreNum - 1]}
                       </div>
-                      <span className={`text-lg font-black shrink-0 ${t.nota !== null && t.nota !== undefined ? colorNota(t.nota) : "text-gray-300"}`}>
-                        {t.nota !== null && t.nota !== undefined ? Number(t.nota).toFixed(1) : "Sin calificar"}
+                      <h4 className="text-sm font-black text-gray-800 uppercase tracking-wide">
+                        {NOMBRES_BIMESTRE[bimestreNum - 1]}
+                      </h4>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Promedio</p>
+                      <span className={`text-2xl font-black ${colorNota(notaBim)}`}>
+                        {Number(notaBim || 0) > 0 ? Number(notaBim).toFixed(1) : "--"}
                       </span>
                     </div>
-                  ))}
-              </div>
-            ) : (
-              <div className="p-10 text-center text-gray-400 text-sm">
-                Este curso aún no tiene evaluaciones registradas.
-              </div>
-            )}
+                  </div>
+
+                  {/* Evaluaciones del bimestre con sus notas */}
+                  <div className="p-5 space-y-3">
+                    {loadingDetalle ? (
+                      <div className="py-6 text-center text-gray-400 text-xs">Cargando evaluaciones...</div>
+                    ) : tareasDelBimestre.length > 0 ? (
+                      tareasDelBimestre.map((t) => (
+                        <div
+                          key={t.id_tarea}
+                          className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center justify-between gap-3 hover:border-[#701C32]/30 hover:shadow-sm transition-all"
+                        >
+                          <div className="flex items-center gap-4 min-w-0">
+                            <div className="p-3 rounded-xl bg-[#FFF1E3] text-[#701C32] shrink-0">
+                              <FileText size={22} />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h5 className="font-bold text-gray-800 truncate">{t.titulo}</h5>
+                                {t.peso > 0 && (
+                                  <span className="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded-full border border-gray-200">
+                                    {t.peso}%
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                                {t.fecha_entrega ? (
+                                  <><Calendar size={12} /> {new Date(t.fecha_entrega).toLocaleDateString()}</>
+                                ) : (
+                                  <><CalendarOff size={12} /> Sin fecha límite</>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Nota</p>
+                            <span className={`text-2xl font-black ${t.nota !== null && t.nota !== undefined ? colorNota(t.nota) : "text-gray-300"}`}>
+                              {t.nota !== null && t.nota !== undefined ? Number(t.nota).toFixed(1) : "--"}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-6 bg-gray-50/60 rounded-xl border-2 border-dashed border-gray-200">
+                        <FolderOpen size={28} className="mx-auto text-gray-300 mb-2" />
+                        <p className="text-gray-400 text-xs font-medium">Aún no hay evaluaciones en este bimestre.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

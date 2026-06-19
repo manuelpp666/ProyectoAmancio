@@ -3,7 +3,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, BookOpen, Calendar, ClipboardList,
-  GraduationCap, FileText, CheckCircle2, Clock, AlertCircle, FolderOpen
+  GraduationCap, FileText, CheckCircle2, Clock, AlertCircle, FolderOpen,
+  Presentation, Download
 } from "lucide-react";
 import { useUser } from "@/src/context/userContext";
 import ModalEntregaTarea from "@/src/components/Tarea/ModalEntregaTarea";
@@ -31,6 +32,14 @@ export default function DetalleCursoPage() {
     const bim = tarea.bimestre || 1;
     if (!acc[bim]) acc[bim] = [];
     acc[bim].push(tarea);
+    return acc;
+  }, {});
+
+  // Agrupar materiales (contenido de clase) por bimestre
+  const materialesPorBimestre: Record<number, any[]> = (data?.materiales || []).reduce((acc: any, mat: any) => {
+    const bim = mat.bimestre || 1;
+    if (!acc[bim]) acc[bim] = [];
+    acc[bim].push(mat);
     return acc;
   }, {});
 
@@ -144,6 +153,7 @@ export default function DetalleCursoPage() {
 
         {[1, 2, 3, 4].map((bimestreNum) => {
           const tareasDelBimestre = tareasPorBimestre[bimestreNum] || [];
+          const materialesDelBimestre = materialesPorBimestre[bimestreNum] || [];
 
           return (
             <div key={bimestreNum} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -158,12 +168,67 @@ export default function DetalleCursoPage() {
                   </h3>
                 </div>
                 <span className="text-[11px] font-bold text-gray-400 bg-white px-3 py-1 rounded-full border border-gray-100">
-                  {tareasDelBimestre.length} actividad{tareasDelBimestre.length === 1 ? "" : "es"}
+                  {materialesDelBimestre.length} material{materialesDelBimestre.length === 1 ? "" : "es"} · {tareasDelBimestre.length} actividad{tareasDelBimestre.length === 1 ? "" : "es"}
                 </span>
               </div>
 
-              {/* Tareas del bimestre */}
-              <div className="p-5">
+              {/* Cuerpo del bimestre: 2 secciones */}
+              <div className="p-5 space-y-6">
+
+                {/* SECCIÓN 1: CONTENIDO DE CLASE */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-[#093E7A]">
+                    <Presentation size={16} />
+                    <h4 className="text-xs font-black uppercase tracking-wide">Contenido de clase</h4>
+                    <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{materialesDelBimestre.length}</span>
+                  </div>
+
+                  {materialesDelBimestre.length > 0 ? (
+                    <div className="grid gap-3">
+                      {materialesDelBimestre.map((material: any) => (
+                        <div
+                          key={material.id_material}
+                          className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center justify-between gap-3 hover:border-[#093E7A]/30 hover:shadow-sm transition-all"
+                        >
+                          <div className="flex items-center gap-4 min-w-0">
+                            <div className="p-3 rounded-xl bg-blue-50 text-[#093E7A] shrink-0">
+                              <Presentation size={22} />
+                            </div>
+                            <div className="min-w-0">
+                              <h5 className="font-bold text-gray-800 truncate">{material.titulo}</h5>
+                              {material.descripcion && (
+                                <p className="text-xs text-gray-400 truncate mt-0.5">{material.descripcion}</p>
+                              )}
+                            </div>
+                          </div>
+                          {material.archivo_url && (
+                            <a
+                              href={`${process.env.NEXT_PUBLIC_API_URL}${material.archivo_url}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 text-xs font-bold text-[#093E7A] bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl transition shrink-0"
+                            >
+                              <Download size={14} /> Ver
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 bg-gray-50/60 rounded-xl border-2 border-dashed border-gray-200">
+                      <p className="text-gray-400 text-xs font-medium">Aún no hay contenido de clase publicado.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* SECCIÓN 2: TAREAS Y EXÁMENES */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-[#701C32]">
+                    <ClipboardList size={16} />
+                    <h4 className="text-xs font-black uppercase tracking-wide">Tareas y exámenes</h4>
+                    <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{tareasDelBimestre.length}</span>
+                  </div>
+
                 {tareasDelBimestre.length > 0 ? (
                   <div className="grid gap-4">
                     {tareasDelBimestre.map((tarea: Tarea) => {
@@ -206,23 +271,16 @@ export default function DetalleCursoPage() {
                                   </span>
                                 </h3>
                                 <p className="text-xs text-gray-400 flex items-center gap-1">
-                                  <Calendar size={12} /> Entrega: {new Date(tarea.fecha_entrega).toLocaleDateString()}
+                                  <Calendar size={12} /> {tarea.fecha_entrega ? `Entrega: ${new Date(tarea.fecha_entrega).toLocaleDateString()}` : "Sin fecha límite"}
                                 </p>
                               </div>
                             </div>
 
                             <div className="text-right">
                               {tarea.entregado ? (
-                                <div className="flex flex-col items-end">
-                                  <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md flex items-center gap-1">
-                                    <CheckCircle2 size={12} /> ENTREGADO
-                                  </span>
-                                  {tarea.nota !== undefined && tarea.nota !== null && (
-                                    <span className="text-lg font-black text-[#701C32] mt-1">
-                                      {Number(tarea.nota).toString().padStart(2, '0')}
-                                    </span>
-                                  )}
-                                </div>
+                                <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md flex items-center gap-1">
+                                  <CheckCircle2 size={12} /> ENTREGADO
+                                </span>
                               ) : (
                                 <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md flex items-center gap-1">
                                   <Clock size={12} /> PENDIENTE
@@ -235,13 +293,14 @@ export default function DetalleCursoPage() {
                     })}
                   </div>
                 ) : (
-                  <div className="text-center py-8 bg-gray-50/60 rounded-xl border-2 border-dashed border-gray-200">
+                  <div className="text-center py-6 bg-gray-50/60 rounded-xl border-2 border-dashed border-gray-200">
                     <FolderOpen size={28} className="mx-auto text-gray-300 mb-2" />
                     <p className="text-gray-400 text-xs font-medium">
-                      Aún no hay contenido publicado en este bimestre.
+                      Aún no hay tareas ni exámenes en este bimestre.
                     </p>
                   </div>
                 )}
+                </div>
               </div>
             </div>
           );

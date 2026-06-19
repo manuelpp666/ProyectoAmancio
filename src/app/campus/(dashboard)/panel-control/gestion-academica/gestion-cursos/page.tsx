@@ -225,7 +225,7 @@ export default function GestionCursosPage() {
         .modal-overlay { background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(2px); }
       ` }} />
 
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-full overflow-hidden">
         <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
           <HeaderPanel />
 

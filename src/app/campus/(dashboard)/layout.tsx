@@ -51,17 +51,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   };
 
+  // Las interfaces internas del panel de administración (no el dashboard) ya traen
+  // su propio contenedor de pantalla completa con cabecera y padding interno.
+  // Quitamos el padding del <main> para esas rutas y así "sacarlas del recuadro"
+  // (que el contenido ocupe todo el ancho/alto sin el margen exterior).
+  const esPanelInterno = pathname.startsWith("/campus/panel-control/");
+
+  // Algunas interfaces tipo "app" traen su propia cabecera a pantalla completa y
+  // scroll interno (mensajería, solicitud de trámites). Deben ocupar todo el área,
+  // igual que en el panel de administración: las sacamos del recuadro (sin padding).
+  const esInterfazSinRecuadro =
+    esPanelInterno ||
+    pathname.endsWith("/mensajeria") ||
+    pathname.endsWith("/tramites/solicitud");
+
   return (
     <div className="flex h-screen bg-[#F2F4F7] font-sans text-slate-800 overflow-hidden">
       {isMobileMenuOpen && (
         <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setIsMobileMenuOpen(false)} />
       )}
-      
+
       {renderSidebar()}
-      
+
       <div className="flex-1 flex flex-col min-w-0 h-full">
         <Header onOpenMenu={() => setIsMobileMenuOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <main className={`flex-1 overflow-y-auto ${esInterfazSinRecuadro ? "" : "p-4 md:p-8"}`}>
           {children}
         </main>
       </div>

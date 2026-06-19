@@ -21,7 +21,8 @@ export default function GestionEstudiantesPage() {
     const [busqueda, setBusqueda] = useState("");
     const [alumnos, setAlumnos] = useState<AlumnoBase[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filtroPostulantes, setFiltroPostulantes] = useState(false);
+    // Vista actual: "estudiantes" | "postulantes" | "renovaciones"
+    const [vista, setVista] = useState<"estudiantes" | "postulantes" | "renovaciones">("estudiantes");
     const [modalInfo, setModalInfo] = useState<{ abierto: boolean, datos: any | null }>({
         abierto: false,
         datos: null
@@ -31,10 +32,19 @@ export default function GestionEstudiantesPage() {
     const [modalRechazo, setModalRechazo] = useState({ abierto: false, id: 0, nombre: "" });
     const [motivoRechazo, setMotivoRechazo] = useState("");
 
+    // --- Renovaciones de matrícula ---
+    const [renovaciones, setRenovaciones] = useState<any[]>([]);
+    const [filtroRenovEstado, setFiltroRenovEstado] = useState<"PENDIENTE" | "APROBADA" | "RECHAZADA" | "TODAS">("PENDIENTE");
+    const [modalDecision, setModalDecision] = useState<{ abierto: boolean, solicitud: any | null, aprobar: boolean }>({
+        abierto: false, solicitud: null, aprobar: true
+    });
+    const [respuestaAdmin, setRespuestaAdmin] = useState("");
+    const [procesando, setProcesando] = useState(false);
+
     const cargarDatos = async () => {
         setLoading(true);
         try {
-            let urlRuta = filtroPostulantes ? "/alumnos/solicitudes-pendientes" : "/alumnos/";
+            let urlRuta = vista === "postulantes" ? "/alumnos/solicitudes-pendientes" : "/alumnos/";
 
             // Si hay algo escrito en búsqueda, lo añadimos como query param
             if (busqueda) {
@@ -45,7 +55,7 @@ export default function GestionEstudiantesPage() {
             // Usamos tu función apiFetch pasándole el string limpio
             const response = await apiFetch(urlRuta);
             if (!response.ok) throw new Error("Error al obtener datos");
-            
+
             const data = await response.json();
             setAlumnos(data);
         } catch (error) {
@@ -56,13 +66,75 @@ export default function GestionEstudiantesPage() {
         }
     };
 
+    const cargarRenovaciones = async () => {
+        setLoading(true);
+        try {
+            const estadoParam = filtroRenovEstado !== "TODAS" ? `?estado=${filtroRenovEstado}` : "";
+            const response = await apiFetch(`/enrollment/renovacion-solicitudes/${estadoParam}`);
+            if (!response.ok) throw new Error("Error al obtener solicitudes");
+            const data = await response.json();
+            setRenovaciones(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error("Error cargando renovaciones:", error);
+            toast.error("No se pudieron cargar las solicitudes de renovación");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
+        if (vista === "renovaciones") {
+            cargarRenovaciones();
+            return;
+        }
         const delayDebounceFn = setTimeout(() => {
             cargarDatos();
         }, 300); // 300ms de debounce para no saturar la API mientras escribes
 
         return () => clearTimeout(delayDebounceFn);
-    }, [filtroPostulantes, busqueda]);
+    }, [vista, busqueda]);
+
+    // Recargar renovaciones al cambiar el filtro de estado
+    useEffect(() => {
+        if (vista === "renovaciones") cargarRenovaciones();
+    }, [filtroRenovEstado]);
+
+    // Aprobar / rechazar una solicitud de renovación
+    const decidirRenovacion = async () => {
+        if (!modalDecision.solicitud) return;
+        setProcesando(true);
+        try {
+            const res = await apiFetch(
+                `/enrollment/renovacion-solicitudes/${modalDecision.solicitud.id_solicitud_matricula}/decidir`,
+                {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ aprobado: modalDecision.aprobar, respuesta_admin: respuestaAdmin || null })
+                }
+            );
+            if (!res.ok) {
+                const body = await res.json().catch(() => null);
+                throw new Error(body?.detail || "Error al procesar la solicitud");
+            }
+            toast.success(modalDecision.aprobar ? "Renovación aprobada y matrícula registrada" : "Solicitud rechazada");
+            setModalDecision({ abierto: false, solicitud: null, aprobar: true });
+            setRespuestaAdmin("");
+            cargarRenovaciones();
+        } catch (e: any) {
+            toast.error(e.message || "No se pudo procesar la solicitud");
+        } finally {
+            setProcesando(false);
+        }
+    };
+
+    const badgeRenovacion = (estado: string) => {
+        const map: any = {
+            PENDIENTE: "bg-blue-100 text-[#093E7A]",
+            APROBADA: "bg-green-100 text-green-700",
+            RECHAZADA: "bg-red-100 text-red-700",
+        };
+        return map[estado] || "bg-gray-100 text-gray-600";
+    };
     const verDetalle = async (id: number) => {
         setCargandoDetalle(true);
         try {
@@ -113,52 +185,154 @@ export default function GestionEstudiantesPage() {
             .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
         `}} />
 
-            <div className="flex h-screen overflow-hidden bg-[#F8FAFC] antialiased">
-                <div className="flex-1 flex flex-col h-full overflow-y-auto custom-scrollbar">
+            <div className="flex h-full overflow-hidden">
+                <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
 
-                    {/* Header */}
-                    <div className="px-8 pt-8 pb-4">
-                        {/* ... (tu código del header igual) ... */}
-                        <div className="flex flex-wrap items-center justify-between gap-4">
-                            <div>
-                                <h2 className="text-3xl font-black text-[#111418] tracking-tight">
-                                    {filtroPostulantes ? "Solicitudes de Admisión" : "Gestión de Estudiantes"}
+                    {/* HEADER CON TABS */}
+                    <div className="bg-white border-b px-8 shrink-0">
+                        <div className="h-16 flex items-center">
+                            <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-[#093E7A]">school</span>
+                                <h2 className="text-xl font-bold text-gray-800">
+                                    {vista === "postulantes" ? "Solicitudes de Admisión"
+                                        : vista === "renovaciones" ? "Renovaciones de Matrícula"
+                                            : "Gestión de Estudiantes"}
                                 </h2>
-                                <p className="text-[#617489] text-sm mt-1">Panel de control administrativo.</p>
                             </div>
-                            <div className="relative flex-1 max-w-md mx-4">
-                                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                                    search
-                                </span>
-                                <input
-                                    type="text"
-                                    placeholder="Buscar por DNI del alumno..."
-                                    value={busqueda}
-                                    onChange={(e) => setBusqueda(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#093E7A] outline-none transition-all"
-                                />
-                            </div>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setFiltroPostulantes(!filtroPostulantes)}
-                                    className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-bold transition-all border ${filtroPostulantes ? "bg-orange-100 border-orange-300 text-orange-700" : "bg-white border-gray-200 text-gray-600"}`}
-                                >
-                                    <span className="material-symbols-outlined">{filtroPostulantes ? 'group' : 'pending_actions'}</span>
-                                    {filtroPostulantes ? "Ver Todos los Alumnos" : "Ver Solicitudes Pendientes"}
-                                </button>
+                        </div>
 
-                                <Link href="/campus/panel-control/gestion-estudiantes/registrar-estudiante">
-                                    <button className="flex items-center gap-2 bg-[#093E7A] hover:bg-[#072e5a] text-white px-6 py-3 rounded-lg text-sm font-bold transition-all shadow-md">
-                                        <span className="material-symbols-outlined text-[20px]">add_circle</span>
-                                        <span>Registrar Nuevo</span>
-                                    </button>
-                                </Link>
-                            </div>
+                        {/* PESTAÑAS */}
+                        <div className="flex gap-8">
+                            {([
+                                { id: "estudiantes", label: "Estudiantes", icon: "group" },
+                                { id: "postulantes", label: "Solicitudes de Admisión", icon: "pending_actions" },
+                                { id: "renovaciones", label: "Renovaciones de Matrícula", icon: "autorenew" },
+                            ] as const).map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setVista(tab.id)}
+                                    className={`py-4 border-b-2 flex items-center gap-2 text-sm font-bold transition-all ${vista === tab.id
+                                            ? "border-[#093E7A] text-[#093E7A]"
+                                            : "border-transparent text-gray-400 hover:text-gray-600"
+                                        }`}
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
+                                    {tab.label}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
-                    {/* Tabla */}
-                    <div className="px-8 py-4 flex-1">
+                    {/* CUERPO */}
+                    <div className="flex-1 p-8 overflow-y-auto">
+                        {/* Barra de búsqueda + registro dedicado */}
+                        {vista !== "renovaciones" && (
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
+                                <div className="relative w-full sm:max-w-md">
+                                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                        search
+                                    </span>
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar por DNI del alumno..."
+                                        value={busqueda}
+                                        onChange={(e) => setBusqueda(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#093E7A] outline-none transition-all"
+                                    />
+                                </div>
+                                {vista === "estudiantes" && (
+                                    <Link href="/campus/panel-control/gestion-estudiantes/registrar-estudiante" className="shrink-0">
+                                        <button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#093E7A] hover:bg-[#072d5a] text-white px-6 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm">
+                                            <span className="material-symbols-outlined text-[20px]">add_circle</span>
+                                            <span>Registrar Nuevo Estudiante</span>
+                                        </button>
+                                    </Link>
+                                )}
+                            </div>
+                        )}
+                        {vista === "renovaciones" ? (
+                            <div className="space-y-4">
+                                {/* Filtro por estado de la solicitud */}
+                                <div className="flex flex-wrap gap-2">
+                                    {(["PENDIENTE", "APROBADA", "RECHAZADA", "TODAS"] as const).map((est) => (
+                                        <button
+                                            key={est}
+                                            onClick={() => setFiltroRenovEstado(est)}
+                                            className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${filtroRenovEstado === est
+                                                    ? "bg-[#093E7A] border-[#093E7A] text-white"
+                                                    : "bg-white border-gray-200 text-gray-500 hover:border-[#093E7A]/40"
+                                                }`}
+                                        >
+                                            {est === "TODAS" ? "Todas" : est.charAt(0) + est.slice(1).toLowerCase()}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden shadow-sm">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="bg-[#fcfafa] border-b border-[#e5e7eb]">
+                                                    <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Estudiante</th>
+                                                    <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">DNI</th>
+                                                    <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Progresión</th>
+                                                    <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Año Destino</th>
+                                                    <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Solicitado</th>
+                                                    <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Estado</th>
+                                                    <th className="px-6 py-4 text-xs font-black uppercase text-[#617489] text-right">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-[#f3f4f6]">
+                                                {loading ? (
+                                                    <tr><td colSpan={7} className="text-center py-10 text-gray-400 text-sm italic">Cargando solicitudes...</td></tr>
+                                                ) : renovaciones.length === 0 ? (
+                                                    <tr><td colSpan={7} className="text-center py-12 text-gray-400 text-sm">No hay solicitudes de renovación {filtroRenovEstado !== "TODAS" ? `en estado "${filtroRenovEstado.toLowerCase()}"` : ""}.</td></tr>
+                                                ) : (
+                                                    renovaciones.map((sol) => (
+                                                        <tr key={sol.id_solicitud_matricula} className="hover:bg-[#fcfafa] transition-colors">
+                                                            <td className="px-6 py-4 text-sm font-bold text-[#111418]">{sol.alumno_nombre}</td>
+                                                            <td className="px-6 py-4 text-sm text-[#4b5563]">{sol.alumno_dni || "—"}</td>
+                                                            <td className="px-6 py-4 text-sm text-[#4b5563]">
+                                                                <span className="inline-flex items-center gap-1.5">
+                                                                    <span className="text-gray-400">{sol.grado_actual || "—"}</span>
+                                                                    <span className="material-symbols-outlined text-[16px] text-[#093E7A]">arrow_forward</span>
+                                                                    <span className="font-bold text-[#093E7A]">{sol.grado_destino || "—"}</span>
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-sm text-[#4b5563]">{sol.anio_destino}</td>
+                                                            <td className="px-6 py-4 text-sm text-[#4b5563]">
+                                                                {sol.fecha_solicitud ? new Date(sol.fecha_solicitud).toLocaleDateString() : "—"}
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${badgeRenovacion(sol.estado)}`}>
+                                                                    {sol.estado}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                {sol.estado === "PENDIENTE" ? (
+                                                                    <div className="flex justify-end gap-2">
+                                                                        <button
+                                                                            onClick={() => { setRespuestaAdmin(""); setModalDecision({ abierto: true, solicitud: sol, aprobar: true }); }}
+                                                                            className="px-3 py-1 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 transition-colors"
+                                                                        >APROBAR</button>
+                                                                        <button
+                                                                            onClick={() => { setRespuestaAdmin(""); setModalDecision({ abierto: true, solicitud: sol, aprobar: false }); }}
+                                                                            className="px-3 py-1 bg-red-100 text-red-600 rounded text-xs font-bold hover:bg-red-200 transition-colors"
+                                                                        >RECHAZAR</button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-xs text-gray-400 italic">Resuelta</span>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
                         <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden shadow-sm">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
@@ -216,9 +390,68 @@ export default function GestionEstudiantesPage() {
                                 </table>
                             </div>
                         </div>
+                        )}
                     </div>
                 </div>
             </div>
+
+            {/* --- MODAL DECISIÓN RENOVACIÓN (Z-70) --- */}
+            {modalDecision.abierto && modalDecision.solicitud && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
+                        <div className={`p-5 text-white flex items-center gap-3 ${modalDecision.aprobar ? "bg-green-600" : "bg-red-600"}`}>
+                            <span className="material-symbols-outlined">{modalDecision.aprobar ? "task_alt" : "cancel"}</span>
+                            <h3 className="font-black text-lg">
+                                {modalDecision.aprobar ? "Aprobar Renovación" : "Rechazar Renovación"}
+                            </h3>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-gray-600 text-sm mb-1">
+                                Estudiante: <b className="text-gray-900">{modalDecision.solicitud.alumno_nombre}</b>
+                            </p>
+                            <p className="text-gray-500 text-xs mb-4">
+                                {modalDecision.solicitud.grado_actual || "—"} → <b>{modalDecision.solicitud.grado_destino || "—"}</b> · Año {modalDecision.solicitud.anio_destino}
+                            </p>
+
+                            {modalDecision.aprobar ? (
+                                <div className="bg-green-50 border border-green-100 rounded-xl p-3 mb-4 text-xs text-green-800 leading-relaxed">
+                                    Al aprobar se registrará automáticamente la matrícula del alumno para el año <b>{modalDecision.solicitud.anio_destino}</b> (sin sección). Podrás asignarle su sección en la pestaña <b>Asignar Estudiante</b>.
+                                </div>
+                            ) : (
+                                <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-4 text-xs text-red-700 leading-relaxed">
+                                    La solicitud quedará marcada como rechazada y el alumno verá tu respuesta.
+                                </div>
+                            )}
+
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                                {modalDecision.aprobar ? "Mensaje para el alumno (opcional)" : "Motivo del rechazo"}
+                            </label>
+                            <textarea
+                                value={respuestaAdmin}
+                                onChange={(e) => setRespuestaAdmin(e.target.value)}
+                                className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#093E7A] outline-none transition-all text-sm min-h-[90px]"
+                                placeholder={modalDecision.aprobar ? "Ej: ¡Bienvenido nuevamente! Acércate a caja para el pago de matrícula." : "Ej: Tienes pensiones pendientes del año actual..."}
+                            />
+
+                            <div className="flex gap-3 mt-6">
+                                <button
+                                    onClick={() => setModalDecision({ abierto: false, solicitud: null, aprobar: true })}
+                                    className="flex-1 px-4 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    disabled={procesando || (!modalDecision.aprobar && !respuestaAdmin.trim())}
+                                    onClick={decidirRenovacion}
+                                    className={`flex-1 px-4 py-2.5 text-sm font-bold text-white rounded-lg disabled:opacity-50 flex items-center justify-center gap-2 ${modalDecision.aprobar ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}
+                                >
+                                    {procesando ? "Procesando..." : modalDecision.aprobar ? "Confirmar Aprobación" : "Confirmar Rechazo"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* --- MODAL 1: INFORMACIÓN DETALLADA (Z-60) --- */}
             {modalInfo.abierto && modalInfo.datos && (

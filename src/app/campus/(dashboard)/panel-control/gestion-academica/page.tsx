@@ -330,7 +330,7 @@ export default function GestionAcademicaPage() {
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
       `}} />
 
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-full overflow-hidden">
         <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
 
           <HeaderPanel />

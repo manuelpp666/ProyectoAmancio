@@ -1,9 +1,9 @@
 "use client";
 import { useUser } from "@/src/context/userContext";
-import { useChat } from "@/src/hooks/useChat"; // Tu hook
+import { useChat } from "@/src/hooks/useChat";
 import ListaContactos from "@/src/components/Chat/ListaContactos";
 import VentanaChat from "@/src/components/Chat/VentanaChat";
-import { Loader2 } from "lucide-react";
+import { Loader2, MessageSquare } from "lucide-react";
 
 export default function MensajeriaPage() {
   const { id_usuario, loading } = useUser();
@@ -17,26 +17,35 @@ export default function MensajeriaPage() {
   );
 
   return (
-    <div className="h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex relative">
-      <ListaContactos 
-        contactos={chat.contactos}
-        chatActivoID={chat.chatActivoID}
-        setChatActivoID={chat.setChatActivoID}
-        query={chat.query}
-        setQuery={chat.setQuery}
-        resultadosBusqueda={chat.resultadosBusqueda}
-        estaBuscando={chat.estaBuscando}
-        seleccionarContacto={chat.seleccionarContacto}
-      />
-      
-      <VentanaChat 
-        contacto={chat.contactoActual}
-        setChatActivoID={chat.setChatActivoID}
-        scrollRef={chat.scrollRef}
-        textoMensaje={chat.textoMensaje}
-        setTextoMensaje={chat.setTextoMensaje}
-        onEnviar={chat.handleEnviar}
-      />
+    <div className="flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
+      <div className="h-16 border-b bg-white flex items-center gap-2 px-8 shrink-0">
+        <MessageSquare className="text-[#701C32]" size={22} />
+        <div>
+          <h2 className="text-xl font-bold text-gray-800 leading-tight">Mensajería</h2>
+          <p className="text-[11px] text-gray-400">Conversa con tus alumnos, colegas y el área de psicología</p>
+        </div>
+      </div>
+      <div className="flex-1 overflow-hidden bg-white border-t border-gray-100 flex relative">
+        <ListaContactos
+          contactos={chat.contactos}
+          chatActivoID={chat.chatActivoID}
+          setChatActivoID={chat.setChatActivoID}
+          query={chat.query}
+          setQuery={chat.setQuery}
+          resultadosBusqueda={chat.resultadosBusqueda}
+          estaBuscando={chat.estaBuscando}
+          seleccionarContacto={chat.seleccionarContacto}
+        />
+
+        <VentanaChat
+          contacto={chat.contactoActual}
+          setChatActivoID={chat.setChatActivoID}
+          scrollRef={chat.scrollRef}
+          textoMensaje={chat.textoMensaje}
+          setTextoMensaje={chat.setTextoMensaje}
+          onEnviar={chat.handleEnviar}
+        />
+      </div>
     </div>
   );
 }

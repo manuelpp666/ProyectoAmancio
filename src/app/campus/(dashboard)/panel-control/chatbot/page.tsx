@@ -133,7 +133,7 @@ export default function ChatbotKnowledgePage() {
     
     <RoleGuard modulo="chatbot">
     
-    <div className="flex h-screen overflow-hidden bg-[#F8FAFC] antialiased">
+    <div className="flex h-full overflow-hidden bg-[#F8FAFC] antialiased">
       {/* --- EL MODAL DE CONFIRMACIÓN --- */}
       <ConfirmModal
         isOpen={isDeleteModalOpen}

@@ -360,7 +360,7 @@ export default function GestionFinancieraPage() {
     
     <RoleGuard modulo="tramites_finanzas">
     
-    <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
+    <div className="flex h-full overflow-hidden bg-[#F8FAFC]">
       <div className="flex-1 flex flex-col">
 
         {/* HEADER CON TABS */}

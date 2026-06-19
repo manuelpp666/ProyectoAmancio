@@ -68,10 +68,19 @@ export interface ResumenNotas {
   promedio_final?: number;
 }
 
+export interface MaterialClase {
+  id_material: number;
+  titulo: string;
+  descripcion?: string | null;
+  archivo_url?: string | null;
+  bimestre: number;
+}
+
 export interface DetalleCurso {
   curso_nombre: string;
   docente_nombre: string;
   tareas: Tarea[];
+  materiales?: MaterialClase[];
   notas: ResumenNotas;
 }
 

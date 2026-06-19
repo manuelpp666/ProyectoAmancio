@@ -1,8 +1,23 @@
 "use client";
 import Link from "next/link";
-import { Home, BookOpen, MessageSquare, X, LogOut, Clock } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Home, BookOpen, MessageSquare, X, Clock } from "lucide-react";
+
+const BASE = "/campus/campus-docente/inicio-docente";
 
 export function AsideDocente({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+
+  const pathname = usePathname();
+
+  // Detectar la sección activa según la ruta actual
+  const esActivo = (ruta: string, exacto = false) =>
+    exacto ? pathname === ruta : pathname === ruta || pathname.startsWith(`${ruta}/`);
+
+  // Mismos colores/estructura del diseño actual, solo resaltando el activo
+  const claseLink = (activo: boolean) =>
+    `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors group ${
+      activo ? "bg-white/10 text-white font-bold" : "text-white/80 hover:bg-white/10 hover:text-white"
+    }`;
 
   return (
     <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#701C32] text-white flex flex-col h-screen transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
@@ -10,7 +25,6 @@ export function AsideDocente({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       {/* HEADER DEL SIDEBAR (Igual al del estudiante) */}
       <div className="h-20 flex items-center justify-between px-6 border-b border-white/10 shrink-0">
         <div className="flex items-center gap-3">
-          {/* Asegúrate de que la ruta de la imagen sea correcta desde donde se importa */}
           <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
           <span className="font-bold text-lg leading-tight">Campus Virtual</span>
         </div>
@@ -21,44 +35,41 @@ export function AsideDocente({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       <nav className="flex-1 py-6 space-y-2 px-3 overflow-y-auto custom-scrollbar">
 
         <Link
-          href="/campus/campus-docente/inicio-docente"
+          href={BASE}
           onClick={onClose}
-          className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg"
+          className={claseLink(esActivo(BASE, true))}
         >
-          <Home size={20} /> Inicio
+          <Home size={20} className="group-hover:text-white" /> Inicio
         </Link>
 
         <Link
-          href="/campus/campus-docente/inicio-docente/cursos"
+          href={`${BASE}/cursos`}
           onClick={onClose}
-          className="flex items-center gap-3 px-4 py-3 text-white/80 hover:bg-white/10 hover:text-white rounded-lg transition-colors group"
+          className={claseLink(esActivo(`${BASE}/cursos`))}
         >
           <BookOpen size={20} className="group-hover:text-white" />
           Cursos
         </Link>
 
         <Link
-          href="/campus/campus-docente/inicio-docente/horario"
+          href={`${BASE}/horario`}
           onClick={onClose}
-          className="flex items-center gap-3 px-4 py-3 text-white/80 hover:bg-white/10 hover:text-white rounded-lg transition-colors group"
+          className={claseLink(esActivo(`${BASE}/horario`))}
         >
           <Clock size={20} className="group-hover:text-white" />
           Horario
         </Link>
 
-        
         <Link
-          href="/campus/campus-docente/inicio-docente/mensajeria"
+          href={`${BASE}/mensajeria`}
           onClick={onClose}
-          className="flex items-center gap-3 px-4 py-3 text-white/80 hover:bg-white/10 hover:text-white rounded-lg transition-colors group"
+          className={claseLink(esActivo(`${BASE}/mensajeria`))}
         >
           <MessageSquare size={20} className="group-hover:text-white" />
           Mensajería
         </Link>
 
       </nav>
-
-      
 
     </aside>
   );

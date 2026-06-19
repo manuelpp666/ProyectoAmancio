@@ -4,7 +4,7 @@ import { useUser } from "@/src/context/userContext";
 import { toast } from "sonner";
 import {
   Loader2, GraduationCap, CalendarCheck, ArrowRight, Send, X,
-  CheckCircle, Clock, XCircle, AlertCircle, FileText, School, BadgeCheck
+  CheckCircle, Clock, XCircle, AlertCircle, FileText, School, BadgeCheck, Lock, CalendarClock
 } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 
@@ -32,8 +32,17 @@ interface InfoRenovacion {
   egresa: boolean;
   ya_matriculado_destino: boolean;
   puede_solicitar: boolean;
+  inscripcion_estado: "NO_CONFIGURADO" | "PROXIMAMENTE" | "ABIERTA" | "CERRADA";
+  inscripciones_abiertas: boolean;
+  inscripcion_inicio?: string | null;
+  inscripcion_fin?: string | null;
   solicitudes: SolicitudMatricula[];
 }
+
+const formatearFecha = (fecha?: string | null) =>
+  fecha
+    ? new Date(fecha + "T00:00:00").toLocaleDateString("es-PE", { day: "numeric", month: "long", year: "numeric" })
+    : "";
 
 export default function MatriculaPage() {
   const { id_usuario, loading: userLoading } = useUser();
@@ -222,18 +231,56 @@ export default function MatriculaPage() {
                 </div>
               </div>
 
-              <p className="text-xs text-gray-500 leading-relaxed mb-5">
-                Al finalizar el año académico puedes solicitar la renovación de tu matrícula para asegurar tu vacante.
-                La solicitud será revisada por la administración del colegio.
-              </p>
+              {/* ESTADO DE LA VENTANA DE INSCRIPCIÓN */}
+              {info.inscripcion_estado === "ABIERTA" ? (
+                <div className="bg-green-50 border border-green-100 rounded-xl p-3 mb-4 flex items-start gap-2">
+                  <CalendarCheck size={16} className="text-green-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-green-800 leading-relaxed">
+                    <span className="font-bold">Inscripciones abiertas.</span> Puedes solicitar tu renovación
+                    {info.inscripcion_fin ? ` hasta el ${formatearFecha(info.inscripcion_fin)}.` : "."}
+                  </p>
+                </div>
+              ) : info.inscripcion_estado === "PROXIMAMENTE" ? (
+                <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 mb-4 flex items-start gap-2">
+                  <CalendarClock size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    <span className="font-bold">Inscripciones próximamente.</span> El periodo de renovación
+                    {info.inscripcion_inicio ? ` abre el ${formatearFecha(info.inscripcion_inicio)}.` : " aún no ha sido habilitado."}
+                  </p>
+                </div>
+              ) : info.inscripcion_estado === "CERRADA" ? (
+                <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-4 flex items-start gap-2">
+                  <Lock size={16} className="text-red-500 shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-700 leading-relaxed">
+                    <span className="font-bold">Inscripciones cerradas.</span> El periodo de renovación
+                    {info.inscripcion_fin ? ` finalizó el ${formatearFecha(info.inscripcion_fin)}.` : " ya terminó."} Acércate a secretaría.
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 mb-4 flex items-start gap-2">
+                  <Clock size={16} className="text-gray-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    Las inscripciones para el año {info.anio_destino} aún no han sido habilitadas por el colegio.
+                    Te avisaremos cuando puedas renovar tu matrícula.
+                  </p>
+                </div>
+              )}
 
               <button
                 onClick={() => setIsModalOpen(true)}
                 disabled={!info.puede_solicitar}
                 className="mt-auto w-full bg-[#701C32] hover:bg-[#5a1628] disabled:opacity-40 disabled:cursor-not-allowed text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-red-900/10"
               >
-                <Send size={16} />
-                {info.puede_solicitar ? "Solicitar renovación de matrícula" : "Ya tienes una solicitud en curso"}
+                {info.puede_solicitar ? <Send size={16} /> : <Lock size={16} />}
+                {info.puede_solicitar
+                  ? "Solicitar renovación de matrícula"
+                  : info.solicitudes.some(s => s.anio_destino === info.anio_destino && ["PENDIENTE", "APROBADA"].includes(s.estado))
+                    ? "Ya tienes una solicitud en curso"
+                    : info.inscripcion_estado === "PROXIMAMENTE"
+                      ? "Inscripciones aún no abiertas"
+                      : info.inscripcion_estado === "CERRADA"
+                        ? "Inscripciones cerradas"
+                        : "Renovación no disponible"}
               </button>
             </>
           )}

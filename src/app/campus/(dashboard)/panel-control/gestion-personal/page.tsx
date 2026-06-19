@@ -1,16 +1,24 @@
 "use client";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Users, UserPlus, Edit, ShieldCheck, BookOpen, Briefcase, HeartHandshake, Power, PowerOff, X, Globe } from "lucide-react";
+import { UserPlus, Edit, ShieldCheck, BookOpen, Briefcase, HeartHandshake, Power, PowerOff, X, Globe, Search } from "lucide-react";
 import { Personal } from "@/src/interfaces/personal";
 import { TipoPersonal } from "@/src/interfaces/personal";
 import { apiFetch } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
 
+const LABELS_PERSONAL: Record<string, string> = {
+  admin: "Administrador",
+  docente: "Docente",
+  auxiliar: "Auxiliar",
+  psicologo: "Psicólogo"
+};
+
 export default function GestionPersonalPage() {
   const [activeTab, setActiveTab] = useState<TipoPersonal>("admin");
   const [personal, setPersonal] = useState<Personal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [busquedaDni, setBusquedaDni] = useState("");
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,8 +75,13 @@ export default function GestionPersonalPage() {
   });
 
   useEffect(() => {
+    setBusquedaDni("");
     fetchPersonal(activeTab);
   }, [activeTab]);
+
+  const personalFiltrado = personal.filter(p =>
+    p.dni.toLowerCase().includes(busquedaDni.trim().toLowerCase())
+  );
 
   const fetchPersonal = async (tipo: TipoPersonal) => {
     setIsLoading(true);
@@ -160,37 +173,53 @@ export default function GestionPersonalPage() {
   return (
     
     <RoleGuard modulo="gestion_personal">
-    <div className="flex flex-col h-full bg-[#F8FAFC]">
-      {/* HEADER */}
-      <div className="h-20 bg-white border-b px-8 flex items-center justify-between shrink-0">
-        <div>
-          <h1 className="text-2xl font-black text-[#093E7A] flex items-center gap-3">
-            <Users size={28} />
-            Gestión de Personal
-          </h1>
-          <p className="text-gray-500 text-sm">Administra los usuarios del sistema (Admin, Docentes, Auxiliares y Psicólogos)</p>
+    <div className="flex h-full overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
+
+        {/* HEADER CON TABS */}
+        <div className="bg-white border-b px-8 shrink-0">
+          <div className="h-16 flex items-center">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#093E7A]">groups</span>
+              <h2 className="text-xl font-bold text-gray-800">Gestión de Personal</h2>
+            </div>
+          </div>
+
+          {/* TABS */}
+          <div className="flex gap-8">
+            <button onClick={() => setActiveTab("admin")} className={`py-4 border-b-2 flex items-center gap-2 text-sm font-bold transition-all ${activeTab === "admin" ? "border-[#093E7A] text-[#093E7A]" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
+              <ShieldCheck size={18} /> Administradores
+            </button>
+            <button onClick={() => setActiveTab("docente")} className={`py-4 border-b-2 flex items-center gap-2 text-sm font-bold transition-all ${activeTab === "docente" ? "border-[#093E7A] text-[#093E7A]" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
+              <BookOpen size={18} /> Docentes
+            </button>
+            <button onClick={() => setActiveTab("auxiliar")} className={`py-4 border-b-2 flex items-center gap-2 text-sm font-bold transition-all ${activeTab === "auxiliar" ? "border-[#093E7A] text-[#093E7A]" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
+              <Briefcase size={18} /> Auxiliares
+            </button>
+            <button onClick={() => setActiveTab("psicologo")} className={`py-4 border-b-2 flex items-center gap-2 text-sm font-bold transition-all ${activeTab === "psicologo" ? "border-[#093E7A] text-[#093E7A]" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
+              <HeartHandshake size={18} /> Psicólogos
+            </button>
+          </div>
         </div>
-        <button onClick={openNew} className="bg-[#093E7A] text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-md hover:opacity-90 flex items-center gap-2">
-          <UserPlus size={18} />
-          Nuevo Registro
-        </button>
-      </div>
 
       <div className="flex-1 p-8 overflow-y-auto">
 
-        {/* TABS */}
-        <div className="flex gap-2 border-b border-gray-200 mb-6">
-          <button onClick={() => setActiveTab("admin")} className={`flex items-center gap-2 px-6 py-3 font-bold border-b-2 transition-colors ${activeTab === "admin" ? "border-[#093E7A] text-[#093E7A]" : "border-transparent text-gray-500 hover:bg-gray-50"}`}>
-            <ShieldCheck size={18} /> Administradores
-          </button>
-          <button onClick={() => setActiveTab("docente")} className={`flex items-center gap-2 px-6 py-3 font-bold border-b-2 transition-colors ${activeTab === "docente" ? "border-[#093E7A] text-[#093E7A]" : "border-transparent text-gray-500 hover:bg-gray-50"}`}>
-            <BookOpen size={18} /> Docentes
-          </button>
-          <button onClick={() => setActiveTab("auxiliar")} className={`flex items-center gap-2 px-6 py-3 font-bold border-b-2 transition-colors ${activeTab === "auxiliar" ? "border-[#093E7A] text-[#093E7A]" : "border-transparent text-gray-500 hover:bg-gray-50"}`}>
-            <Briefcase size={18} /> Auxiliares
-          </button>
-          <button onClick={() => setActiveTab("psicologo")} className={`flex items-center gap-2 px-6 py-3 font-bold border-b-2 transition-colors ${activeTab === "psicologo" ? "border-[#093E7A] text-[#093E7A]" : "border-transparent text-gray-500 hover:bg-gray-50"}`}>
-            <HeartHandshake size={18} /> Psicólogos
+        {/* BARRA: BÚSQUEDA POR DNI + REGISTRO DEDICADO */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-5">
+          <div className="relative w-full sm:w-80">
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder={`Buscar ${LABELS_PERSONAL[activeTab].toLowerCase()} por DNI...`}
+              value={busquedaDni}
+              onChange={(e) => setBusquedaDni(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A]"
+            />
+          </div>
+          <button onClick={openNew} className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-all shrink-0">
+            <UserPlus size={18} />
+            Nuevo {LABELS_PERSONAL[activeTab]}
           </button>
         </div>
 
@@ -208,10 +237,14 @@ export default function GestionPersonalPage() {
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr><td colSpan={4} className="py-10 text-center text-gray-400">Cargando datos...</td></tr>
-              ) : personal.length === 0 ? (
-                <tr><td colSpan={4} className="py-10 text-center text-gray-400">No hay personal registrado en esta área.</td></tr>
+              ) : personalFiltrado.length === 0 ? (
+                <tr><td colSpan={4} className="py-10 text-center text-gray-400">
+                  {busquedaDni.trim()
+                    ? `No se encontró personal con el DNI "${busquedaDni}".`
+                    : "No hay personal registrado en esta área."}
+                </td></tr>
               ) : (
-                personal.map(p => (
+                personalFiltrado.map(p => (
                   <tr key={p.id} className={`hover:bg-gray-50 transition-colors ${!p.usuario.activo ? 'opacity-60 bg-gray-50' : ''}`}>
                     <td className="px-6 py-4">
                       <div className="font-bold text-gray-800">{p.apellidos}, {p.nombres}</div>
@@ -455,6 +488,7 @@ export default function GestionPersonalPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
     </RoleGuard>
   );

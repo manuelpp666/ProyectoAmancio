@@ -50,7 +50,7 @@ export default function GestionContenidoPage() {
   };
 
   if (loading) return (
-    <div className="flex flex-col items-center justify-center h-screen text-gray-400 bg-[#F8FAFC]">
+    <div className="flex flex-col items-center justify-center h-full text-gray-400 bg-[#F8FAFC]">
       <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#093E7A] mb-4"></div>
       <p className="font-bold">Cargando noticias...</p>
     </div>
@@ -59,8 +59,8 @@ export default function GestionContenidoPage() {
   return (
     
     <RoleGuard modulo="contenido_web" subModulo="noticias">
-    <div className="min-h-screen bg-[#F8FAFC]">
-      <div className="flex h-screen overflow-hidden">
+    <div className="h-full bg-[#F8FAFC]">
+      <div className="flex h-full overflow-hidden">
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden">

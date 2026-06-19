@@ -72,7 +72,7 @@ export default function ModalEntregaTarea({ tarea, idUsuario, onClose, onRefresh
           <div>
             <h2 className="text-2xl font-black">{tarea.titulo}</h2>
             <p className="text-white/70 text-sm flex items-center gap-1 mt-1">
-              <Calendar size={14} /> Entrega: {new Date(tarea.fecha_entrega).toLocaleDateString()}
+              <Calendar size={14} /> {tarea.fecha_entrega ? `Entrega: ${new Date(tarea.fecha_entrega).toLocaleDateString()}` : "Sin fecha límite"}
             </p>
             <p className="bg-white/20 text-white text-xs font-bold px-2 py-0.5 rounded-lg flex items-center gap-1">
         Valor: {tarea.peso}%
@@ -136,12 +136,6 @@ export default function ModalEntregaTarea({ tarea, idUsuario, onClose, onRefresh
                   <p className="text-blue-700 text-sm italic leading-relaxed">
                     "{tarea.retroalimentacion_docente}"
                   </p>
-                  {tarea.nota !== null && (
-                    <div className="mt-4 pt-4 border-t border-blue-200/50 flex justify-between items-center">
-                      <span className="text-blue-800 text-xs font-bold uppercase">Calificación:</span>
-                      <span className="text-2xl font-black text-blue-900">{tarea.nota}</span>
-                    </div>
-                  )}
                 </div>
               )}
 

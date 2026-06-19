@@ -115,7 +115,7 @@ export default function GestionWebPage() {
     <RoleGuard modulo="contenido_web" subModulo="info_general">
     
     
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-full overflow-hidden">
       <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
         <HeaderPanel />
 

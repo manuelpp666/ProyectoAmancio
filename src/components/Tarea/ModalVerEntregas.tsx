@@ -84,6 +84,14 @@ export default function ModalVerEntregas({ tarea, onClose }: { tarea: any; onClo
                <div className="animate-spin mb-4 border-4 border-t-[#701C32] border-gray-200 rounded-full w-10 h-10"></div>
                <p>Cargando alumnos...</p>
             </div>
+          ) : entregas.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+              <div className="bg-gray-100 p-4 rounded-full mb-4">
+                <FileText size={32} className="text-gray-300" />
+              </div>
+              <p className="font-bold text-gray-500">Aún no hay entregas</p>
+              <p className="text-sm">Ningún alumno ha subido un archivo para esta actividad todavía.</p>
+            </div>
           ) : (
             <div className="space-y-4">
               {entregas.map((e) => (

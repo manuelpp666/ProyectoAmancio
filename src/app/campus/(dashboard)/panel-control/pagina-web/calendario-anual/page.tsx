@@ -90,7 +90,7 @@ export default function CalendarioPage() {
 
   return (
     <RoleGuard modulo="contenido_web" subModulo="calendario">
-    <div className="flex h-screen overflow-hidden bg-[#F8FAFC] antialiased">
+    <div className="flex h-full overflow-hidden bg-[#F8FAFC] antialiased">
       <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
         <HeaderPanel />
 

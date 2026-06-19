@@ -222,7 +222,7 @@ export default function AsignacionDocentesPage() {
   return (
     
     <RoleGuard modulo="academico" subModulo="docentes">
-      <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
+      <div className="flex h-full overflow-hidden bg-[#F8FAFC]">
         <div className="flex-1 flex flex-col overflow-hidden">
           <HeaderPanel />
 
