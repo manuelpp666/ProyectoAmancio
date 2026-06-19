@@ -187,22 +187,31 @@ export default function CalendarioPage() {
 
       {/* MODAL DE CREACIÓN/EDICIÓN */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl">
-            <h2 className="mb-6 text-lg font-black text-[#093E7A] uppercase">
-              {eventoActivo ? "Editar Evento" : "Nuevo Evento"}
-            </h2>
-            <EventForm
-              evento={eventoActivo}
-              // IMPORTANTE: Pasar el año seleccionado al formulario para que se guarde correctamente
-              defaultAnio={anioSeleccionado}
-              onClose={() => setIsModalOpen(false)}
-              onSuccess={() => {
-                toast.success(eventoActivo ? "Evento actualizado" : "Evento creado");
-                fetchEventos(anioSeleccionado);
-                setIsModalOpen(false);
-              }}
-            />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div className="bg-[#093E7A] px-6 py-5 flex justify-between items-start text-white">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">event</span></div>
+                <div>
+                  <h2 className="font-black text-lg leading-tight">{eventoActivo ? "Editar Evento" : "Nuevo Evento"}</h2>
+                  <p className="text-[11px] text-white/70 mt-0.5">Registra una fecha importante del calendario escolar.</p>
+                </div>
+              </div>
+              <button onClick={() => setIsModalOpen(false)} className="hover:text-gray-300 mt-0.5"><span className="material-symbols-outlined">close</span></button>
+            </div>
+            <div className="p-6">
+              <EventForm
+                evento={eventoActivo}
+                // IMPORTANTE: Pasar el año seleccionado al formulario para que se guarde correctamente
+                defaultAnio={anioSeleccionado}
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={() => {
+                  toast.success(eventoActivo ? "Evento actualizado" : "Evento creado");
+                  fetchEventos(anioSeleccionado);
+                  setIsModalOpen(false);
+                }}
+              />
+            </div>
           </div>
         </div>
       )}

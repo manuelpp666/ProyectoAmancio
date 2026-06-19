@@ -599,12 +599,15 @@ export default function GestionAcademicaPage() {
       {isCrearAnioModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div className="p-6 border-b bg-[#093E7A] text-white flex justify-between items-start">
-              <div>
-                <h3 className="font-black text-lg">Crear Nuevo Año Académico</h3>
-                <p className="text-xs opacity-80">El año se creará en el sistema y aparecerá en el selector.</p>
+            <div className="bg-[#093E7A] px-6 py-5 text-white flex justify-between items-start">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">calendar_add_on</span></div>
+                <div>
+                  <h3 className="font-black text-lg leading-tight">Nuevo Año Académico</h3>
+                  <p className="text-[11px] text-white/70 mt-0.5">El año se creará en el sistema y aparecerá en el selector.</p>
+                </div>
               </div>
-              <button onClick={() => setIsCrearAnioModalOpen(false)} className="text-white/70 hover:text-white transition-colors"><span className="material-symbols-outlined">close</span></button>
+              <button onClick={() => setIsCrearAnioModalOpen(false)} className="text-white/70 hover:text-white transition-colors mt-0.5"><span className="material-symbols-outlined">close</span></button>
             </div>
             <form onSubmit={handleCrearAnio} className="p-6 space-y-4">
               <div>
@@ -653,12 +656,15 @@ export default function GestionAcademicaPage() {
       {isEditarAnioModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div className="p-6 border-b bg-[#093E7A] text-white flex justify-between items-start">
-              <div>
-                <h3 className="font-black text-lg">Editar Año Académico</h3>
-                <p className="text-xs opacity-80">Modificando el año {anioSeleccionado}</p>
+            <div className="bg-[#093E7A] px-6 py-5 text-white flex justify-between items-start">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">edit_calendar</span></div>
+                <div>
+                  <h3 className="font-black text-lg leading-tight">Editar Año Académico</h3>
+                  <p className="text-[11px] text-white/70 mt-0.5">Modificando el año {anioSeleccionado}</p>
+                </div>
               </div>
-              <button onClick={() => setIsEditarAnioModalOpen(false)} className="text-white/70 hover:text-white transition-colors"><span className="material-symbols-outlined">close</span></button>
+              <button onClick={() => setIsEditarAnioModalOpen(false)} className="text-white/70 hover:text-white transition-colors mt-0.5"><span className="material-symbols-outlined">close</span></button>
             </div>
             <form onSubmit={handleEditarAnio} className="p-6 space-y-4">
               <div>
@@ -702,12 +708,15 @@ export default function GestionAcademicaPage() {
       {isInscripcionModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div className="p-6 border-b bg-[#093E7A] text-white flex justify-between items-start">
-              <div>
-                <h3 className="font-black text-lg">Configurar Inscripciones</h3>
-                <p className="text-xs opacity-80">Periodo para {anioSeleccionado}</p>
+            <div className="bg-[#093E7A] px-6 py-5 text-white flex justify-between items-start">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">how_to_reg</span></div>
+                <div>
+                  <h3 className="font-black text-lg leading-tight">Configurar Inscripciones</h3>
+                  <p className="text-[11px] text-white/70 mt-0.5">Periodo de matrícula para {anioSeleccionado}</p>
+                </div>
               </div>
-              <button onClick={() => setIsInscripcionModalOpen(false)} className="text-white/70 hover:text-white transition-colors"><span className="material-symbols-outlined">close</span></button>
+              <button onClick={() => setIsInscripcionModalOpen(false)} className="text-white/70 hover:text-white transition-colors mt-0.5"><span className="material-symbols-outlined">close</span></button>
             </div>
             <form onSubmit={handleGuardarInscripcion} className="p-6 space-y-4">
               <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 text-xs text-blue-800 mb-4">
@@ -734,9 +743,15 @@ export default function GestionAcademicaPage() {
       {isSeccionModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-            <div className="p-6 border-b flex justify-between items-center bg-gray-50">
-              <h3 className="font-black text-lg text-[#093E7A]">{seccionEnEdicion ? `Editar Sección` : "Nueva Sección"}</h3>
-              <button onClick={() => setIsSeccionModalOpen(false)} className="text-gray-400 hover:text-gray-600"><span className="material-symbols-outlined">close</span></button>
+            <div className="bg-[#093E7A] px-6 py-5 text-white flex justify-between items-start">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">groups</span></div>
+                <div>
+                  <h3 className="font-black text-lg leading-tight">{seccionEnEdicion ? "Editar Sección" : "Nueva Sección"}</h3>
+                  <p className="text-[11px] text-white/70 mt-0.5">Define el nombre de la sección y sus vacantes.</p>
+                </div>
+              </div>
+              <button onClick={() => setIsSeccionModalOpen(false)} className="text-white/70 hover:text-white transition-colors mt-0.5"><span className="material-symbols-outlined">close</span></button>
             </div>
             <form onSubmit={handleGuardarSeccion} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -767,12 +782,15 @@ export default function GestionAcademicaPage() {
       {isCopiarModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div className="p-6 border-b flex justify-between items-start">
-              <div>
-                <h3 className="font-black text-lg text-gray-800">Copiar Estructura</h3>
-                <p className="text-xs text-gray-500">Replica secciones de un año anterior.</p>
+            <div className="bg-[#093E7A] px-6 py-5 text-white flex justify-between items-start">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">content_copy</span></div>
+                <div>
+                  <h3 className="font-black text-lg leading-tight">Copiar Estructura</h3>
+                  <p className="text-[11px] text-white/70 mt-0.5">Replica las secciones de un año anterior.</p>
+                </div>
               </div>
-              <button onClick={() => setIsCopiarModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors"><span className="material-symbols-outlined">close</span></button>
+              <button onClick={() => setIsCopiarModalOpen(false)} className="text-white/70 hover:text-white transition-colors mt-0.5"><span className="material-symbols-outlined">close</span></button>
             </div>
             <div className="p-6 space-y-4">
               <div className="bg-yellow-50 text-yellow-800 p-3 rounded-lg text-xs border border-yellow-100">

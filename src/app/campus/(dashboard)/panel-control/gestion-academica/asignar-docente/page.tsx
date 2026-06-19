@@ -398,11 +398,15 @@ export default function AsignacionDocentesPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in duration-200">
             <form onSubmit={guardarAsignacion}>
-              <div className="p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-2xl">
-                <h3 className="text-xl font-bold text-gray-900">
-                  {editingId ? "Editar Asignación Docente" : "Crear Nuevo Vínculo"}
-                </h3>
-                <button type="button" onClick={cerrarModal} className="text-gray-400 hover:text-gray-600">
+              <div className="bg-[#093E7A] px-6 py-5 flex justify-between items-start text-white rounded-t-2xl">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">link</span></div>
+                  <div>
+                    <h3 className="font-black text-lg leading-tight">{editingId ? "Editar Asignación" : "Nuevo Vínculo Docente"}</h3>
+                    <p className="text-[11px] text-white/70 mt-0.5">Vincula un docente a un curso de una sección.</p>
+                  </div>
+                </div>
+                <button type="button" onClick={cerrarModal} className="hover:text-gray-300 mt-0.5">
                   <span className="material-symbols-outlined">close</span>
                 </button>
               </div>
@@ -471,9 +475,15 @@ export default function AsignacionDocentesPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in duration-200">
             <form onSubmit={guardarTutor}>
-              <div className="p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-2xl">
-                <h3 className="text-xl font-bold text-gray-900">Asignar Tutor a Sección</h3>
-                <button type="button" onClick={cerrarModalTutor} className="text-gray-400 hover:text-gray-600">
+              <div className="bg-[#093E7A] px-6 py-5 flex justify-between items-start text-white rounded-t-2xl">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">supervisor_account</span></div>
+                  <div>
+                    <h3 className="font-black text-lg leading-tight">Asignar Tutor</h3>
+                    <p className="text-[11px] text-white/70 mt-0.5">Designa al docente tutor de una sección.</p>
+                  </div>
+                </div>
+                <button type="button" onClick={cerrarModalTutor} className="hover:text-gray-300 mt-0.5">
                   <span className="material-symbols-outlined">close</span>
                 </button>
               </div>

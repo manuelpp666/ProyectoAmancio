@@ -77,58 +77,67 @@ export default function EventForm({ evento, defaultAnio, onClose, onSuccess }: E
                 <p className="text-sm font-bold text-[#093E7A]">{formData.id_anio_escolar || "No seleccionado"}</p>
             </div>
 
-            <input
-                required
-                placeholder="Título del evento"
-                className="w-full p-2 border rounded-xl text-sm focus:ring-2 focus:ring-[#093E7A]/20 outline-none"
-                value={formData.titulo}
-                onChange={e => setFormData({ ...formData, titulo: e.target.value })}
-            />
-            
+            <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Título del evento</label>
+                <input
+                    required
+                    placeholder="Ej. Aniversario del colegio"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A] outline-none"
+                    value={formData.titulo}
+                    onChange={e => setFormData({ ...formData, titulo: e.target.value })}
+                />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Fecha Inicio</label>
                     <input
                         type="date"
                         required
-                        className="w-full p-2 border rounded-xl text-sm"
+                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A] outline-none"
                         value={formData.fecha_inicio}
                         onChange={e => setFormData({ ...formData, fecha_inicio: e.target.value })}
                     />
                 </div>
-                <div>
+                <div className="space-y-1.5">
                     <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Fecha Fin (Opcional)</label>
                     <input
                         type="date"
-                        className="w-full p-2 border rounded-xl text-sm"
+                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A] outline-none"
                         value={formData.fecha_fin}
                         onChange={e => setFormData({ ...formData, fecha_fin: e.target.value })}
                     />
                 </div>
             </div>
 
-            <select
-                className="w-full p-2 border rounded-xl text-sm bg-white"
-                value={formData.tipo_evento}
-                onChange={e => setFormData({ ...formData, tipo_evento: e.target.value })}
-            >
-                <option value="">-- Tipo de evento --</option>
-                <option value="Inicio de Clases">Inicio de Clases</option>
-                <option value="Festividades">Festividades</option>
-                <option value="Ceremonia">Ceremonia</option>
-                <option value="Feriado">Feriado</option>
-                <option value="Actividad">Actividad</option>
-                <option value="Actividad Escolar">Actividad Escolar</option>
-                <option value="Vacaciones">Vacaciones</option>
-            </select>
+            <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Tipo de evento</label>
+                <select
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A] outline-none"
+                    value={formData.tipo_evento}
+                    onChange={e => setFormData({ ...formData, tipo_evento: e.target.value })}
+                >
+                    <option value="">-- Selecciona... --</option>
+                    <option value="Inicio de Clases">Inicio de Clases</option>
+                    <option value="Festividades">Festividades</option>
+                    <option value="Ceremonia">Ceremonia</option>
+                    <option value="Feriado">Feriado</option>
+                    <option value="Actividad">Actividad</option>
+                    <option value="Actividad Escolar">Actividad Escolar</option>
+                    <option value="Vacaciones">Vacaciones</option>
+                </select>
+            </div>
 
-            <textarea
-                placeholder="Descripción breve..."
-                rows={3}
-                className="w-full p-2 border rounded-xl text-sm"
-                value={formData.descripcion}
-                onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
-            />
+            <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Descripción (Opcional)</label>
+                <textarea
+                    placeholder="Descripción breve..."
+                    rows={3}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A] outline-none resize-none"
+                    value={formData.descripcion}
+                    onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
+                />
+            </div>
 
             <div className="flex items-center justify-between p-2 bg-gray-50 rounded-xl">
                 <label className="text-sm font-medium text-gray-600">Color de etiqueta:</label>

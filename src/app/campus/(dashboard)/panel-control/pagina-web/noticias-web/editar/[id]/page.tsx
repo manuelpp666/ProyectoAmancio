@@ -74,18 +74,19 @@ export default function EditarNoticiaPage() {
   return (
     
     <RoleGuard modulo="contenido_web" subModulo="noticias">
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col">
+    <div className="h-full bg-[#F8FAFC] flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="h-20 bg-white border-b border-gray-100 px-8 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-4">
-          <Link href="/campus/panel-control/pagina-web/noticias-web" className="p-2.5 hover:bg-gray-50 rounded-xl transition-colors text-gray-400">
+      <header className="h-16 bg-white border-b border-gray-100 px-8 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
+          <Link href="/campus/panel-control/pagina-web/noticias-web" className="w-9 h-9 flex items-center justify-center hover:bg-gray-50 rounded-full transition-colors text-gray-400">
             <ArrowLeft size={20} />
           </Link>
-          <div>
-            <h1 className="text-xl font-black text-gray-900 tracking-tight">Editar Noticia</h1>
-            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest text-[#093E7A]">
-              ID: #{params.id}
-            </p>
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#093E7A]">edit_note</span>
+            <div>
+              <h1 className="text-xl font-bold text-gray-800 leading-tight">Editar Noticia</h1>
+              <p className="text-[11px] text-[#093E7A] font-bold leading-none">ID: #{params.id}</p>
+            </div>
           </div>
         </div>
       </header>

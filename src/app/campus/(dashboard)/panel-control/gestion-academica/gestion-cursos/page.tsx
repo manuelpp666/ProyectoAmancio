@@ -346,55 +346,77 @@ export default function GestionCursosPage() {
       {/* --- MODAL PRINCIPAL CURSO --- */}
       {showModal && (
         <div className="fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden">
-            <div className="p-6 border-b flex justify-between items-center bg-gray-50">
-              <h3 className="text-xl font-black text-[#093E7A]">{editingId ? `Editando: ${nuevoCurso.nombre}` : "Configurar Nuevo Curso"}</h3>
-              <button onClick={cerrarModalPrincipal}><span className="material-symbols-outlined">close</span></button>
-            </div>
-            <div className="p-8 space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-500 uppercase">Nombre del Curso</label>
-                  <input
-                    type="text"
-                    className="w-full p-3 border rounded-xl outline-none focus:ring-2 ring-blue-100"
-                    value={nuevoCurso.nombre}
-                    onChange={(e) => setNuevoCurso({ ...nuevoCurso, nombre: e.target.value })}
-                  />
-                </div>
-                
-                {/* NUEVO INPUT: MINUTOS SEMANALES */}
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-500 uppercase">Minutos Semanales</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="15"
-                    className="w-full p-3 border rounded-xl outline-none focus:ring-2 ring-blue-100"
-                    value={nuevoCurso.minutos_semanales}
-                    onChange={(e) => setNuevoCurso({ ...nuevoCurso, minutos_semanales: parseInt(e.target.value) || 0 })}
-                  />
-                </div>
+          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
 
-                {/* El Área Académica pasa a ocupar las dos columnas si quieres, o se queda aquí */}
-                <div className="space-y-2 col-span-2">
-                  <label className="text-xs font-black text-gray-500 uppercase">Área Académica</label>
-                  <div className="flex gap-2">
-                    <select
-                      className="flex-1 p-3 border rounded-xl"
-                      value={nuevoCurso.id_area}
-                      onChange={(e) => setNuevoCurso({ ...nuevoCurso, id_area: e.target.value })}
-                    >
-                      <option value="">Seleccione...</option>
-                      {areas.map(a => <option key={a.id_area} value={a.id_area}>{a.nombre}</option>)}
-                    </select>
-                    <button onClick={() => setShowAreaModal(true)} className="p-3 bg-gray-100 rounded-xl text-[#093E7A]"><span className="material-symbols-outlined">add</span></button>
-                  </div>
+            {/* Cabecera dedicada */}
+            <div className="bg-[#093E7A] px-6 py-5 text-white flex justify-between items-start shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined">menu_book</span>
+                </div>
+                <div>
+                  <h3 className="font-black text-lg leading-tight">{editingId ? "Editar Curso" : "Nuevo Curso"}</h3>
+                  <p className="text-[11px] text-white/70 mt-0.5 max-w-sm leading-snug">
+                    Define el curso, su carga horaria y los grados en los que se dictará.
+                  </p>
                 </div>
               </div>
-              <div className="space-y-3">
-                <label className="text-xs font-black text-gray-500 uppercase border-b w-full block pb-1">Seleccionar Grados</label>
-                <div className="grid grid-cols-3 gap-6">
+              <button onClick={cerrarModalPrincipal} className="hover:text-gray-300 mt-0.5"><span className="material-symbols-outlined">close</span></button>
+            </div>
+
+            <div className="p-6 space-y-6 overflow-y-auto">
+
+              {/* SECCIÓN: DATOS DEL CURSO */}
+              <section className="space-y-3">
+                <h4 className="text-[11px] font-black text-[#093E7A] uppercase tracking-widest flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px]">auto_stories</span> Datos del curso
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Nombre del Curso</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Matemática"
+                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A]"
+                      value={nuevoCurso.nombre}
+                      onChange={(e) => setNuevoCurso({ ...nuevoCurso, nombre: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Minutos Semanales</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="15"
+                      placeholder="Ej. 180"
+                      className="w-full border border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A]"
+                      value={nuevoCurso.minutos_semanales}
+                      onChange={(e) => setNuevoCurso({ ...nuevoCurso, minutos_semanales: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="space-y-1.5 col-span-2">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Área Académica</label>
+                    <div className="flex gap-2">
+                      <select
+                        className="flex-1 border border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A] bg-white"
+                        value={nuevoCurso.id_area}
+                        onChange={(e) => setNuevoCurso({ ...nuevoCurso, id_area: e.target.value })}
+                      >
+                        <option value="">Seleccione...</option>
+                        {areas.map(a => <option key={a.id_area} value={a.id_area}>{a.nombre}</option>)}
+                      </select>
+                      <button onClick={() => setShowAreaModal(true)} title="Nueva área" className="px-3 bg-[#093E7A]/10 rounded-lg text-[#093E7A] hover:bg-[#093E7A]/20 transition-colors"><span className="material-symbols-outlined">add</span></button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* SECCIÓN: GRADOS */}
+              <section className="space-y-3">
+                <h4 className="text-[11px] font-black text-[#093E7A] uppercase tracking-widest flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px]">school</span> Grados donde se dicta
+                </h4>
+                <div className="grid grid-cols-3 gap-6 bg-gray-50 rounded-xl border border-gray-200 p-4">
                   {niveles.map(nivel => (
                     <div key={nivel.id_nivel} className="space-y-2">
                       <p className="text-[10px] font-black text-[#093E7A] uppercase">{nivel.nombre}</p>
@@ -402,7 +424,7 @@ export default function GestionCursosPage() {
                         <label key={grado.id_grado} className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
-                            className="rounded border-gray-300"
+                            className="rounded border-gray-300 accent-[#093E7A]"
                             checked={gradosSeleccionados.includes(grado.id_grado)}
                             onChange={(e) => {
                               if (e.target.checked) setGradosSeleccionados([...gradosSeleccionados, grado.id_grado]);
@@ -415,15 +437,16 @@ export default function GestionCursosPage() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
             </div>
-            <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
-              <button onClick={cerrarModalPrincipal} className="px-6 py-2 font-bold text-gray-400">Cancelar</button>
+
+            <div className="p-4 border-t bg-gray-50 flex gap-3 shrink-0">
+              <button onClick={cerrarModalPrincipal} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200">Cancelar</button>
               <button
                 onClick={handleGuardarCurso}
-                className="px-8 py-2.5 bg-[#093E7A] text-white rounded-xl font-bold shadow-lg"
+                className="flex-1 py-3 bg-[#093E7A] text-white rounded-xl font-bold hover:bg-[#072d5a] transition-all"
               >
-                {editingId ? "Actualizar Cambios" : "Guardar Configuración"}
+                {editingId ? "Guardar cambios" : "Registrar Curso"}
               </button>
             </div>
           </div>
@@ -432,19 +455,30 @@ export default function GestionCursosPage() {
 
       {/* --- MINI MODAL ÁREA --- */}
       {showAreaModal && (
-        <div className="fixed inset-0 z-[60] modal-overlay flex items-center justify-center">
-          <div className="bg-white rounded-xl p-6 w-80 space-y-4 shadow-2xl border">
-            <h4 className="font-black text-[#093E7A]">Nueva Área</h4>
-            <input
-              type="text"
-              className="w-full p-2 border rounded outline-none focus:ring-2 ring-blue-100"
-              placeholder="Ej: Matemáticas"
-              value={nuevaAreaNombre}
-              onChange={(e) => setNuevaAreaNombre(e.target.value)}
-            />
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowAreaModal(false)} className="text-xs font-bold text-gray-400">Cerrar</button>
-              <button onClick={handleCrearArea} className="bg-[#093E7A] text-white px-4 py-2 rounded text-xs font-bold">Crear</button>
+        <div className="fixed inset-0 z-[60] modal-overlay flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
+            <div className="bg-[#093E7A] px-5 py-4 text-white flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[20px]">category</span>
+                <h4 className="font-bold">Nueva Área Académica</h4>
+              </div>
+              <button onClick={() => setShowAreaModal(false)} className="hover:text-gray-300"><span className="material-symbols-outlined">close</span></button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-500 uppercase">Nombre del área</label>
+                <input
+                  type="text"
+                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A]"
+                  placeholder="Ej. Matemáticas"
+                  value={nuevaAreaNombre}
+                  onChange={(e) => setNuevaAreaNombre(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setShowAreaModal(false)} className="flex-1 py-2.5 bg-gray-100 text-gray-600 font-bold rounded-lg hover:bg-gray-200 text-sm">Cancelar</button>
+                <button onClick={handleCrearArea} className="flex-1 py-2.5 bg-[#093E7A] text-white rounded-lg font-bold hover:bg-[#072d5a] text-sm">Crear área</button>
+              </div>
             </div>
           </div>
         </div>

@@ -7,11 +7,27 @@ import { TipoPersonal } from "@/src/interfaces/personal";
 import { apiFetch } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
 
-const LABELS_PERSONAL: Record<string, string> = {
-  admin: "Administrador",
-  docente: "Docente",
-  auxiliar: "Auxiliar",
-  psicologo: "Psicólogo"
+const TIPO_CONFIG: Record<string, { label: string; icon: any; desc: string }> = {
+  admin: {
+    label: "Administrador",
+    icon: ShieldCheck,
+    desc: "Tendrá acceso al panel de control y a los módulos que le asignes."
+  },
+  docente: {
+    label: "Docente",
+    icon: BookOpen,
+    desc: "Podrá dictar cursos, registrar notas y comunicarse con sus alumnos."
+  },
+  auxiliar: {
+    label: "Auxiliar",
+    icon: Briefcase,
+    desc: "Brindará apoyo administrativo y en la gestión de la disciplina."
+  },
+  psicologo: {
+    label: "Psicólogo",
+    icon: HeartHandshake,
+    desc: "Atenderá citas y velará por el bienestar emocional de los estudiantes."
+  }
 };
 
 export default function GestionPersonalPage() {
@@ -70,7 +86,6 @@ export default function GestionPersonalPage() {
     dni: "",
     email: "",
     telefono: "",
-    sueldo: 0,
     password: ""
   });
 
@@ -155,7 +170,7 @@ export default function GestionPersonalPage() {
   };
 
   const openNew = () => {
-    setFormData({ nombres: "", apellidos: "", dni: "", email: "", telefono: "", sueldo: 0, password: "" });
+    setFormData({ nombres: "", apellidos: "", dni: "", email: "", telefono: "", password: "" });
     setIsEditing(false);
     setIsModalOpen(true);
   };
@@ -163,7 +178,7 @@ export default function GestionPersonalPage() {
   const openEdit = (p: Personal) => {
     setFormData({
       nombres: p.nombres, apellidos: p.apellidos, dni: p.dni, email: p.email || "",
-      telefono: p.telefono || "", sueldo: p.sueldo, password: ""
+      telefono: p.telefono || "", password: ""
     });
     setCurrentId(p.id);
     setIsEditing(true);
@@ -211,7 +226,7 @@ export default function GestionPersonalPage() {
             <input
               type="text"
               inputMode="numeric"
-              placeholder={`Buscar ${LABELS_PERSONAL[activeTab].toLowerCase()} por DNI...`}
+              placeholder={`Buscar ${TIPO_CONFIG[activeTab].label.toLowerCase()} por DNI...`}
               value={busquedaDni}
               onChange={(e) => setBusquedaDni(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A]"
@@ -219,7 +234,7 @@ export default function GestionPersonalPage() {
           </div>
           <button onClick={openNew} className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-all shrink-0">
             <UserPlus size={18} />
-            Nuevo {LABELS_PERSONAL[activeTab]}
+            Nuevo {TIPO_CONFIG[activeTab].label}
           </button>
         </div>
 
@@ -286,68 +301,106 @@ export default function GestionPersonalPage() {
       </div>
 
       {/* MODAL */}
-      {isModalOpen && (
+      {isModalOpen && (() => {
+        const config = TIPO_CONFIG[activeTab];
+        const IconoTipo = config.icon;
+        return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="bg-[#093E7A] px-6 py-4 text-white flex justify-between items-center shrink-0">
-              <h3 className="font-bold text-lg">{isEditing ? 'Editar Personal' : `Nuevo ${activeTab.toUpperCase()}`}</h3>
-              <button onClick={() => setIsModalOpen(false)} className="hover:text-gray-300"><X size={24} /></button>
+
+            {/* Cabecera dedicada al tipo */}
+            <div className="bg-[#093E7A] px-6 py-5 text-white flex justify-between items-start shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
+                  <IconoTipo size={24} />
+                </div>
+                <div>
+                  <h3 className="font-black text-lg leading-tight">
+                    {isEditing ? `Editar ${config.label}` : `Nuevo ${config.label}`}
+                  </h3>
+                  <p className="text-[11px] text-white/70 mt-0.5 max-w-sm leading-snug">{config.desc}</p>
+                </div>
+              </div>
+              <button onClick={() => setIsModalOpen(false)} className="hover:text-gray-300 mt-0.5"><X size={24} /></button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nombres</label>
-                  <input required type="text" className="w-full border rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#093E7A]"
-                    value={formData.nombres} onChange={e => setFormData({ ...formData, nombres: e.target.value })} />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Apellidos</label>
-                  <input required type="text" className="w-full border rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#093E7A]"
-                    value={formData.apellidos} onChange={e => setFormData({ ...formData, apellidos: e.target.value })} />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">DNI (Usuario)</label>
-                  <input required type="text" maxLength={8} className="w-full border rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#093E7A]"
-                    value={formData.dni} onChange={e => setFormData({ ...formData, dni: e.target.value })} />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Sueldo (S/)</label>
-                  <input required type="number" step="0.01" className="w-full border rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#093E7A]"
-                    value={formData.sueldo} onChange={e => setFormData({ ...formData, sueldo: parseFloat(e.target.value) })} />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Teléfono</label>
-                  <input type="text" maxLength={9} className="w-full border rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#093E7A]"
-                    value={formData.telefono} onChange={e => setFormData({ ...formData, telefono: e.target.value })} />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Correo Electrónico</label>
-                  <input type="email" className="w-full border rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#093E7A]"
-                    value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
-                </div>
-              </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
 
-              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mt-4">
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
-                  Contraseña de Acceso {isEditing && "(Dejar en blanco para no cambiar)"}
-                </label>
-                <input
-                  required={!isEditing} type="text"
-                  placeholder={isEditing ? "********" : "Escriba una contraseña segura"}
-                  className="w-full border rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#093E7A]"
-                  value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })}
-                />
-              </div>
+              {/* SECCIÓN: DATOS PERSONALES */}
+              <section className="space-y-3">
+                <h4 className="text-[11px] font-black text-[#093E7A] uppercase tracking-widest flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px]">badge</span> Datos personales
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nombres</label>
+                    <input required type="text" placeholder="Ej. María Fernanda" className="w-full border border-gray-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#093E7A]"
+                      value={formData.nombres} onChange={e => setFormData({ ...formData, nombres: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Apellidos</label>
+                    <input required type="text" placeholder="Ej. Gómez Salas" className="w-full border border-gray-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#093E7A]"
+                      value={formData.apellidos} onChange={e => setFormData({ ...formData, apellidos: e.target.value })} />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">DNI</label>
+                    <input required type="text" inputMode="numeric" maxLength={8} placeholder="8 dígitos"
+                      className="w-full border border-gray-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#093E7A]"
+                      value={formData.dni} onChange={e => setFormData({ ...formData, dni: e.target.value.replace(/\D/g, "") })} />
+                    <p className="text-[11px] text-gray-400 mt-1">Se usará como nombre de usuario para iniciar sesión.</p>
+                  </div>
+                </div>
+              </section>
 
-              <div className="flex gap-4 pt-4">
+              {/* SECCIÓN: CONTACTO */}
+              <section className="space-y-3">
+                <h4 className="text-[11px] font-black text-[#093E7A] uppercase tracking-widest flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px]">contact_phone</span> Contacto
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Teléfono</label>
+                    <input type="text" inputMode="numeric" maxLength={9} placeholder="9 dígitos"
+                      className="w-full border border-gray-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#093E7A]"
+                      value={formData.telefono} onChange={e => setFormData({ ...formData, telefono: e.target.value.replace(/\D/g, "") })} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Correo Electrónico</label>
+                    <input type="email" placeholder="correo@ejemplo.com" className="w-full border border-gray-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#093E7A]"
+                      value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                  </div>
+                </div>
+              </section>
+
+              {/* SECCIÓN: ACCESO */}
+              <section className="space-y-3">
+                <h4 className="text-[11px] font-black text-[#093E7A] uppercase tracking-widest flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px]">lock</span> Acceso al sistema
+                </h4>
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                    Contraseña {isEditing && "(Dejar en blanco para no cambiar)"}
+                  </label>
+                  <input
+                    required={!isEditing} type="text"
+                    placeholder={isEditing ? "********" : "Escriba una contraseña segura"}
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#093E7A] bg-white"
+                    value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })}
+                  />
+                </div>
+              </section>
+
+              <div className="flex gap-4 pt-2">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200">Cancelar</button>
-                <button type="submit" className="flex-1 py-3 bg-[#093E7A] text-white font-bold rounded-xl hover:bg-[#072d5a]">Guardar Personal</button>
+                <button type="submit" className="flex-1 py-3 bg-[#093E7A] text-white font-bold rounded-xl hover:bg-[#072d5a]">
+                  {isEditing ? "Guardar cambios" : `Registrar ${config.label}`}
+                </button>
               </div>
             </form>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* MODAL DE PERMISOS */}
       {isPermisosModalOpen && selectedUser && (

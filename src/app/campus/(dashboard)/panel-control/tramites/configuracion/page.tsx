@@ -756,9 +756,15 @@ export default function GestionFinancieraPage() {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-            <div className="bg-[#093E7A] p-4 flex justify-between items-center text-white shrink-0">
-              <h3 className="font-bold">{isEditing ? 'Editar Trámite' : 'Nuevo Trámite'}</h3>
-              <button onClick={() => setIsModalOpen(false)}><span className="material-symbols-outlined">close</span></button>
+            <div className="bg-[#093E7A] px-6 py-5 flex justify-between items-start text-white shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">description</span></div>
+                <div>
+                  <h3 className="font-black text-lg leading-tight">{isEditing ? 'Editar Trámite' : 'Nuevo Trámite'}</h3>
+                  <p className="text-[11px] text-white/70 mt-0.5">Define el costo, alcance y requisitos del trámite.</p>
+                </div>
+              </div>
+              <button onClick={() => setIsModalOpen(false)} className="hover:text-gray-300 mt-0.5"><span className="material-symbols-outlined">close</span></button>
             </div>
 
             <form onSubmit={handleSubmitTramite} className="p-6 space-y-4 overflow-y-auto">
@@ -835,14 +841,17 @@ export default function GestionFinancieraPage() {
       {isDictamenModalOpen && selectedSolicitud && (
         <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="bg-gray-50 p-4 border-b flex justify-between items-center">
-              <div>
-                <h3 className="font-bold text-gray-800">Atender Solicitud</h3>
-                <p className="text-[10px] text-gray-500 uppercase font-bold">Ref: #{selectedSolicitud.id_solicitud_tramite}</p>
+            <div className="bg-[#093E7A] px-6 py-5 flex justify-between items-start text-white">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">mark_as_unread</span></div>
+                <div>
+                  <h3 className="font-black text-lg leading-tight">Atender Solicitud</h3>
+                  <p className="text-[11px] text-white/70 mt-0.5 uppercase tracking-wide">Ref: #{selectedSolicitud.id_solicitud_tramite}</p>
+                </div>
               </div>
               <button
                 onClick={() => setIsDictamenModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="hover:text-gray-300 transition-colors mt-0.5"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
@@ -888,9 +897,15 @@ export default function GestionFinancieraPage() {
       {isModalTipoPagoOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-            <div className="bg-[#093E7A] p-4 flex justify-between items-center text-white shrink-0">
-              <h3 className="font-bold">{isEditingTipoPago ? 'Editar Plantilla' : 'Nueva Plantilla Automática'}</h3>
-              <button onClick={() => setIsModalTipoPagoOpen(false)}><span className="material-symbols-outlined">close</span></button>
+            <div className="bg-[#093E7A] px-6 py-5 flex justify-between items-start text-white shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">receipt_long</span></div>
+                <div>
+                  <h3 className="font-black text-lg leading-tight">{isEditingTipoPago ? 'Editar Plantilla' : 'Nueva Plantilla de Pago'}</h3>
+                  <p className="text-[11px] text-white/70 mt-0.5">Regla automática para generar deudas por categoría y fecha.</p>
+                </div>
+              </div>
+              <button onClick={() => setIsModalTipoPagoOpen(false)} className="hover:text-gray-300 mt-0.5"><span className="material-symbols-outlined">close</span></button>
             </div>
             <form onSubmit={handleSubmitTipoPago} className="p-6 space-y-4 overflow-y-auto">
               
@@ -986,9 +1001,15 @@ export default function GestionFinancieraPage() {
       {isEditPagoOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
-            <div className="bg-[#093E7A] p-4 flex justify-between items-center text-white">
-              <h3 className="font-bold">Editar Pago</h3>
-              <button onClick={() => setIsEditPagoOpen(false)}><span className="material-symbols-outlined">close</span></button>
+            <div className="bg-[#093E7A] px-6 py-5 flex justify-between items-start text-white">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">payments</span></div>
+                <div>
+                  <h3 className="font-black text-lg leading-tight">Editar Pago</h3>
+                  <p className="text-[11px] text-white/70 mt-0.5">Ajusta el concepto, monto, mora y estado del pago.</p>
+                </div>
+              </div>
+              <button onClick={() => setIsEditPagoOpen(false)} className="hover:text-gray-300 mt-0.5"><span className="material-symbols-outlined">close</span></button>
             </div>
             <form onSubmit={handleEditPago} className="p-6 space-y-4">
               <div>
