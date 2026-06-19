@@ -21,11 +21,11 @@ export function AsideCampus({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   const [isTramitesOpen, setIsTramitesOpen] = useState(enTramites);
   const [isAlumnoOpen, setIsAlumnoOpen] = useState(enAlumno);
 
-  // Abrir automáticamente el dropdown correspondiente al navegar dentro de su sección
+  // Al cambiar de apartado: abrir el dropdown de la sección actual y cerrar los demás
   useEffect(() => {
-    if (enAlumno) setIsAlumnoOpen(true);
-    if (enTramites) setIsTramitesOpen(true);
-  }, [enAlumno, enTramites]);
+    setIsAlumnoOpen(enAlumno);
+    setIsTramitesOpen(enTramites);
+  }, [pathname]);
 
   // Estilos reutilizando los mismos colores del diseño actual
   const claseLink = (activo: boolean) =>
