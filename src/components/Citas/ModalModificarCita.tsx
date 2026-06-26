@@ -59,14 +59,17 @@ export function ModalModificarCita({ isOpen, onClose, onSuccess, cita }: any) {
       <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         
         {/* MODAL HEADER */}
-        <div className="bg-amber-600 p-6 text-white flex justify-between items-center">
-          <div>
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <Calendar size={22} /> Reprogramar Cita
-            </h2>
-            <p className="text-white/70 text-xs">Ajuste la fecha y hora de la atención.</p>
+        <div className="bg-amber-600 px-6 py-5 text-white flex justify-between items-start">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
+              <Calendar size={24} />
+            </div>
+            <div>
+              <h2 className="font-black text-lg leading-tight">Reprogramar Cita</h2>
+              <p className="text-[11px] text-white/70 mt-0.5">Ajusta la fecha y hora de la atención.</p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors mt-0.5">
             <X size={24} />
           </button>
         </div>

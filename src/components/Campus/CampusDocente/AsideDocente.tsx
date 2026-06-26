@@ -26,7 +26,7 @@ export function AsideDocente({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       <div className="h-20 flex items-center justify-between px-6 border-b border-white/10 shrink-0">
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
-          <span className="font-bold text-lg leading-tight">Campus Virtual</span>
+          <span className="font-bold text-lg leading-tight">Panel Docente</span>
         </div>
         <button onClick={onClose} className="lg:hidden text-white/80"><X size={24} /></button>
       </div>

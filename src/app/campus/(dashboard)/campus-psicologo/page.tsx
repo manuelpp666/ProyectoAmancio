@@ -2,14 +2,18 @@
 import { useUser } from "@/src/context/userContext";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { 
-  Calendar, 
-  AlertCircle, 
-  ArrowRight, 
-  Loader2, 
+import {
+  Calendar,
+  AlertCircle,
+  ArrowRight,
+  Loader2,
   CheckCircle2,
   Clock,
-  Info
+  Info,
+  Users,
+  MessageSquare,
+  HeartHandshake,
+  CalendarHeart
 } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 
@@ -60,25 +64,63 @@ export default function InicioPsicologoPage() {
     { label: "Atenciones del Mes", val: resumen.atenciones_mes.toString(), icon: CheckCircle2, color: "bg-green-50 text-green-600" },
   ];
 
+  const accesos = [
+    { label: "Agenda de Citas", desc: "Programa y atiende sesiones", icon: CalendarHeart, href: `/campus/campus-psicologo/agenda` },
+    { label: "Seguimiento de Alumnos", desc: "Historial y casos de bienestar", icon: Users, href: `/campus/campus-psicologo/estudiantes` },
+    { label: "Mensajería", desc: "Comunícate con alumnos y docentes", icon: MessageSquare, href: `/campus/campus-psicologo/mensajeria` },
+  ];
+
   return (
-    <div className="space-y-8 max-w-7xl mx-auto p-4 md:p-0">
-      <div>
-        <h1 className="text-2xl font-bold text-[#701C32]">Panel de Psicología</h1>
-        <p className="text-gray-500">Resumen de bienestar y alertas de conducta</p>
+    <div className="space-y-8 max-w-7xl mx-auto p-4 md:p-8">
+
+      {/* BANNER DE BIENVENIDA */}
+      <div className="bg-[#701C32] rounded-3xl p-8 md:p-10 text-white shadow-lg relative overflow-hidden">
+        <div className="absolute -right-12 -top-12 w-52 h-52 rounded-full bg-white/5 pointer-events-none"></div>
+        <div className="absolute right-24 -bottom-16 w-40 h-40 rounded-full bg-white/5 pointer-events-none"></div>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/15 rounded-full text-[10px] font-bold tracking-widest mb-4 uppercase backdrop-blur-sm">
+              <HeartHandshake size={12} /> Departamento de Psicología
+            </div>
+            <h1 className="text-3xl md:text-4xl font-black leading-tight">Bienestar Estudiantil</h1>
+            <p className="text-white/85 mt-2 text-sm md:text-base max-w-lg">
+              Acompaña, evalúa y da seguimiento al bienestar emocional de los estudiantes del colegio.
+            </p>
+          </div>
+          <div className="hidden md:flex w-20 h-20 rounded-2xl bg-white/10 border border-white/15 items-center justify-center shrink-0">
+            <HeartHandshake size={36} className="text-[#FFF1E3]" />
+          </div>
+        </div>
       </div>
 
       {/* ESTADÍSTICAS RÁPIDAS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {estadisticas.map((item, i) => (
-          <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${item.color}`}>
+          <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${item.color}`}>
               <item.icon size={24} />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-800">{item.val}</p>
+              <p className="text-2xl font-black text-gray-800">{item.val}</p>
               <p className="text-sm text-gray-500">{item.label}</p>
             </div>
           </div>
+        ))}
+      </div>
+
+      {/* ACCESOS RÁPIDOS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {accesos.map((a, i) => (
+          <Link key={i} href={a.href} className="group bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:border-[#701C32]/30 hover:shadow-md transition-all flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[#FFF1E3] text-[#701C32] flex items-center justify-center shrink-0">
+              <a.icon size={22} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-bold text-gray-800 group-hover:text-[#701C32] transition-colors">{a.label}</p>
+              <p className="text-xs text-gray-400 truncate">{a.desc}</p>
+            </div>
+            <ArrowRight size={18} className="text-gray-300 group-hover:text-[#701C32] group-hover:translate-x-1 transition-all shrink-0" />
+          </Link>
         ))}
       </div>
 
