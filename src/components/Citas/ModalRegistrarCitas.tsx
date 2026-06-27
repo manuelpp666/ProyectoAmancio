@@ -4,14 +4,14 @@ import { X, Search, User, Users, Calendar, FileText, CheckCircle, Loader2 } from
 import { apiFetch } from "@/src/lib/api";
 import { toast } from "sonner";
 
-export function ModalRegistrarCita({ isOpen, onClose, onSuccess }: any) {
+export function ModalRegistrarCita({ isOpen, onClose, onSuccess, alumnoInicial }: any) {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [resultados, setResultados] = useState([]);
   const [alumnoSeleccionado, setAlumnoSeleccionado] = useState<any>(null);
   const [familiares, setFamiliares] = useState([]);
-  
+
   const [formData, setFormData] = useState({
     id_alumno: "",
     id_familiar: "",
@@ -22,6 +22,17 @@ export function ModalRegistrarCita({ isOpen, onClose, onSuccess }: any) {
 useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Preseleccionar alumno cuando se abre desde "Citar" (lista de riesgo)
+  useEffect(() => {
+    if (isOpen && alumnoInicial?.id_alumno) {
+      handleSelectAlumno(alumnoInicial);
+    } else if (!isOpen) {
+      setAlumnoSeleccionado(null);
+      setFamiliares([]);
+      setFormData({ id_alumno: "", id_familiar: "", motivo: "", fecha_cita: "", estado: "PROGRAMADA" });
+    }
+  }, [isOpen, alumnoInicial]);
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
       if (busqueda.length >= 3) {
@@ -115,7 +126,7 @@ useEffect(() => {
             {alumnoSeleccionado && (
               <div className="mt-3 bg-[#701C32]/5 p-3 rounded-xl border border-[#701C32]/10 flex items-center gap-3">
                 <div className="bg-[#701C32] text-white p-2 rounded-lg"><User size={16}/></div>
-                <span className="font-bold text-[#701C32]">{alumnoSeleccionado.nombres} {alumnoSeleccionado.apellidos}</span>
+                <span className="font-bold text-[#701C32]">{alumnoSeleccionado.nombre_completo || `${alumnoSeleccionado.nombres ?? ""} ${alumnoSeleccionado.apellidos ?? ""}`}</span>
                 <button onClick={() => setAlumnoSeleccionado(null)} className="ml-auto text-xs font-bold text-gray-400 hover:text-red-500">Remover</button>
               </div>
             )}
