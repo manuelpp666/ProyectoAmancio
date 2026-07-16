@@ -1,8 +1,17 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Search, User, Users, Calendar, FileText, CheckCircle, Loader2 } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
+import { nombreAlumno } from "@/src/lib/alumno";
 import { toast } from "sonner";
+
+const FORM_INICIAL = {
+  id_alumno: "",
+  id_familiar: "",
+  motivo: "",
+  fecha_cita: "",
+  estado: "PROGRAMADA"
+};
 
 export function ModalRegistrarCita({ isOpen, onClose, onSuccess, alumnoInicial }: any) {
   const [mounted, setMounted] = useState(false);
@@ -12,45 +21,32 @@ export function ModalRegistrarCita({ isOpen, onClose, onSuccess, alumnoInicial }
   const [alumnoSeleccionado, setAlumnoSeleccionado] = useState<any>(null);
   const [familiares, setFamiliares] = useState([]);
 
-  const [formData, setFormData] = useState({
-    id_alumno: "",
-    id_familiar: "",
-    motivo: "",
-    fecha_cita: "",
-    estado: "PROGRAMADA"
-  });
+  const [formData, setFormData] = useState(FORM_INICIAL);
+
+  // Id del alumno cuyos familiares se pidieron por última vez; descarta
+  // respuestas que lleguen fuera de orden tras cambiar de alumno o cerrar.
+  const idAlumnoFamiliares = useRef<any>(null);
 useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Preseleccionar alumno cuando se abre desde "Citar" (lista de riesgo)
-  useEffect(() => {
-    if (isOpen && alumnoInicial?.id_alumno) {
-      handleSelectAlumno(alumnoInicial);
-    } else if (!isOpen) {
-      setAlumnoSeleccionado(null);
-      setFamiliares([]);
-      setFormData({ id_alumno: "", id_familiar: "", motivo: "", fecha_cita: "", estado: "PROGRAMADA" });
-    }
-  }, [isOpen, alumnoInicial]);
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (busqueda.length >= 3) {
-        const res = await apiFetch(`/conducta/buscar-alumnos?q=${busqueda}`);
-        if (res.ok) setResultados(await res.json());
-      } else { setResultados([]); }
-    }, 400);
-    return () => clearTimeout(delayDebounceFn);
-  }, [busqueda]);
-
-  if (!mounted || !isOpen) return null;
   const handleSelectAlumno = async (alumno: any) => {
     setAlumnoSeleccionado(alumno);
-    setFormData({ ...formData, id_alumno: alumno.id_alumno, id_familiar: "" });
+    setFormData((prev) => ({ ...prev, id_alumno: alumno.id_alumno, id_familiar: "" }));
     setBusqueda("");
     setResultados([]);
-    const res = await apiFetch(`/conducta/alumno/${alumno.id_alumno}/familiares`);
-    if (res.ok) setFamiliares(await res.json());
+    setFamiliares([]);
+    idAlumnoFamiliares.current = alumno.id_alumno;
+    try {
+      const res = await apiFetch(`/conducta/alumno/${alumno.id_alumno}/familiares`);
+      if (idAlumnoFamiliares.current !== alumno.id_alumno) return;
+      if (res.ok) setFamiliares(await res.json());
+      else toast.error("No se pudieron cargar los apoderados del alumno");
+    } catch (error) {
+      if (idAlumnoFamiliares.current === alumno.id_alumno) {
+        toast.error("No se pudieron cargar los apoderados del alumno");
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,6 +60,8 @@ useEffect(() => {
       if (res.ok) {
         toast.success("Cita programada correctamente");
         onSuccess();
+      } else {
+        toast.error("No se pudo programar la cita. Revisa los datos e intenta de nuevo.");
       }
     } catch (error) {
       toast.error("Error al procesar la solicitud");
@@ -72,9 +70,43 @@ useEffect(() => {
     }
   };
 
+  // Preseleccionar alumno cuando se abre desde "Citar" (lista de riesgo)
+  useEffect(() => {
+    if (isOpen && alumnoInicial?.id_alumno) {
+      handleSelectAlumno(alumnoInicial);
+    } else if (!isOpen) {
+      idAlumnoFamiliares.current = null;
+      setAlumnoSeleccionado(null);
+      setFamiliares([]);
+      setBusqueda("");
+      setResultados([]);
+      setFormData(FORM_INICIAL);
+    }
+  }, [isOpen, alumnoInicial]);
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (busqueda.length >= 3) {
+        try {
+          const res = await apiFetch(`/conducta/buscar-alumnos?q=${encodeURIComponent(busqueda)}`);
+          if (res.ok) setResultados(await res.json());
+        } catch (error) {
+          console.error("Error buscando alumnos", error);
+        }
+      } else { setResultados([]); }
+    }, 400);
+    return () => clearTimeout(delayDebounceFn);
+  }, [busqueda]);
+
+  if (!mounted || !isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titulo-registrar-cita"
+        className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
+      >
         
         {/* MODAL HEADER */}
         <div className="bg-[#701C32] px-6 py-5 text-white flex justify-between items-start">
@@ -83,11 +115,11 @@ useEffect(() => {
               <Calendar size={24} />
             </div>
             <div>
-              <h2 className="font-black text-lg leading-tight">Programar Atención</h2>
+              <h2 id="titulo-registrar-cita" className="font-black text-lg leading-tight">Programar Atención</h2>
               <p className="text-[11px] text-white/70 mt-0.5">Completa los datos para la nueva cita psicológica.</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors mt-0.5">
+          <button onClick={onClose} aria-label="Cerrar" className="p-2 hover:bg-white/10 rounded-full transition-colors mt-0.5">
             <X size={24} />
           </button>
         </div>
@@ -126,7 +158,7 @@ useEffect(() => {
             {alumnoSeleccionado && (
               <div className="mt-3 bg-[#701C32]/5 p-3 rounded-xl border border-[#701C32]/10 flex items-center gap-3">
                 <div className="bg-[#701C32] text-white p-2 rounded-lg"><User size={16}/></div>
-                <span className="font-bold text-[#701C32]">{alumnoSeleccionado.nombre_completo || `${alumnoSeleccionado.nombres ?? ""} ${alumnoSeleccionado.apellidos ?? ""}`}</span>
+                <span className="font-bold text-[#701C32]">{nombreAlumno(alumnoSeleccionado)}</span>
                 <button onClick={() => setAlumnoSeleccionado(null)} className="ml-auto text-xs font-bold text-gray-400 hover:text-red-500">Remover</button>
               </div>
             )}
@@ -181,7 +213,7 @@ useEffect(() => {
             <button
               type="submit"
               disabled={loading || !alumnoSeleccionado}
-              className="flex-[2] bg-[#701C32] text-white py-3 rounded-xl font-bold hover:bg-[#5a1628] transition-all flex items-center justify-center gap-2"
+              className="flex-[2] bg-[#701C32] text-white py-3 rounded-xl font-bold hover:bg-[#5a1628] active:scale-[0.98] disabled:opacity-60 transition-all flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 className="animate-spin" size={20}/> : <CheckCircle size={20}/>}
               Confirmar Cita

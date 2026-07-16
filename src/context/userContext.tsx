@@ -102,34 +102,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     initAuth();
   }, []);
-  
-  
-  
-  // EFECTO DE CARGA: Se ejecuta al entrar o al refrescar (F5)
-  useEffect(() => {
-    const encRole = sessionStorage.getItem("userRole");
-    const encUser = sessionStorage.getItem("userName");
-    const encId = sessionStorage.getItem("userId");
-    const encPermisos = sessionStorage.getItem("userPermisos");
-
-    if (encRole && encUser && encId && encPermisos) {
-      const decRole = decrypt(encRole) as Role;
-      const decUser = decrypt(encUser);
-      const decId = decrypt(encId);
-      const decPermisos = decrypt(encPermisos);
-
-      if (decRole && decUser && decId && decPermisos) {
-        setRole(decRole);
-        setUsername(decUser);
-        setIdUsuario(Number(decId));
-        setPermisos(JSON.parse(decPermisos));
-      } else {
-        // Si hay datos pero están corruptos, limpiar
-        logout();
-      }
-    }
-    setLoading(false);
-  }, []);
 
   const setUserData = (newRole: Role, newUser: string, newId: number, newToken: string, newPermisos: any) => {
     setRole(newRole);

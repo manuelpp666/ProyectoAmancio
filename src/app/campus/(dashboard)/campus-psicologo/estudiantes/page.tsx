@@ -11,14 +11,16 @@ import {
   Users,
 } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
+import { nombreAlumno } from "@/src/lib/alumno";
 import { ModalDetalleSeguimiento } from "@/src/components/Citas/ModalDetalleSeguimiento";
 import { ModalRegistrarCita } from "@/src/components/Citas/ModalRegistrarCitas";
 
 export default function SeguimientoAlumnosPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [hasSearched, setHasSearched] = useState(false);
+  // null = todavía no se ha buscado nada en esta sesión
+  const [searchResults, setSearchResults] = useState<any[] | null>(null);
+  const [terminoBuscado, setTerminoBuscado] = useState("");
 
   const [alumnosRiesgo, setAlumnosRiesgo] = useState<any[]>([]);
   const [loadingRiesgo, setLoadingRiesgo] = useState(true);
@@ -51,30 +53,25 @@ export default function SeguimientoAlumnosPage() {
     if (searchTerm.length < 3) return;
 
     setIsSearching(true);
-    setHasSearched(true);
+    setTerminoBuscado(searchTerm);
     try {
-      const res = await apiFetch(`/conducta/buscar-alumnos?q=${searchTerm}`);
-      if (res.ok) setSearchResults(await res.json());
+      const res = await apiFetch(`/conducta/buscar-alumnos?q=${encodeURIComponent(searchTerm)}`);
+      setSearchResults(res.ok ? await res.json() : []);
     } catch (error) {
       console.error("Error en la búsqueda", error);
+      setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
   };
 
   const openDetail = (alumno: any) => {
-    const nombre = alumno.nombre_completo || `${alumno.nombres} ${alumno.apellidos}`;
-    setSelectedStudent({ id_alumno: alumno.id_alumno, nombre_completo: nombre });
+    setSelectedStudent({ id_alumno: alumno.id_alumno, nombre_completo: nombreAlumno(alumno) });
     setIsModalOpen(true);
   };
 
   const openCita = (alumno?: any) => {
-    if (alumno) {
-      const nombre = alumno.nombre_completo || `${alumno.nombres} ${alumno.apellidos}`;
-      setCitaAlumno({ id_alumno: alumno.id_alumno, nombre_completo: nombre });
-    } else {
-      setCitaAlumno(null);
-    }
+    setCitaAlumno(alumno ? { id_alumno: alumno.id_alumno, nombre_completo: nombreAlumno(alumno) } : null);
     setIsCitaOpen(true);
   };
 
@@ -91,7 +88,7 @@ export default function SeguimientoAlumnosPage() {
 
         <button
           onClick={() => openCita()}
-          className="flex items-center gap-2 bg-[#701C32] text-white px-5 py-2.5 rounded-xl font-bold hover:bg-[#5a1628] transition-all shadow-lg shadow-[#701C32]/20"
+          className="flex items-center gap-2 bg-[#701C32] text-white px-5 py-2.5 rounded-xl font-bold hover:bg-[#5a1628] active:scale-[0.98] transition-all shadow-lg shadow-[#701C32]/20"
         >
           <Plus size={20} /> Programar Cita
         </button>
@@ -118,14 +115,14 @@ export default function SeguimientoAlumnosPage() {
             <button
               type="submit"
               disabled={isSearching || searchTerm.length < 3}
-              className="bg-[#701C32] text-white px-5 py-2.5 rounded-xl font-bold hover:bg-[#5a1628] disabled:opacity-50 transition-colors flex items-center justify-center min-w-[100px]"
+              className="bg-[#701C32] text-white px-5 py-2.5 rounded-xl font-bold hover:bg-[#5a1628] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center min-w-[100px]"
             >
               {isSearching ? <Loader2 className="animate-spin" size={20} /> : "Buscar"}
             </button>
           </form>
 
           {/* RESULTADOS */}
-          {searchResults.length > 0 ? (
+          {searchResults && searchResults.length > 0 ? (
             <div className="space-y-4">
               {searchResults.map((alumno) => (
                 <div
@@ -153,7 +150,7 @@ export default function SeguimientoAlumnosPage() {
                     </button>
                     <button
                       onClick={() => openCita(alumno)}
-                      className="flex items-center gap-2 px-4 py-2 bg-[#701C32] text-white font-semibold rounded-xl hover:bg-[#5a1628] transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 bg-[#701C32] text-white font-semibold rounded-xl hover:bg-[#5a1628] active:scale-[0.98] transition-all"
                     >
                       <CalendarPlus size={18} /> Citar
                     </button>
@@ -161,10 +158,10 @@ export default function SeguimientoAlumnosPage() {
                 </div>
               ))}
             </div>
-          ) : hasSearched && !isSearching ? (
+          ) : searchResults && !isSearching ? (
             <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
               <Search className="mx-auto text-gray-300 mb-4" size={48} />
-              <h3 className="text-gray-500 font-medium">No se encontraron resultados para "{searchTerm}"</h3>
+              <h3 className="text-gray-500 font-medium">No se encontraron resultados para "{terminoBuscado}"</h3>
             </div>
           ) : (
             <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
@@ -190,8 +187,19 @@ export default function SeguimientoAlumnosPage() {
 
             <div className="p-2">
               {loadingRiesgo ? (
-                <div className="flex justify-center py-10">
-                  <Loader2 className="animate-spin text-[#701C32]" />
+                <div className="space-y-2 animate-pulse" aria-hidden="true">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="p-4">
+                      <div className="flex justify-between items-center gap-2 mb-3">
+                        <div className="h-4 w-36 bg-gray-100 rounded" />
+                        <div className="h-4 w-12 bg-gray-100 rounded-full" />
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="h-8 flex-1 bg-gray-100 rounded-lg" />
+                        <div className="h-8 flex-1 bg-gray-100 rounded-lg" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : alumnosRiesgo.length > 0 ? (
                 <div className="space-y-1">
@@ -224,7 +232,7 @@ export default function SeguimientoAlumnosPage() {
                         </button>
                         <button
                           onClick={() => openCita(alumno)}
-                          className="flex-1 bg-[#C97035] text-white text-xs font-bold py-2 rounded-lg hover:bg-[#b05f2a] flex items-center justify-center gap-1.5"
+                          className="flex-1 bg-[#C97035] text-white text-xs font-bold py-2 rounded-lg hover:bg-[#b05f2a] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
                         >
                           <CalendarPlus size={14} /> Citar
                         </button>

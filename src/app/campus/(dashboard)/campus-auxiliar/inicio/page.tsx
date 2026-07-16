@@ -73,15 +73,15 @@ export default function AuxiliarDashboardPage() {
 
       {/* ACCESOS RÁPIDOS */}
       <div>
-        <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">
+        <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-4">
           Módulos de Gestión
-        </h4>
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {accesos.map((a, i) => (
+          {accesos.map((a) => (
             <Link
-              key={i}
+              key={a.href}
               href={a.href}
-              className={`group bg-white p-6 rounded-2xl shadow-sm border border-gray-100 ${a.hover} hover:shadow-md transition-all flex flex-col`}
+              className={`group bg-white p-6 rounded-2xl shadow-sm border border-gray-100 ${a.hover} hover:shadow-md active:scale-[0.99] transition-all flex flex-col`}
             >
               <div className="flex items-center gap-4 mb-4">
                 <div className={`w-14 h-14 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform ${a.accent}`}>
@@ -137,11 +137,8 @@ export default function AuxiliarDashboardPage() {
               </p>
             </div>
           </div>
-          <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between text-sm">
-            <span className="text-gray-400">Estado del Sistema:</span>
-            <span className="flex items-center gap-2 text-green-400 font-medium">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" /> Sincronizado
-            </span>
+          <div className="mt-8 pt-6 border-t border-white/10 text-sm text-gray-400">
+            Ante una incidencia grave, comunícala directamente al departamento de psicología.
           </div>
         </div>
       </div>
