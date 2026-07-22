@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { apiFetch } from '@/src/lib/api';
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
+import { PARENTESCOS } from '@/src/interfaces/familiar';
 
 
 
@@ -86,60 +87,50 @@ export default function RegistroEstudiantePage() {
             return;
         }
 
+        if (familiarData.telefono.length !== 9) {
+            toast.error("El teléfono del apoderado debe tener exactamente 9 dígitos.");
+            return;
+        }
+
         setIsLoading(true);
 
-        // Limpiar los datos opcionales del alumno
-        const payloadAlumno = {
-            ...formData,
-            id_grado_ingreso: formData.id_grado_ingreso ? parseInt(formData.id_grado_ingreso) : null,
-            fecha_nacimiento: formData.fecha_nacimiento ? formData.fecha_nacimiento : null,
-            genero: formData.genero || null,
-            talla_polo: formData.talla_polo || null,
-            direccion: formData.direccion || null,
-            colegio_procedencia: formData.colegio_procedencia || null,
-            enfermedad: formData.enfermedad || null,
-        };
-
-        // Limpiar los datos opcionales del familiar
-        const payloadFamiliar = {
-            nombres: familiarData.nombres,
-            apellidos: familiarData.apellidos,
-            dni: familiarData.dni,
-            telefono: familiarData.telefono,
-            email: familiarData.email || null,
-            tipo_parentesco: familiarData.tipo_parentesco || null
+        // El alumno y su apoderado se registran juntos: el backend los guarda en
+        // una sola transacción y crea el vínculo entre ambos.
+        const payload = {
+            alumno: {
+                ...formData,
+                id_grado_ingreso: formData.id_grado_ingreso ? parseInt(formData.id_grado_ingreso) : null,
+                fecha_nacimiento: formData.fecha_nacimiento ? formData.fecha_nacimiento : null,
+                genero: formData.genero || null,
+                talla_polo: formData.talla_polo || null,
+                direccion: formData.direccion || null,
+                colegio_procedencia: formData.colegio_procedencia || null,
+                enfermedad: formData.enfermedad || null,
+            },
+            familiar: {
+                nombres: familiarData.nombres,
+                apellidos: familiarData.apellidos,
+                dni: familiarData.dni,
+                telefono: familiarData.telefono,
+                email: familiarData.email || null,
+                tipo_parentesco: familiarData.tipo_parentesco,
+            },
         };
 
         try {
-            // 1. Guardar Alumno
-            const resAlumno = await apiFetch("/alumnos/", {
+            const res = await apiFetch("/alumnos/con-familiar", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payloadAlumno)
+                body: JSON.stringify(payload)
             });
 
-            if (!resAlumno.ok) {
-                const errorData = await resAlumno.json();
-                toast.error(errorData.detail?.[0]?.msg || errorData.detail || "Error al registrar el estudiante");
-                setIsLoading(false);
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => null);
+                toast.error(errorData?.detail?.[0]?.msg || errorData?.detail || "Error al registrar el estudiante");
                 return;
             }
 
-            // 2. Guardar Familiar (Apoderado)
-            const resFamiliar = await apiFetch("/familiares/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payloadFamiliar)
-            });
-
-            if (!resFamiliar.ok) {
-                const errorFam = await resFamiliar.json();
-                toast.warning(`El estudiante se creó, pero hubo un problema con el apoderado: ${errorFam.detail || "Error desconocido"}`);
-            } else {
-                toast.success("Estudiante y Apoderado registrados correctamente");
-            }
-            
-            // Redirigir a la lista de estudiantes
+            toast.success("Estudiante y apoderado registrados correctamente");
             router.push("/campus/panel-control/gestion-estudiantes");
 
         } catch (error) {
@@ -312,13 +303,10 @@ export default function RegistroEstudiantePage() {
                                     <input id="fam_email" value={familiarData.email} onChange={handleChangeFamiliar} className="reg-input" placeholder="correo@ejemplo.com" type="email" />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="reg-label" htmlFor="fam_tipo_parentesco">Parentesco</label>
-                                    <select id="fam_tipo_parentesco" value={familiarData.tipo_parentesco} onChange={handleChangeFamiliar} className="reg-input">
+                                    <label className="reg-label" htmlFor="fam_tipo_parentesco">Parentesco <span className="text-red-500">*</span></label>
+                                    <select required id="fam_tipo_parentesco" value={familiarData.tipo_parentesco} onChange={handleChangeFamiliar} className="reg-input">
                                         <option value="">Seleccione...</option>
-                                        <option value="Padre">Padre</option>
-                                        <option value="Madre">Madre</option>
-                                        <option value="Tutor">Tutor Legal</option>
-                                        <option value="Otro">Otro</option>
+                                        {PARENTESCOS.map((p) => <option key={p} value={p}>{p}</option>)}
                                     </select>
                                 </div>
                             </div>

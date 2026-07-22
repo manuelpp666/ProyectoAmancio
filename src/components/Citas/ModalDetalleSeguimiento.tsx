@@ -77,15 +77,44 @@ export function ModalDetalleSeguimiento({ isOpen, onClose, idAlumno, nombreAlumn
                   {data?.historial_conducta?.length > 0 ? (
                     data.historial_conducta.map((h: any) => (
                       <div key={h.id_reporte} className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                        <div className="flex justify-between items-start mb-1">
+                        <div className="flex justify-between items-start gap-2 mb-1.5">
                           <span className="text-xs font-black text-gray-400 uppercase">
                             {new Date(h.fecha_reporte).toLocaleDateString()}
                           </span>
-                          <span className="text-[10px] bg-[#701C32]/10 text-[#701C32] px-2 py-0.5 rounded-full font-bold">
-                            NIVEL {h.id_nivel_conducta}
-                          </span>
+                          {typeof h.puntos === "number" && (
+                            <span className="text-[10px] bg-[#701C32]/10 text-[#701C32] px-2 py-0.5 rounded-full font-bold shrink-0">
+                              −{h.puntos} pts
+                            </span>
+                          )}
                         </div>
+
+                        {/* Falta tipificada según el Reglamento Interno */}
+                        {(h.nivel_nombre || h.tipo_falta) && (
+                          <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                            {h.nivel_nombre && (
+                              <span className="text-[11px] font-bold text-[#701C32]">{h.nivel_nombre}</span>
+                            )}
+                            {h.tipo_falta && (
+                              <span className="text-[10px] uppercase tracking-wide bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full font-bold">
+                                {h.tipo_falta}
+                              </span>
+                            )}
+                            {h.cambio_ie && (
+                              <span className="text-[10px] uppercase tracking-wide bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-black">
+                                Amerita cambio de I.E.
+                              </span>
+                            )}
+                          </div>
+                        )}
+
                         <p className="text-sm text-[#2C3E50] font-semibold">{h.descripcion}</p>
+
+                        {h.medida && (
+                          <p className="text-[11px] text-gray-500 mt-1.5">
+                            <span className="font-bold uppercase text-gray-400">Medida: </span>
+                            {h.medida}
+                          </p>
+                        )}
                       </div>
                     ))
                   ) : (

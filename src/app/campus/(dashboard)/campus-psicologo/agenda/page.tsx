@@ -5,7 +5,6 @@ import {
     Calendar as CalendarIcon,
     Clock,
     User,
-    MoreVertical,
     Filter,
     Loader2,
     CalendarDays,
@@ -54,6 +53,8 @@ const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
         }
     };
     const fetchCitas = async () => {
+        // Evita el primer fetch con fecha vacía (antes de inicializar el filtro)
+        if (!filtroFecha) return;
         setLoading(true);
         try {
             const res = await apiFetch(`/conducta/citas/agenda-diaria?fecha=${filtroFecha}`);
@@ -120,9 +121,6 @@ const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
                                         {new Date(cita.fecha_cita).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
-                                <button className="text-gray-300 hover:text-gray-600 transition-colors">
-                                    <MoreVertical size={18} />
-                                </button>
                             </div>
 
                             <div className="space-y-3">
@@ -147,7 +145,11 @@ const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
                             </div>
 
                             <div className="mt-4 pt-4 border-t border-gray-50 flex justify-between items-center">
-                                <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase ${cita.estado === 'PROGRAMADA' ? 'bg-blue-50 text-blue-600' : 'bg-green-50 text-green-600'
+                                <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase ${
+                                    cita.estado === 'PROGRAMADA' ? 'bg-blue-50 text-blue-600'
+                                    : cita.estado === 'REPROGRAMADA' ? 'bg-amber-50 text-amber-600'
+                                    : cita.estado === 'CANCELADA' ? 'bg-red-50 text-red-600'
+                                    : 'bg-green-50 text-green-600'
                                     }`}>
                                     {cita.estado}
                                 </span>

@@ -38,7 +38,7 @@ useEffect(() => {
     setFamiliares([]);
     idAlumnoFamiliares.current = alumno.id_alumno;
     try {
-      const res = await apiFetch(`/conducta/alumno/${alumno.id_alumno}/familiares`);
+      const res = await apiFetch(`/alumnos/${alumno.id_alumno}/familiares`);
       if (idAlumnoFamiliares.current !== alumno.id_alumno) return;
       if (res.ok) setFamiliares(await res.json());
       else toast.error("No se pudieron cargar los apoderados del alumno");

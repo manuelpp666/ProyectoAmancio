@@ -7,8 +7,8 @@ import {
   CalendarPlus,
   User,
   Loader2,
-  Plus,
   Users,
+  Clock,
 } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 import { nombreAlumno } from "@/src/lib/alumno";
@@ -18,9 +18,13 @@ import { ModalRegistrarCita } from "@/src/components/Citas/ModalRegistrarCitas";
 export default function SeguimientoAlumnosPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  // null = todavía no se ha buscado nada en esta sesión
+  // null = no hay búsqueda activa (se muestra la lista de recientes)
   const [searchResults, setSearchResults] = useState<any[] | null>(null);
   const [terminoBuscado, setTerminoBuscado] = useState("");
+
+  // Alumnos con citas recientes (lista por defecto al entrar)
+  const [recientes, setRecientes] = useState<any[]>([]);
+  const [loadingRecientes, setLoadingRecientes] = useState(true);
 
   const [alumnosRiesgo, setAlumnosRiesgo] = useState<any[]>([]);
   const [loadingRiesgo, setLoadingRiesgo] = useState(true);
@@ -28,12 +32,13 @@ export default function SeguimientoAlumnosPage() {
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Modal de cita (botón "Citar" / "Programar Cita")
+  // Modal de cita (botón "Citar" contextual de cada alumno)
   const [citaAlumno, setCitaAlumno] = useState<any>(null);
   const [isCitaOpen, setIsCitaOpen] = useState(false);
 
   useEffect(() => {
     fetchAlumnosRiesgo();
+    fetchRecientes();
   }, []);
 
   const fetchAlumnosRiesgo = async () => {
@@ -48,22 +53,51 @@ export default function SeguimientoAlumnosPage() {
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchTerm.length < 3) return;
-
-    setIsSearching(true);
-    setTerminoBuscado(searchTerm);
+  const fetchRecientes = async () => {
+    setLoadingRecientes(true);
     try {
-      const res = await apiFetch(`/conducta/buscar-alumnos?q=${encodeURIComponent(searchTerm)}`);
-      setSearchResults(res.ok ? await res.json() : []);
+      const res = await apiFetch("/conducta/citas/alumnos-recientes");
+      if (res.ok) setRecientes(await res.json());
     } catch (error) {
-      console.error("Error en la búsqueda", error);
-      setSearchResults([]);
+      console.error("Error obteniendo alumnos con citas recientes", error);
     } finally {
-      setIsSearching(false);
+      setLoadingRecientes(false);
     }
   };
+
+  // Búsqueda automática con debounce (sin botón). Con < 3 caracteres se
+  // limpia la búsqueda y se vuelve a mostrar la lista de recientes.
+  useEffect(() => {
+    const termino = searchTerm.trim();
+    if (termino.length < 3) {
+      setSearchResults(null);
+      setIsSearching(false);
+      return;
+    }
+
+    let cancelado = false;
+    setIsSearching(true);
+    const debounce = setTimeout(async () => {
+      try {
+        const res = await apiFetch(`/conducta/buscar-alumnos?q=${encodeURIComponent(termino)}`);
+        if (cancelado) return;
+        setTerminoBuscado(termino);
+        setSearchResults(res.ok ? await res.json() : []);
+      } catch (error) {
+        if (!cancelado) {
+          console.error("Error en la búsqueda", error);
+          setSearchResults([]);
+        }
+      } finally {
+        if (!cancelado) setIsSearching(false);
+      }
+    }, 400);
+
+    return () => {
+      cancelado = true;
+      clearTimeout(debounce);
+    };
+  }, [searchTerm]);
 
   const openDetail = (alumno: any) => {
     setSelectedStudent({ id_alumno: alumno.id_alumno, nombre_completo: nombreAlumno(alumno) });
@@ -85,23 +119,13 @@ export default function SeguimientoAlumnosPage() {
             Consulta el historial completo de conducta y psicología de cualquier estudiante.
           </p>
         </div>
-
-        <button
-          onClick={() => openCita()}
-          className="flex items-center gap-2 bg-[#701C32] text-white px-5 py-2.5 rounded-xl font-bold hover:bg-[#5a1628] active:scale-[0.98] transition-all shadow-lg shadow-[#701C32]/20"
-        >
-          <Plus size={20} /> Programar Cita
-        </button>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* SECCIÓN IZQUIERDA: BUSCADOR Y RESULTADOS */}
         <div className="w-full lg:w-2/3 space-y-6">
-          {/* BARRA DE BÚSQUEDA */}
-          <form
-            onSubmit={handleSearch}
-            className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm"
-          >
+          {/* BARRA DE BÚSQUEDA (automática) */}
+          <div className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
               <input
@@ -109,19 +133,15 @@ export default function SeguimientoAlumnosPage() {
                 placeholder="Buscar por nombre, apellidos o DNI..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-gray-100 focus:border-[#701C32] focus:ring-4 focus:ring-[#701C32]/10 transition-all outline-none text-[#2C3E50] font-medium"
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl border-2 border-gray-100 focus:border-[#701C32] focus:ring-4 focus:ring-[#701C32]/10 transition-all outline-none text-[#2C3E50] font-medium"
               />
+              {isSearching && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 text-[#701C32] animate-spin" size={20} />
+              )}
             </div>
-            <button
-              type="submit"
-              disabled={isSearching || searchTerm.length < 3}
-              className="bg-[#701C32] text-white px-5 py-2.5 rounded-xl font-bold hover:bg-[#5a1628] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center min-w-[100px]"
-            >
-              {isSearching ? <Loader2 className="animate-spin" size={20} /> : "Buscar"}
-            </button>
-          </form>
+          </div>
 
-          {/* RESULTADOS */}
+          {/* RESULTADOS DE BÚSQUEDA */}
           {searchResults && searchResults.length > 0 ? (
             <div className="space-y-4">
               {searchResults.map((alumno) => (
@@ -164,10 +184,73 @@ export default function SeguimientoAlumnosPage() {
               <h3 className="text-gray-500 font-medium">No se encontraron resultados para "{terminoBuscado}"</h3>
             </div>
           ) : (
-            <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-              <Users className="mx-auto text-gray-300 mb-4" size={48} />
-              <h3 className="text-gray-500 font-medium">Busca un alumno para ver su expediente</h3>
-              <p className="text-gray-400 text-sm mt-1">Escribe al menos 3 caracteres</p>
+            /* SIN BÚSQUEDA ACTIVA: lista de alumnos con citas recientes */
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-sm font-bold text-[#2C3E50] px-1">
+                <Clock size={16} className="text-[#701C32]" />
+                Alumnos con citas recientes
+              </div>
+
+              {loadingRecientes ? (
+                <div className="space-y-4 animate-pulse" aria-hidden="true">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-gray-100 shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-40 bg-gray-100 rounded" />
+                        <div className="h-3 w-24 bg-gray-100 rounded" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : recientes.length > 0 ? (
+                recientes.map((alumno) => (
+                  <div
+                    key={alumno.id_alumno}
+                    className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 hover:shadow-xl transition-all relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-[#701C32]" />
+                    <div className="flex items-center gap-4 pl-2">
+                      <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-[#2C3E50] shrink-0">
+                        <User size={24} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-[#2C3E50]">
+                          {alumno.nombres} {alumno.apellidos}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          DNI: {alumno.dni}
+                          {alumno.ultima_cita && (
+                            <span className="text-gray-400">
+                              {" · "}Última cita: {new Date(alumno.ultima_cita).toLocaleDateString()}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openDetail(alumno)}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-[#2C3E50] font-semibold rounded-xl hover:bg-gray-100 transition-colors border border-gray-200"
+                      >
+                        <Eye size={18} /> Historial
+                      </button>
+                      <button
+                        onClick={() => openCita(alumno)}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#701C32] text-white font-semibold rounded-xl hover:bg-[#5a1628] active:scale-[0.98] transition-all"
+                      >
+                        <CalendarPlus size={18} /> Citar
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
+                  <Users className="mx-auto text-gray-300 mb-4" size={48} />
+                  <h3 className="text-gray-500 font-medium">Aún no hay citas registradas</h3>
+                  <p className="text-gray-400 text-sm mt-1">Busca un alumno por nombre o DNI para ver su expediente</p>
+                </div>
+              )}
             </div>
           )}
         </div>

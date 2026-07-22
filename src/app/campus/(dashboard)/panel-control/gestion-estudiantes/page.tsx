@@ -6,6 +6,7 @@ import { AlumnoBase } from "@/src/interfaces/admision";
 import EdadBadge from "@/src/components/utils/CalcularEdad";
 import { apiFetch } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
+import { ModalEditarEstudiante } from "@/src/components/Campus/PanelControl/ModalEditarEstudiante";
 
 function InfoItem({ label, value }: { label: string, value: string }) {
     return (
@@ -31,6 +32,8 @@ export default function GestionEstudiantesPage() {
     // Estados para el Modal de Rechazo
     const [modalRechazo, setModalRechazo] = useState({ abierto: false, id: 0, nombre: "" });
     const [motivoRechazo, setMotivoRechazo] = useState("");
+    // Estudiante en edición (null = modal cerrado)
+    const [alumnoEditando, setAlumnoEditando] = useState<AlumnoBase | null>(null);
 
     // --- Renovaciones de matrícula ---
     const [renovaciones, setRenovaciones] = useState<any[]>([]);
@@ -58,12 +61,23 @@ export default function GestionEstudiantesPage() {
 
             const data = await response.json();
             setAlumnos(data);
+            return data as AlumnoBase[];
         } catch (error) {
             console.error("Error cargando alumnos:", error); // Para ver el error real en la consola de tu navegador
             toast.error("No se pudo conectar con el servidor");
         } finally {
             setLoading(false);
         }
+    };
+
+    // Tras guardar, la lista se recarga y el modal vuelve a apuntar al dato del
+    // servidor: así la cabecera y el formulario reflejan lo realmente guardado.
+    const trasGuardarEstudiante = async () => {
+        const data = await cargarDatos();
+        setAlumnoEditando((actual) => {
+            if (!actual || !data) return actual;
+            return data.find((a) => a.id_alumno === actual.id_alumno) ?? actual;
+        });
     };
 
     const cargarRenovaciones = async () => {
@@ -365,9 +379,17 @@ export default function GestionEstudiantesPage() {
                                                         <div className="flex justify-end gap-2">
                                                             <button
                                                                 onClick={() => verDetalle(alumno.id_alumno)}
+                                                                title="Ver expediente"
                                                                 className="p-2 text-slate-400 hover:text-[#093E7A] hover:bg-[#093E7A]/5 rounded-lg transition-all"
                                                             >
                                                                 <span className="material-symbols-outlined text-[20px]">visibility</span>
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setAlumnoEditando(alumno)}
+                                                                title="Editar estudiante y familiares"
+                                                                className="p-2 text-slate-400 hover:text-[#093E7A] hover:bg-[#093E7A]/5 rounded-lg transition-all"
+                                                            >
+                                                                <span className="material-symbols-outlined text-[20px]">edit</span>
                                                             </button>
                                                             {alumno.estado_ingreso === "POSTULANTE" && (
                                                                 <>
@@ -394,6 +416,13 @@ export default function GestionEstudiantesPage() {
                     </div>
                 </div>
             </div>
+
+            {/* --- MODAL: EDITAR ESTUDIANTE Y SUS FAMILIARES (Z-60) --- */}
+            <ModalEditarEstudiante
+                alumno={alumnoEditando}
+                onClose={() => setAlumnoEditando(null)}
+                onSaved={trasGuardarEstudiante}
+            />
 
             {/* --- MODAL DECISIÓN RENOVACIÓN (Z-70) --- */}
             {modalDecision.abierto && modalDecision.solicitud && (

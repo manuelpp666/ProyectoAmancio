@@ -95,6 +95,11 @@ export default function HistorialConductaPage() {
                 <span className="text-[10px] font-black text-[#701C32] bg-[#701C32]/5 px-2 py-0.5 rounded-md">{r.fecha}</span>
                 <h4 className="font-bold text-gray-800 text-lg">{r.motivo}</h4>
                 <p className="text-sm text-gray-500">{r.nota_reglamento}</p>
+                {r.medida && (
+                  <span className={`inline-block mt-1 text-[11px] font-bold rounded-lg px-2.5 py-1 ${r.cambio_ie ? "bg-red-50 text-red-700 border border-red-100" : "bg-slate-100 text-slate-700"}`}>
+                    {r.medida}
+                  </span>
+                )}
               </div>
               <div className="text-right">
                 <span className="text-2xl font-black text-red-600">-{r.puntos_restados}</span>

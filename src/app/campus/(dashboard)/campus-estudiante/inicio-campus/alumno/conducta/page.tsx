@@ -76,8 +76,14 @@ export default function ConductaAlumnoPage() {
     }
   };
   const ultimoReporte = data?.historial?.[0];
+
+  // Umbrales definidos por el backend (única fuente de verdad del sistema de puntos)
+  const puntajeMaximo = data?.puntaje_maximo ?? 100;
+  const umbralObservacion = data?.umbral_observacion ?? 75;
+  const umbralCritico = data?.umbral_critico ?? 40;
+
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-12 px-4 animate-in fade-in duration-500">
+    <div className="max-w-5xl mx-auto space-y-8 pb-12 px-4 surface-in">
       {/* HEADER */}
       <div>
         <h1 className="text-3xl font-black text-[#701C32] flex items-center gap-3">
@@ -85,6 +91,22 @@ export default function ConductaAlumnoPage() {
         </h1>
         <p className="text-gray-500 mt-2">Seguimiento de conducta basado en el Reglamento Interno 2026</p>
       </div>
+
+      {/* ALERTA DE FALTA MUY GRAVE */}
+      {data?.requiere_cambio_ie && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-5 flex gap-4 items-start">
+          <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+            <AlertCircle size={20} />
+          </div>
+          <div>
+            <h3 className="font-bold text-red-800">Tienes registrada una falta muy grave</h3>
+            <p className="text-sm text-red-700 mt-1 leading-relaxed">
+              Según el Reglamento Interno, esta falta contempla el cambio de institución educativa.
+              Tu apoderado debe acercarse a la dirección del colegio a la brevedad.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* SECCIÓN DE PUNTAJE Y BARRA */}
       <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-8 items-center">
@@ -102,9 +124,9 @@ export default function ConductaAlumnoPage() {
           <div className="flex justify-between items-end">
             <div>
               <h2 className="text-xl font-bold text-gray-800">Progreso Conductual</h2>
-              <p className="text-sm text-gray-500">Inicias con 100 puntos cada año escolar</p>
+              <p className="text-sm text-gray-500">Inicias con {puntajeMaximo} puntos cada año escolar</p>
             </div>
-            <span className="font-black text-2xl text-gray-300">100</span>
+            <span className="font-black text-2xl text-gray-300">{puntajeMaximo}</span>
           </div>
 
           {/* La Barra de Progreso */}
@@ -116,14 +138,14 @@ export default function ConductaAlumnoPage() {
           </div>
 
           <div className="flex gap-4 flex-wrap">
-            <div className="flex items-center gap-2 text-xs font-bold text-gray-500 bg-gray-50 px-3 py-1 rounded-lg">
-              <CheckCircle2 size={14} className="text-emerald-500" /> 100-75: Excelente
+            <div className="flex items-center gap-2 text-xs font-bold text-gray-600 bg-gray-50 px-3 py-1 rounded-lg">
+              <CheckCircle2 size={14} className="text-emerald-500" /> {puntajeMaximo}-{umbralObservacion}: Buena conducta
             </div>
-            <div className="flex items-center gap-2 text-xs font-bold text-gray-500 bg-gray-50 px-3 py-1 rounded-lg">
-              <AlertTriangle size={14} className="text-amber-500" /> 74-40: Regular
+            <div className="flex items-center gap-2 text-xs font-bold text-gray-600 bg-gray-50 px-3 py-1 rounded-lg">
+              <AlertTriangle size={14} className="text-amber-500" /> {umbralObservacion - 1}-{umbralCritico}: En observación
             </div>
-            <div className="flex items-center gap-2 text-xs font-bold text-gray-500 bg-gray-50 px-3 py-1 rounded-lg">
-              <AlertCircle size={14} className="text-red-500" /> 39-0: En riesgo
+            <div className="flex items-center gap-2 text-xs font-bold text-gray-600 bg-gray-50 px-3 py-1 rounded-lg">
+              <AlertCircle size={14} className="text-red-500" /> {umbralCritico - 1}-0: Conducta crítica
             </div>
           </div>
         </div>
@@ -154,6 +176,11 @@ export default function ConductaAlumnoPage() {
                   <div>
                     <h4 className="font-bold text-gray-800">{ultimoReporte.motivo}</h4>
                     <p className="text-xs text-gray-500">{ultimoReporte.fecha}</p>
+                    {ultimoReporte.medida && (
+                      <span className={`inline-block mt-2 text-[11px] font-bold rounded-lg px-2.5 py-1 ${ultimoReporte.cambio_ie ? "bg-red-50 text-red-700 border border-red-100" : "bg-slate-100 text-slate-700"}`}>
+                        {ultimoReporte.medida}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <span className="text-red-600 font-black">-{ultimoReporte.puntos_restados} pts</span>
@@ -165,7 +192,7 @@ export default function ConductaAlumnoPage() {
                 <ShieldCheck className="text-emerald-500" size={32} />
               </div>
               <h4 className="text-emerald-900 font-bold text-lg">¡Excelente conducta!</h4>
-              <p className="text-emerald-700 text-sm max-w-xs">No tienes reportes registrados. Mantén tu puntaje en 100 para obtener beneficios al finalizar el año.</p>
+              <p className="text-emerald-700 text-sm max-w-xs">No tienes reportes registrados. Mantén tu puntaje en {puntajeMaximo} para obtener beneficios al finalizar el año.</p>
             </div>
           )}
         </div>
