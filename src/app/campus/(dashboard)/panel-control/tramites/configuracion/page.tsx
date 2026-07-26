@@ -407,8 +407,8 @@ export default function GestionFinancieraPage() {
                 </button>
               </div>
 
-              <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-                <table className="w-full text-left border-collapse">
+              <div className="bg-white rounded-xl border shadow-sm overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[600px]">
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase">Nombre del Trámite</th>
@@ -529,8 +529,8 @@ export default function GestionFinancieraPage() {
                 </button>
               </div>
 
-              <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-                <table className="w-full text-left border-collapse">
+              <div className="bg-white rounded-xl border shadow-sm overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[600px]">
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase">Categoría</th>
@@ -670,8 +670,8 @@ export default function GestionFinancieraPage() {
                 )}
               </div>
 
-              <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-                <table className="w-full text-left border-collapse">
+              <div className="bg-white rounded-xl border shadow-sm overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[600px]">
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase">F. Venc.</th>

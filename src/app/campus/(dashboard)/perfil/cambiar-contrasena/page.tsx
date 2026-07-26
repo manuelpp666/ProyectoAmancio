@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUser } from "@/src/context/userContext";
-import { Lock, Eye, EyeOff, Save, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Lock, Eye, EyeOff, Save, Loader2, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/src/lib/api";
@@ -12,25 +12,36 @@ interface FastApiValidationError {
   type: string;
 }
 
+// Ruta de inicio según el rol del usuario
+const homePorRol = (rol: string | null): string => {
+  switch (rol) {
+    case "ADMIN": return "/campus/panel-control";
+    case "DOCENTE": return "/campus/campus-docente/inicio-docente";
+    case "ALUMNO": return "/campus/campus-estudiante/inicio-campus";
+    case "PSICOLOGO": return "/campus/campus-psicologo";
+    case "AUXILIAR": return "/campus/campus-auxiliar/inicio";
+    default: return "/campus";
+  }
+};
+
 export default function SecurityPage() {
   const router = useRouter();
-  const { username, role } = useUser();
+  const { username, role, loading: authLoading } = useUser();
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState({ current: false, new: false, confirm: false });
   const [formData, setFormData] = useState({ current: "", new: "", confirm: "" });
   const [status, setStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
-  const handleBack = () => {
-    if (role === "ADMIN") {
-      router.push("/campus/panel-control");
-    } else if (role === "DOCENTE") {
-      router.push("/campus/campus-docente/inicio-docente");
-    } else if (role === "ALUMNO") {
-      router.push("/campus/campus-estudiante/inicio-campus");
-    } else {
-      // Por si acaso el role es null, enviarlo al login o inicio
-      router.push("/campus");
+  // Esta pantalla es exclusiva del administrador. Si otro rol entra por URL
+  // directa, lo redirigimos a su panel de inicio.
+  useEffect(() => {
+    if (!authLoading && role !== "ADMIN") {
+      router.replace(homePorRol(role));
     }
+  }, [authLoading, role, router]);
+
+  const handleBack = () => {
+    router.push(homePorRol(role));
   };
   // Lógica de fuerza de contraseña
   const getStrength = () => {
@@ -101,9 +112,27 @@ export default function SecurityPage() {
     }
   };
 
+  // Mientras verificamos el rol (o si no es ADMIN, en pleno redirect) no mostramos el formulario
+  if (authLoading || role !== "ADMIN") {
+    return (
+      <div className="min-h-full flex items-center justify-center">
+        <Loader2 className="animate-spin text-[#093E7A]" size={40} />
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-[#F8FAFC] min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+    <div className="min-h-full flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <button
+          type="button"
+          onClick={handleBack}
+          className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-[#093E7A] transition-colors"
+        >
+          <ArrowLeft size={18} /> Volver
+        </button>
+
+        <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
 
         <div className="mb-8 text-center">
           <div className="w-16 h-16 bg-[#093E7A]/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -196,7 +225,7 @@ export default function SecurityPage() {
             </div>
           </div>
 
-          <div className="pt-4 flex flex-col gap-3">
+          <div className="pt-4">
             <button
               disabled={loading}
               className="w-full py-4 bg-[#093E7A] hover:bg-[#072f5d] disabled:bg-slate-400 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs"
@@ -205,15 +234,9 @@ export default function SecurityPage() {
               {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
               {loading ? "Procesando..." : "Actualizar Contraseña"}
             </button>
-            <button
-              type="button"
-              onClick={handleBack}
-              className="text-center text-xs font-bold text-[#701C32] hover:underline py-2 uppercase tracking-tight"
-            >
-              Cancelar y volver al campus
-            </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

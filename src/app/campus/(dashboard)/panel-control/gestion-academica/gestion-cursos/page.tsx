@@ -273,8 +273,8 @@ export default function GestionCursosPage() {
                     </span>
                   </div>
 
-                  <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-                    <table className="w-full text-left border-collapse">
+                  <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[600px]">
                       <thead>
                         <tr className="bg-gray-50 border-b border-gray-200">
                           <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Curso / Asignatura</th>
@@ -416,7 +416,7 @@ export default function GestionCursosPage() {
                 <h4 className="text-[11px] font-black text-[#093E7A] uppercase tracking-widest flex items-center gap-2">
                   <span className="material-symbols-outlined text-[16px]">school</span> Grados donde se dicta
                 </h4>
-                <div className="grid grid-cols-3 gap-6 bg-gray-50 rounded-xl border border-gray-200 p-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 bg-gray-50 rounded-xl border border-gray-200 p-4">
                   {niveles.map(nivel => (
                     <div key={nivel.id_nivel} className="space-y-2">
                       <p className="text-[10px] font-black text-[#093E7A] uppercase">{nivel.nombre}</p>

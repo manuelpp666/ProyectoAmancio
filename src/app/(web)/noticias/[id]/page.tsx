@@ -1,18 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Header from "@/src/components/Pagina-Web/Header";
-import Footer from "@/src/components/Pagina-Web/Footer";
 import { NoticiaResponse } from "@/src/interfaces/noticia";
 import { getYouTubeID } from "@/src/components/utils/youtube";
-import { Calendar, Tag, ArrowLeft, Share2, Clock } from "lucide-react";
+import { sanitizarHtml } from "@/src/components/utils/html";
+import { formatearFechaLarga } from "@/src/components/utils/fecha";
+import { Calendar, Tag, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 export default function DetalleNoticiaPage() {
     const { id } = useParams();
     const [noticia, setNoticia] = useState<NoticiaResponse | null>(null);
     const [loading, setLoading] = useState(true);
-
 
     useEffect(() => {
         const fetchNoticia = async () => {
@@ -33,43 +32,52 @@ export default function DetalleNoticiaPage() {
         if (id) fetchNoticia();
     }, [id]);
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center">Cargando noticia...</div>;
-    if (!noticia) return <div className="min-h-screen flex items-center justify-center">Noticia no encontrada</div>;
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center">
+            <Loader2 className="animate-spin text-[#701C32]" size={40} />
+        </div>
+    );
+    if (!noticia) return (
+        <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center">
+            <p className="text-slate-500 font-medium">Noticia no encontrada.</p>
+            <Link href="/noticias" className="text-[#093E7A] font-bold hover:text-[#701C32] transition-colors">
+                Volver a noticias
+            </Link>
+        </div>
+    );
 
     const videoId = noticia.categoria === "video" ? getYouTubeID(noticia.imagen_portada_url || "") : null;
 
     return (
         <div className="bg-white">
-            <Header />
-
-            <main className="min-h-screen pb-20">
+            <div className="min-h-screen pb-20">
                 {/* Header de la Noticia */}
-                <div className="bg-slate-50 border-b border-slate-100 py-12 mb-12">
+                <div className="bg-slate-50 border-b border-slate-100 py-10 md:py-12 mb-10 md:mb-12">
                     <div className="max-w-4xl mx-auto px-4">
                         <Link
                             href="/noticias"
-                            className="flex items-center gap-2 text-[#093E7A] font-bold text-sm mb-8 hover:gap-3 transition-all"
+                            className="flex items-center gap-2 text-[#093E7A] font-bold text-sm mb-6 md:mb-8 hover:gap-3 transition-all w-fit"
                         >
                             <ArrowLeft size={20} /> Volver a noticias
                         </Link>
 
-                        <div className="flex items-center gap-3 mb-6">
+                        <div className="flex flex-wrap items-center gap-3 mb-6">
                             <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${noticia.categoria === 'video' ? 'bg-red-100 text-red-700' : 'bg-[#FFF1E3] text-[#701C32]'
                                 }`}>
                                 {noticia.categoria}
                             </span>
                             <span className="flex items-center gap-1 text-slate-400 text-sm font-medium">
                                 <Calendar size={14} />
-                                {new Date(noticia.fecha_publicacion).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                {formatearFechaLarga(noticia.fecha_publicacion)}
                             </span>
                         </div>
 
-                        <h1 className="text-4xl md:text-5xl font-black text-[#701C32] leading-[1.1] mb-8">
+                        <h1 className="text-3xl md:text-5xl font-black text-[#701C32] leading-[1.1] mb-8">
                             {noticia.titulo}
                         </h1>
 
-                        <div className="flex items-center gap-4 border-t border-slate-200 pt-8">
-                            <div className="w-12 h-12 rounded-full bg-[#093E7A] flex items-center justify-center text-white font-bold">
+                        <div className="flex items-center gap-4 border-t border-slate-200 pt-6 md:pt-8">
+                            <div className="w-12 h-12 rounded-full bg-[#093E7A] flex items-center justify-center text-white font-bold shrink-0">
                                 A
                             </div>
                             <div>
@@ -82,35 +90,36 @@ export default function DetalleNoticiaPage() {
 
                 <div className="max-w-4xl mx-auto px-4">
                     {/* Visual principal (Imagen o Video) */}
-                    <div className="mb-12 rounded-3xl overflow-hidden shadow-2xl">
+                    <div className="mb-10 md:mb-12 rounded-3xl overflow-hidden shadow-2xl">
                         {noticia.categoria === "video" && videoId ? (
                             <div className="aspect-video w-full">
                                 <iframe
                                     className="w-full h-full"
                                     src={`https://www.youtube.com/embed/${videoId}`}
-                                    title="YouTube video player"
+                                    title={noticia.titulo}
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                     allowFullScreen
                                 ></iframe>
                             </div>
                         ) : (
                             <img
-                                src={noticia.imagen_portada_url || "/placeholder.jpg"}
+                                src={noticia.imagen_portada_url || "/placeholder-news.svg"}
                                 alt={noticia.titulo}
                                 className="w-full h-auto object-cover max-h-[500px]"
                             />
                         )}
                     </div>
 
-                    {/* CONTENIDO DEL EDITOR (TIPTAP) */}
-                    <div className="prose prose-lg prose-slate max-w-none 
+                    {/* CONTENIDO DEL EDITOR (TIPTAP) — sanitizado */}
+                    <div className="prose prose-base md:prose-lg prose-slate max-w-none
             prose-headings:text-[#701C32] prose-headings:font-black
             prose-p:text-slate-600 prose-p:leading-relaxed
             prose-strong:text-slate-900
+            prose-img:rounded-2xl
             prose-blockquote:border-l-[#093E7A] prose-blockquote:bg-blue-50 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-lg
             prose-li:marker:text-[#093E7A]
             mb-16"
-                        dangerouslySetInnerHTML={{ __html: noticia.contenido }}
+                        dangerouslySetInnerHTML={{ __html: sanitizarHtml(noticia.contenido) }}
                     />
 
                     {/* Footer de noticia */}
@@ -120,13 +129,9 @@ export default function DetalleNoticiaPage() {
                             <span className="text-sm font-bold text-slate-500 uppercase tracking-widest">Etiquetas:</span>
                             <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-md text-xs font-bold">Institucional</span>
                         </div>
-
-                        
                     </div>
                 </div>
-            </main>
-
-            <Footer />
+            </div>
         </div>
     );
 }

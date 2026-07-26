@@ -34,6 +34,8 @@ export default function AsignacionEstudiantesPage() {
 
   // --- ESTADOS DE UI ---
   const [draggedStudent, setDraggedStudent] = useState<AlumnoMatriculado | null>(null);
+  // Selección táctil (móvil): estudiante "tomado" para asignar con un toque
+  const [alumnoSeleccionado, setAlumnoSeleccionado] = useState<AlumnoMatriculado | null>(null);
   const [seccionesEditando, setSeccionesEditando] = useState<Record<number, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
   //Estados de modal de confirmacion
@@ -127,6 +129,7 @@ export default function AsignacionEstudiantesPage() {
   }, [selectedAnio, selectedGrado]);
 
   useEffect(() => {
+    setAlumnoSeleccionado(null); // limpiar selección táctil al cambiar de contexto
     if (selectedAnio && selectedGrado) {
       cargarDatosOperativos(false);
     } else {
@@ -193,11 +196,8 @@ export default function AsignacionEstudiantesPage() {
     e.preventDefault();
   };
 
-  const handleDropToSection = (seccionId: number) => {
-    if (!draggedStudent) return;
-    const alumno = draggedStudent;
-    setDraggedStudent(null);
-
+  // Núcleo de validación + asignación, reutilizado por arrastre (desktop) y toque (móvil)
+  const intentarAsignar = (alumno: AlumnoMatriculado, seccionId: number) => {
     if (!seccionesEditando[seccionId]) {
       toast.warning("Habilita la edición ('Editar Selección') para modificar esta sección.");
       return;
@@ -228,6 +228,21 @@ export default function AsignacionEstudiantesPage() {
     ejecutarAsignacion(alumno, seccionId);
   };
 
+  const handleDropToSection = (seccionId: number) => {
+    if (!draggedStudent) return;
+    const alumno = draggedStudent;
+    setDraggedStudent(null);
+    intentarAsignar(alumno, seccionId);
+  };
+
+  // Toque (móvil): asigna el alumno seleccionado a la sección tocada
+  const handleTapSeccion = (seccionId: number) => {
+    if (!alumnoSeleccionado) return;
+    const alumno = alumnoSeleccionado;
+    setAlumnoSeleccionado(null);
+    intentarAsignar(alumno, seccionId);
+  };
+
   const ejecutarAsignacion = (alumno: AlumnoMatriculado, seccionId: number) => {
     const nuevosAlumnos = alumnos.map(a =>
       a.id_matricula === alumno.id_matricula ? { ...a, id_seccion: seccionId } : a
@@ -236,16 +251,13 @@ export default function AsignacionEstudiantesPage() {
     setDraggedStudent(null);
   };
 
-  const handleDropToUnassigned = () => {
-    if (!draggedStudent) return;
-    const alumno = draggedStudent;
-    setDraggedStudent(null);
-
+  // Núcleo de desasignación, reutilizado por arrastre y toque
+  const intentarDesasignar = (alumno: AlumnoMatriculado) => {
     if (estaBloqueado(alumno)) {
       toast.error("No puedes desasignar a este alumno: el año académico ya comenzó y ya estaba asignado.");
       return;
     }
-    if (alumno.id_seccion !== null && !seccionesEditando[alumno.id_seccion]) {
+    if (alumno.id_seccion !== null && alumno.id_seccion !== undefined && !seccionesEditando[alumno.id_seccion]) {
       toast.warning("La sección de origen está bloqueada.");
       return;
     }
@@ -256,6 +268,24 @@ export default function AsignacionEstudiantesPage() {
         : a
     );
     setAlumnos(nuevosAlumnos);
+  };
+
+  const handleDropToUnassigned = () => {
+    if (!draggedStudent) return;
+    const alumno = draggedStudent;
+    setDraggedStudent(null);
+    intentarDesasignar(alumno);
+  };
+
+  // Toque (móvil): selecciona/deselecciona un estudiante para asignarlo
+  const seleccionarAlumno = (alumno: AlumnoMatriculado) => {
+    if (estaBloqueado(alumno)) {
+      toast.error("Este alumno ya está asignado y el año comenzó: no se puede mover.");
+      return;
+    }
+    setAlumnoSeleccionado(prev =>
+      prev?.id_matricula === alumno.id_matricula ? null : alumno
+    );
   };
 
   // --- CONFIRMAR CAMBIOS ---
@@ -312,19 +342,19 @@ export default function AsignacionEstudiantesPage() {
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
       `}} />
 
-      <div className="flex h-full overflow-hidden">
-        <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
+      <div className="flex min-h-full lg:h-full lg:overflow-hidden">
+        <div className="flex-1 flex flex-col lg:overflow-hidden bg-[#F8FAFC] min-w-0">
 
           <HeaderPanel />
 
-          <div className="h-16 border-b bg-white flex items-center justify-between px-8 shrink-0">
-            <div className="flex items-center gap-4">
+          <div className="min-h-16 border-b bg-white flex flex-wrap items-center justify-between gap-y-2 px-4 md:px-8 py-2 md:py-0 shrink-0">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#093E7A]">person_add_alt</span>
-                <h2 className="text-xl font-bold text-gray-800">Asignación de Estudiantes</h2>
+                <h2 className="text-lg md:text-xl font-bold text-gray-800">Asignación de Estudiantes</h2>
               </div>
-              <div className="h-6 w-px bg-gray-200 mx-2"></div>
-              <div className="flex items-center gap-2">
+              <div className="hidden md:block h-6 w-px bg-gray-200 mx-2"></div>
+              <div className="flex flex-wrap items-center gap-2">
                 <AnioSelector
                   value={selectedAnio}
                   onChange={setSelectedAnio}
@@ -355,7 +385,7 @@ export default function AsignacionEstudiantesPage() {
               </div>
             </div>
             {anioActualObj && (
-              <div className="text-xs text-gray-400">
+              <div className="hidden lg:block text-xs text-gray-400">
                 {anioActualObj.inicio_inscripcion ?
                   `Del ${anioActualObj.inicio_inscripcion} al ${anioActualObj.fin_inscripcion}` :
                   "Fechas no configuradas"}
@@ -363,11 +393,11 @@ export default function AsignacionEstudiantesPage() {
             )}
           </div>
 
-          <div className="flex-1 flex overflow-hidden p-8 gap-8">
+          <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden p-4 md:p-8 gap-4 md:gap-8">
 
             {/* --- LISTA IZQUIERDA --- */}
             <div
-              className="w-1/3 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+              className="w-full lg:w-1/3 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 lg:overflow-hidden shrink-0"
               onDragOver={handleDragOver}
               onDrop={handleDropToUnassigned}
             >
@@ -393,26 +423,32 @@ export default function AsignacionEstudiantesPage() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto bg-slate-50/30">
+              <div className="flex-1 overflow-y-auto bg-slate-50/30 max-h-[55vh] lg:max-h-none">
                 {selectedGrado ? (
                   <div className="divide-y divide-gray-100">
-                    {alumnosFiltrados.map((alumno) => (
+                    {alumnosFiltrados.map((alumno) => {
+                      const seleccionado = alumnoSeleccionado?.id_matricula === alumno.id_matricula;
+                      return (
                       <div
                         key={alumno.id_matricula}
                         draggable
                         onDragStart={() => handleDragStart(alumno)}
-                        className="p-4 bg-white hover:bg-gray-50 cursor-grab active:cursor-grabbing group flex items-center gap-4 transition-colors"
+                        onClick={() => seleccionarAlumno(alumno)}
+                        className={`p-4 cursor-pointer lg:cursor-grab lg:active:cursor-grabbing group flex items-center gap-4 transition-colors ${seleccionado ? 'bg-[#093E7A]/10 ring-2 ring-inset ring-[#093E7A]' : 'bg-white hover:bg-gray-50'}`}
                       >
-                        <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center border border-gray-200">
+                        <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center border border-gray-200 shrink-0">
                           <span className="material-symbols-outlined text-gray-400">person</span>
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-gray-900 truncate">{alumno.nombres} {alumno.apellidos}</p>
                           <p className="text-xs text-gray-500">DNI: {alumno.dni}</p>
                         </div>
-                        <span className="material-symbols-outlined text-gray-300 group-hover:text-[#093E7A] transition-colors">drag_indicator</span>
+                        <span className={`material-symbols-outlined transition-colors ${seleccionado ? 'text-[#093E7A]' : 'text-gray-300 group-hover:text-[#093E7A]'}`}>
+                          {seleccionado ? 'check_circle' : 'touch_app'}
+                        </span>
                       </div>
-                    ))}
+                      );
+                    })}
                     {alumnosFiltrados.length === 0 && (
                       <div className="p-10 text-center text-gray-400 text-sm">
                         {isLoading ? "Cargando estudiantes..." : "No hay alumnos pendientes para este filtro."}
@@ -428,7 +464,7 @@ export default function AsignacionEstudiantesPage() {
             </div>
 
             {/* --- DERECHA: PASOS --- */}
-            <div className="flex-1 flex flex-col gap-6 overflow-y-auto pr-2 pb-10">
+            <div className="flex-1 min-w-0 flex flex-col gap-6 lg:overflow-y-auto lg:pr-2 pb-10">
 
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 shrink-0">
                 <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Paso 1: Seleccionar Nivel</h3>
@@ -518,12 +554,23 @@ export default function AsignacionEstudiantesPage() {
                               El año ya comenzó: puedes asignar nuevos alumnos, pero los ya asignados (🔒) no se pueden mover ni desasignar.
                             </div>
                           )}
+                          {/* Botón táctil: asignar el alumno seleccionado a esta sección */}
+                          {alumnoSeleccionado && estaEditando && !estaBloqueado(alumnoSeleccionado) && vacantesRestantes > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => handleTapSeccion(seccion.id_seccion || 0)}
+                              className="mb-3 w-full bg-[#093E7A]/10 text-[#093E7A] border-2 border-dashed border-[#093E7A]/40 py-2.5 rounded-lg font-bold text-xs flex items-center justify-center gap-2 hover:bg-[#093E7A]/15 transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-sm">person_add</span>
+                              Asignar a {alumnoSeleccionado.nombres.split(' ')[0]} aquí
+                            </button>
+                          )}
                           <div className="flex-1 bg-white border border-gray-100 rounded-lg p-2 mb-4 overflow-y-auto max-h-48 min-h-[100px]">
                             {alumnosEnSeccion.length === 0 ? (
                               <div className="h-full flex flex-col items-center justify-center text-gray-300">
                                 <span className="material-symbols-outlined text-2xl mb-1">add_circle</span>
-                                <p className="text-[10px] font-bold uppercase">
-                                  {vacantesRestantes > 0 && estaEditando ? 'Arrastrar aquí' : 'Vacío'}
+                                <p className="text-[10px] font-bold uppercase text-center px-2">
+                                  {vacantesRestantes > 0 && estaEditando ? 'Arrastra o toca «Asignar aquí»' : 'Vacío'}
                                 </p>
                               </div>
                             ) : (
@@ -544,7 +591,14 @@ export default function AsignacionEstudiantesPage() {
                                     {bloqueado ? (
                                       <span className="material-symbols-outlined text-[14px] text-gray-400 shrink-0">lock</span>
                                     ) : estaEditando ? (
-                                      <span className="material-symbols-outlined text-[10px] text-gray-400 shrink-0">drag_handle</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => intentarDesasignar(a)}
+                                        title="Quitar de la sección"
+                                        className="shrink-0 text-gray-400 hover:text-red-600 transition-colors flex items-center"
+                                      >
+                                        <span className="material-symbols-outlined text-[16px]">close</span>
+                                      </button>
                                     ) : null}
                                   </div>
                                   );
@@ -586,6 +640,19 @@ export default function AsignacionEstudiantesPage() {
           </div>
         </div>
       </div>
+      {/* Barra flotante de selección (solo móvil) */}
+      {alumnoSeleccionado && (
+        <div className="lg:hidden fixed bottom-4 inset-x-4 z-50 bg-[#093E7A] text-white rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-3 animate-in slide-in-from-bottom-4">
+          <span className="material-symbols-outlined shrink-0">touch_app</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] uppercase tracking-widest text-white/70 leading-none mb-0.5">Estudiante tomado · toca «Asignar aquí»</p>
+            <p className="text-sm font-bold truncate">{alumnoSeleccionado.nombres} {alumnoSeleccionado.apellidos}</p>
+          </div>
+          <button onClick={() => setAlumnoSeleccionado(null)} className="shrink-0 bg-white/15 hover:bg-white/25 rounded-lg px-3 py-1.5 text-xs font-bold transition-colors">
+            Cancelar
+          </button>
+        </div>
+      )}
       <ConfirmModal
         isOpen={showConfirmModal}
         onClose={() => {

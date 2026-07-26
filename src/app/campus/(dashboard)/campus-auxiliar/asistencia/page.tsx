@@ -146,30 +146,36 @@ export default function AsistenciaAuxiliarPage() {
     setAsistenciaState(prev => ({ ...prev, [idMatricula]: estado }));
   };
 
-  // 6. Enviar Asistencia al Backend
+  // 6. Enviar Asistencia al Backend (en lote) y notificar por correo a los apoderados
   const handleGuardarAsistencia = async () => {
     if (alumnos.length === 0) return;
     setIsSaving(true);
 
     try {
-      const promesas = alumnos.map((m) => {
-        const estado = asistenciaState[m.id_matricula] || "P";
-        return apiFetch("/gestion/asistencia/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id_matricula: m.id_matricula,
-            fecha: fechaAsistencia,
-            estado: estado,
-            observacion: ""
-          })
-        });
+      const registros = alumnos.map((m) => ({
+        id_matricula: m.id_matricula,
+        estado: asistenciaState[m.id_matricula] || "P",
+        observacion: "",
+      }));
+
+      const res = await apiFetch("/gestion/asistencia/lote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fecha: fechaAsistencia, registros }),
       });
 
-      await Promise.all(promesas);
-      toast.success("Asistencia registrada correctamente");
+      if (!res.ok) throw new Error("No se pudo registrar la asistencia");
+
+      const data = await res.json().catch(() => null);
+      if (data && data.correos_encolados > 0) {
+        toast.success(
+          `Asistencia registrada. Se enviará confirmación por correo a ${data.correos_encolados} apoderado(s).`
+        );
+      } else {
+        toast.success("Asistencia registrada correctamente");
+      }
     } catch (error) {
-      toast.error("Hubo un error al registrar algunas asistencias");
+      toast.error("Hubo un error al registrar la asistencia");
     } finally {
       setIsSaving(false);
     }

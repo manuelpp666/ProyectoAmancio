@@ -18,12 +18,13 @@ export function HeaderCampus({ onOpenMenu }: { onOpenMenu: () => void }) {
 
     const calcularNoVistas = async () => {
       try {
-        const res = await apiFetch(`/gestion/notificaciones/${id_usuario}`);
+        // Endpoint ligero: solo el conteo, sin traer la lista completa
+        const res = await apiFetch(`/gestion/notificaciones/${id_usuario}/contador`);
         if (!res.ok) return;
         const data = await res.json();
-        const notifs: any[] = data.notificaciones || [];
+        const total = Number(data.total || 0);
         const seenCount = Number(localStorage.getItem(`notif_seen_count_${id_usuario}`) || "0");
-        const nuevas = Math.max(0, notifs.length - seenCount);
+        const nuevas = Math.max(0, total - seenCount);
         setNoVistas(nuevas);
       } catch (error) {
         console.error("Error al contar notificaciones:", error);
@@ -124,14 +125,17 @@ export function HeaderCampus({ onOpenMenu }: { onOpenMenu: () => void }) {
               >
                 <User size={18} className="text-gray-400" /> Mis Datos
               </Link>
-              <Link
-                href="/campus/perfil/cambiar-contrasena"
-                className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#701C32] transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <Key size={18} className="text-gray-400" /> Cambiar Contraseña
-              </Link>
-              
+              {/* Cambiar contraseña: solo disponible para el administrador */}
+              {role === "ADMIN" && (
+                <Link
+                  href="/campus/perfil/cambiar-contrasena"
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#701C32] transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Key size={18} className="text-gray-400" /> Cambiar Contraseña
+                </Link>
+              )}
+
               <div className="my-1 border-t border-gray-100" />
 
               <button

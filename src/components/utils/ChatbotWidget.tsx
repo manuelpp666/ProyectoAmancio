@@ -38,7 +38,8 @@ export default function ChatWidget() {
       formData.append('question', userQuery);
 
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/chatbot/ask`, formData);
-      setMessages(prev => [...prev, { role: 'bot', text: res.data.answer }]);
+      const respuesta = res.data?.answer?.trim() || 'No encontré una respuesta para eso. ¿Puedes reformular tu pregunta?';
+      setMessages(prev => [...prev, { role: 'bot', text: respuesta }]);
     } catch (error) {
       setMessages(prev => [...prev, { role: 'bot', text: 'Lo siento, tuve un problema al procesar tu consulta. Reintenta en un momento.' }]);
     } finally {
@@ -47,10 +48,10 @@ export default function ChatWidget() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] flex flex-col items-end">
       {/* Ventana de Chat */}
       {isOpen && (
-        <div className="mb-4 w-[350px] md:w-[400px] h-[500px] bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-300">
+        <div className="mb-4 w-[calc(100vw-2rem)] sm:w-[400px] h-[70vh] max-h-[500px] bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-300">
           
           {/* Header */}
           <div className="bg-[#701C32] p-5 text-white flex justify-between items-center shadow-lg">
@@ -116,6 +117,7 @@ export default function ChatWidget() {
       {/* Botón Flotante (Trigger) */}
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label={isOpen ? "Cerrar chat" : "Abrir chat de ayuda"}
         className="bg-[#701C32] text-white p-4 rounded-full shadow-2xl hover:scale-110 active:scale-90 transition-all group relative"
       >
         {isOpen ? <X size={28} /> : <MessageCircle size={28} />}

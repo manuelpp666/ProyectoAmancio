@@ -27,7 +27,7 @@ export const getNoticiaImagen = (noticia: {
   if (noticia.categoria === "video") {
     const videoId = getYouTubeID(noticia.imagen_portada_url || "");
     if (videoId) return getYouTubeThumbnail(videoId);
-    return "/placeholder-news.jpg";
+    return "/placeholder-news.svg";
   }
-  return noticia.imagen_portada_url || "/placeholder-news.jpg";
+  return noticia.imagen_portada_url || "/placeholder-news.svg";
 };

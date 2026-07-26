@@ -3,9 +3,11 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -16,6 +18,10 @@ export default function Header() {
     { name: "Docentes", href: "/docentes" },
     { name: "Calendario", href: "/calendario" },
   ];
+
+  // La página está activa si la ruta coincide (o comienza con) el href
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
     <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100">
@@ -45,7 +51,10 @@ export default function Header() {
               <Link
                 key={link.name}
                 href={link.href}
-                className="font-bold text-sm uppercase tracking-wider text-slate-700 hover:text-[#701C32] transition-colors"
+                aria-current={isActive(link.href) ? "page" : undefined}
+                className={`font-bold text-sm uppercase tracking-wider transition-colors ${
+                  isActive(link.href) ? "text-[#701C32]" : "text-slate-700 hover:text-[#701C32]"
+                }`}
               >
                 {link.name}
               </Link>
@@ -85,7 +94,10 @@ export default function Header() {
               key={link.name}
               href={link.href}
               onClick={() => setIsOpen(false)}
-              className="block px-3 py-3 rounded-md text-base font-bold uppercase tracking-wider text-slate-700 hover:bg-slate-50 hover:text-[#701C32]"
+              aria-current={isActive(link.href) ? "page" : undefined}
+              className={`block px-3 py-3 rounded-md text-base font-bold uppercase tracking-wider hover:bg-slate-50 hover:text-[#701C32] ${
+                isActive(link.href) ? "text-[#701C32] bg-slate-50" : "text-slate-700"
+              }`}
             >
               {link.name}
             </Link>

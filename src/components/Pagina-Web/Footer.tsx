@@ -7,10 +7,18 @@ export default function Footer() {
   const { data, loading } = useConfiguracion('footer');
 
   // Función auxiliar para obtener el valor o uno por defecto
-  const getVal = (clave: string, defecto: string) => {
+  const getVal = (clave: string, defecto = "") => {
     const item = data.find(i => i.clave === clave);
-    return item ? item.valor : defecto;
+    return item?.valor?.trim() || defecto;
   };
+
+  // Datos de contacto: solo se muestran los que estén realmente configurados
+  // (evita mostrar dirección/teléfono/correo inventados si la API no responde).
+  const contactos = [
+    { icono: "place", valor: getVal("footer_direccion") },
+    { icono: "mail", valor: getVal("footer_correo") },
+    { icono: "phone", valor: getVal("footer_telefono") },
+  ].filter(c => c.valor !== "");
 
   // Redes sociales (solo se muestran las que tengan link configurado)
   const redes = [
@@ -49,15 +57,13 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center space-x-3 mb-6">
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center text-[#701C32]">
-                <Link href="/">
-                  <img
-                    src="/logo.png"
-                    alt="Logo Amancio Varona"
-                    className="h-30 md:h-30 object-contain cursor-pointer"
-                  />
-                </Link>
-              </div>
+              <Link href="/" className="shrink-0">
+                <img
+                  src="/logo.png"
+                  alt="Logo Amancio Varona"
+                  className="h-12 w-auto object-contain cursor-pointer"
+                />
+              </Link>
               <span className="font-black text-xl tracking-tight uppercase">Amancistas</span>
             </div>
             {/* DESCRIPCIÓN DINÁMICA */}
@@ -101,35 +107,24 @@ export default function Footer() {
           <div className="col-span-1 md:col-span-2">
             <h5 className="font-black text-lg mb-6 text-white">Contáctanos</h5>
             <div className="space-y-4">
-              {/* DIRECCIÓN DINÁMICA */}
-              <div className="flex items-center space-x-4 group cursor-pointer">
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                  <span className="material-icons-round text-[#FFF1E3]">place</span>
+              {loading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-10 w-2/3 bg-white/10 rounded-full animate-pulse" />
+                  ))}
                 </div>
-                <span className="text-[#FFF1E3]/80">
-                  {getVal('footer_direccion', 'Av. Las Orquídeas 123, Urb. San Isidro')}
-                </span>
-              </div>
-
-              {/* EMAIL DINÁMICO */}
-              <div className="flex items-center space-x-4 group cursor-pointer">
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                  <span className="material-icons-round text-[#FFF1E3]">mail</span>
-                </div>
-                <span className="text-[#FFF1E3]/80">
-                  {getVal('footer_correo', 'informes@amancistas.edu.pe')}
-                </span>
-              </div>
-
-              {/* TELÉFONO DINÁMICO */}
-              <div className="flex items-center space-x-4 group cursor-pointer">
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                  <span className="material-icons-round text-[#FFF1E3]">phone</span>
-                </div>
-                <span className="text-[#FFF1E3]/80">
-                  {getVal('footer_telefono', '+51 987 654 321')}
-                </span>
-              </div>
+              ) : contactos.length > 0 ? (
+                contactos.map((c) => (
+                  <div key={c.icono} className="flex items-center space-x-4 group">
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors shrink-0">
+                      <span className="material-icons-round text-[#FFF1E3]">{c.icono}</span>
+                    </div>
+                    <span className="text-[#FFF1E3]/80 break-words">{c.valor}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-[#FFF1E3]/60 text-sm">Información de contacto disponible próximamente.</p>
+              )}
             </div>
           </div>
         </div>

@@ -226,23 +226,23 @@ export default function AsignacionDocentesPage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <HeaderPanel />
 
-          <div className="flex-1 overflow-y-auto p-8">
+          <div className="flex-1 overflow-y-auto p-4 md:p-8">
             {/* TABS SUPERIORES */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
               <div>
                 <h3 className="text-2xl font-black text-gray-900 mb-4">Vínculos Académicos</h3>
-                <div className="flex gap-6 border-b border-gray-200">
+                <div className="flex gap-4 sm:gap-6 border-b border-gray-200 overflow-x-auto">
                   <button
                     onClick={() => setActiveTab("carga")}
-                    className={`pb-3 font-bold text-sm border-b-2 transition-all ${activeTab === 'carga' ? 'border-[#093E7A] text-[#093E7A]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+                    className={`pb-3 font-bold text-sm border-b-2 transition-all whitespace-nowrap ${activeTab === 'carga' ? 'border-[#093E7A] text-[#093E7A]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
                   >
-                    <span className="flex items-center gap-2"><span className="material-symbols-outlined text-lg">menu_book</span> Carga Académica (Cursos)</span>
+                    <span className="flex items-center gap-2"><span className="material-symbols-outlined text-lg">menu_book</span> Carga Académica <span className="hidden sm:inline">(Cursos)</span></span>
                   </button>
                   <button
                     onClick={() => setActiveTab("tutores")}
-                    className={`pb-3 font-bold text-sm border-b-2 transition-all ${activeTab === 'tutores' ? 'border-[#093E7A] text-[#093E7A]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+                    className={`pb-3 font-bold text-sm border-b-2 transition-all whitespace-nowrap ${activeTab === 'tutores' ? 'border-[#093E7A] text-[#093E7A]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
                   >
-                    <span className="flex items-center gap-2"><span className="material-symbols-outlined text-lg">supervisor_account</span> Tutorías de Sección</span>
+                    <span className="flex items-center gap-2"><span className="material-symbols-outlined text-lg">supervisor_account</span> Tutorías <span className="hidden sm:inline">de Sección</span></span>
                   </button>
                 </div>
               </div>
@@ -294,8 +294,8 @@ export default function AsignacionDocentesPage() {
             </div>
 
             {/* TABLA PRINCIPAL DINÁMICA */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <table className="w-full text-left border-collapse">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[600px]">
                 
                 <thead className="bg-gray-50/80">
                   {activeTab === "carga" ? (

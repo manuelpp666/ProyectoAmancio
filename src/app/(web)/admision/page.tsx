@@ -8,56 +8,80 @@ import {
   MapPin,
   Phone,
   Mail,
-  Calendar,
   Stethoscope,
-  Shirt,
   School,
   Send,
-  ArrowLeft
+  ArrowLeft,
+  Loader2,
+  CalendarClock
 } from "lucide-react";
-import Header from "@/src/components/Pagina-Web/Header";
-import Footer from "@/src/components/Pagina-Web/Footer";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useConfiguracion } from "@/src/hooks/useConfiguracion";
+import { formatearFechaLarga } from "@/src/components/utils/fecha";
+
+interface EstadoAdmision {
+  abierto: boolean;
+  tipo?: string;
+  proxima_inscripcion?: string;
+}
+
+const ESTADO_INICIAL = {
+  alumno: {
+    dni: "",
+    nombres: "",
+    apellidos: "",
+    fecha_nacimiento: "",
+    genero: "M",
+    direccion: "",
+    enfermedad: "",
+    talla_polo: "",
+    colegio_procedencia: "",
+    id_grado_ingreso: "",
+  },
+  familiar: {
+    dni: "",
+    nombres: "",
+    apellidos: "",
+    telefono: "",
+    email: "",
+    direccion: "",
+  },
+  tipo_parentesco: "PADRE",
+};
 
 export default function AdmisionPage() {
   const router = useRouter();
-  const { data: config } = useConfiguracion('admision');
-  const getVal = (clave: string, defecto: string) => config.find(i => i.clave === clave)?.valor || defecto;
+  const { getVal } = useConfiguracion('admision');
   const [loading, setLoading] = useState(false);
   const [grados, setGrados] = useState<Grado[]>([]);
-  const [formData, setFormData] = useState({
-    alumno: {
-      dni: "",
-      nombres: "",
-      apellidos: "",
-      fecha_nacimiento: "",
-      genero: "M",
-      direccion: "", // Re-agregado aquí
-      enfermedad: "",
-      talla_polo: "",
-      colegio_procedencia: "",
-      id_grado_ingreso: "",
-    },
-    familiar: {
-      dni: "",
-      nombres: "",
-      apellidos: "",
-      telefono: "",
-      email: "",
-      direccion: "",
-    },
-    tipo_parentesco: "PADRE" // Este valor es el que lee el router
-  });
-  // Cargar grados al montar el componente
+  const [estado, setEstado] = useState<EstadoAdmision | null>(null);
+  const [mismaDireccion, setMismaDireccion] = useState(true);
+  const [formData, setFormData] = useState(ESTADO_INICIAL);
+
+  // Verificar si la admisión está abierta (evita postulaciones fuera de fecha)
   useEffect(() => {
+    const fetchEstado = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/web/estado-admision`);
+        if (res.ok) {
+          const data = await res.json();
+          setEstado(data || { abierto: false });
+        } else {
+          setEstado({ abierto: false });
+        }
+      } catch {
+        setEstado({ abierto: false });
+      }
+    };
+    fetchEstado();
+
     const fetchGrados = async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/academic/grados/`);
         if (res.ok) {
           const data = await res.json();
-          setGrados(data);
+          setGrados(Array.isArray(data) ? data : []);
         }
       } catch (error) {
         console.error("Error cargando grados:", error);
@@ -65,35 +89,59 @@ export default function AdmisionPage() {
     };
     fetchGrados();
   }, []);
+
+  // Helpers de actualización de estado
+  const setAlumno = (campo: string, valor: string) =>
+    setFormData(prev => ({ ...prev, alumno: { ...prev.alumno, [campo]: valor } }));
+  const setFamiliar = (campo: string, valor: string) =>
+    setFormData(prev => ({ ...prev, familiar: { ...prev.familiar, [campo]: valor } }));
+  const soloDigitos = (v: string) => v.replace(/\D/g, "");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
+
+    // Validaciones mínimas de cliente
+    if (formData.alumno.dni.length !== 8) {
+      toast.error("El DNI del alumno debe tener 8 dígitos.");
+      return;
+    }
+    if (formData.familiar.dni.length !== 8) {
+      toast.error("El DNI del apoderado debe tener 8 dígitos.");
+      return;
+    }
+    if (formData.familiar.telefono.length !== 9) {
+      toast.error("El teléfono debe tener 9 dígitos.");
+      return;
+    }
+
     setLoading(true);
 
     const dataToSend = {
       ...formData,
+      familiar: {
+        ...formData.familiar,
+        direccion: mismaDireccion ? formData.alumno.direccion : formData.familiar.direccion,
+      },
       alumno: {
         ...formData.alumno,
-        id_grado_ingreso: parseInt(formData.alumno.id_grado_ingreso)
-      }
+        id_grado_ingreso: parseInt(formData.alumno.id_grado_ingreso),
+      },
     };
+
     const promise = fetch(`${process.env.NEXT_PUBLIC_API_URL}/admision/postular`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(dataToSend),
     }).then(async (res) => {
-      const data = await res.json(); // Leemos el JSON siempre
-
+      const data = await res.json();
       if (!res.ok) {
-        // Si el error viene de Pydantic (FastAPI), 'detail' puede ser una lista o un string
         let errorMsg = "Error en el servidor";
-
         if (typeof data.detail === "string") {
           errorMsg = data.detail;
         } else if (Array.isArray(data.detail)) {
-          // Si es la lista por defecto de FastAPI: "Campo: mensaje"
           errorMsg = `${data.detail[0].loc[1]}: ${data.detail[0].msg}`;
         }
-
         throw new Error(errorMsg);
       }
       return data;
@@ -101,54 +149,85 @@ export default function AdmisionPage() {
 
     toast.promise(promise, {
       loading: 'Procesando tu postulación...',
-      success: (data) => {
-        // Redirigir después de un momento
-        setTimeout(() => router.push("/"), 5000);
-
-        // Retornamos el título (esto es lo que TypeScript espera)
-        // Pero configuramos la descripción como segundo argumento
-        return (
-          <div>
-            <p className="font-bold">¡Postulación enviada con éxito!</p>
-            <p className="text-sm font-normal opacity-90">
-              Por favor, espere una respuesta de nuestra oficina en su teléfono o el correo que usted envió en los próximos 30 días.
-            </p>
-          </div>
-        );
-      },
+      success: () => (
+        <div>
+          <p className="font-bold">¡Postulación enviada con éxito!</p>
+          <p className="text-sm font-normal opacity-90">
+            Por favor, espere una respuesta de nuestra oficina en su teléfono o el correo que usted envió en los próximos 30 días.
+          </p>
+        </div>
+      ),
       error: (err) => `${err.message}`,
     });
 
-    setLoading(false);
-
-    setLoading(false);
+    try {
+      await promise;
+      // Éxito: limpiamos el formulario y redirigimos
+      setFormData(ESTADO_INICIAL);
+      setMismaDireccion(true);
+      setTimeout(() => router.push("/"), 5000);
+    } catch {
+      // El error ya se muestra vía toast
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Estado de carga inicial
+  if (estado === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="animate-spin text-[#701C32]" size={40} />
+      </div>
+    );
+  }
+
+  // Admisión cerrada: no permitimos postular
+  if (!estado.abierto) {
+    return (
+      <div className="bg-slate-50 min-h-screen flex items-center justify-center px-4 py-20">
+        <div className="max-w-lg w-full bg-white rounded-[2rem] shadow-xl border border-slate-100 p-8 md:p-12 text-center">
+          <div className="w-16 h-16 bg-[#FFF1E3] rounded-2xl flex items-center justify-center text-[#701C32] mx-auto mb-6">
+            <CalendarClock size={32} />
+          </div>
+          <h1 className="text-2xl md:text-3xl font-black text-[#701C32] mb-4">Admisión cerrada</h1>
+          <p className="text-slate-600 mb-6">
+            En este momento no hay un proceso de admisión abierto.
+            {estado.proxima_inscripcion
+              ? ` Las próximas inscripciones serán el ${formatearFechaLarga(estado.proxima_inscripcion)}.`
+              : " Vuelve pronto para conocer las próximas fechas."}
+          </p>
+          <Link href="/" className="inline-flex items-center gap-2 bg-[#093E7A] text-white px-8 py-3.5 rounded-full font-bold hover:bg-[#073365] transition-all shadow-lg">
+            <ArrowLeft size={18} /> Volver al inicio
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-50 min-h-screen">
-      <Header />
-
       {/* Banner de Título */}
-      <section className="bg-[#701C32] py-16 px-4">
+      <section className="bg-[#701C32] py-14 md:py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <Link href="/" className="text-white/80 hover:text-white flex items-center justify-center mb-6 transition-colors">
             <ArrowLeft size={20} className="mr-2" /> Volver al inicio
           </Link>
-          <h1 className="text-4xl md:text-5xl font-black text-white mb-4">{getVal('admision_titulo', 'Proceso de Admisión')}</h1>
-          <p className="text-[#FFF1E3] text-lg font-light">{getVal('admision_subtitulo', 'Completa los datos para iniciar la postulación de tu menor hijo(a).')}</p>
+          <h1 className="text-3xl md:text-5xl font-black text-white mb-4">{getVal('admision_titulo', 'Proceso de Admisión')}</h1>
+          <p className="text-[#FFF1E3] text-base md:text-lg font-light">{getVal('admision_subtitulo', 'Completa los datos para iniciar la postulación de tu menor hijo(a).')}</p>
         </div>
       </section>
 
-      <main className="max-w-5xl mx-auto px-4 -mt-10 pb-24">
+      <div className="max-w-5xl mx-auto px-4 -mt-8 md:-mt-10 pb-20 md:pb-24">
         <form onSubmit={handleSubmit} className="space-y-8">
 
           {/* SECCIÓN ALUMNO */}
-          <div className="bg-white rounded-[2rem] shadow-xl p-8 md:p-12 border border-slate-100">
+          <div className="bg-white rounded-[2rem] shadow-xl p-6 sm:p-8 md:p-12 border border-slate-100">
             <div className="flex items-center space-x-4 mb-8 border-b border-slate-100 pb-4">
-              <div className="bg-[#FFF1E3] p-3 rounded-2xl text-[#701C32]">
+              <div className="bg-[#FFF1E3] p-3 rounded-2xl text-[#701C32] shrink-0">
                 <User size={28} />
               </div>
-              <h2 className="text-2xl font-black text-[#093E7A]">Datos del Estudiante</h2>
+              <h2 className="text-xl md:text-2xl font-black text-[#093E7A]">Datos del Estudiante</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -156,18 +235,21 @@ export default function AdmisionPage() {
                 <label className="block text-sm font-bold text-slate-700 mb-2">DNI del Alumno</label>
                 <input
                   required
+                  inputMode="numeric"
                   maxLength={8}
+                  value={formData.alumno.dni}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#701C32] focus:outline-none transition-all"
                   placeholder="8 dígitos"
-                  onChange={(e) => setFormData({ ...formData, alumno: { ...formData.alumno, dni: e.target.value } })}
+                  onChange={(e) => setAlumno("dni", soloDigitos(e.target.value))}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-2">Género</label>
                   <select
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none"
-                    onChange={(e) => setFormData({ ...formData, alumno: { ...formData.alumno, genero: e.target.value } })}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#701C32] focus:outline-none"
+                    value={formData.alumno.genero}
+                    onChange={(e) => setAlumno("genero", e.target.value)}
                   >
                     <option value="M">Masculino</option>
                     <option value="F">Femenino</option>
@@ -178,8 +260,9 @@ export default function AdmisionPage() {
                   <input
                     type="date"
                     required
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none"
-                    onChange={(e) => setFormData({ ...formData, alumno: { ...formData.alumno, fecha_nacimiento: e.target.value } })}
+                    value={formData.alumno.fecha_nacimiento}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#701C32] focus:outline-none"
+                    onChange={(e) => setAlumno("fecha_nacimiento", e.target.value)}
                   />
                 </div>
               </div>
@@ -188,16 +271,18 @@ export default function AdmisionPage() {
                 <label className="block text-sm font-bold text-slate-700 mb-2">Nombres</label>
                 <input
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none"
-                  onChange={(e) => setFormData({ ...formData, alumno: { ...formData.alumno, nombres: e.target.value } })}
+                  value={formData.alumno.nombres}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#701C32] focus:outline-none"
+                  onChange={(e) => setAlumno("nombres", e.target.value)}
                 />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Apellidos</label>
                 <input
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none"
-                  onChange={(e) => setFormData({ ...formData, alumno: { ...formData.alumno, apellidos: e.target.value } })}
+                  value={formData.alumno.apellidos}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#701C32] focus:outline-none"
+                  onChange={(e) => setAlumno("apellidos", e.target.value)}
                 />
               </div>
 
@@ -206,51 +291,45 @@ export default function AdmisionPage() {
                 <div className="relative">
                   <MapPin className="absolute left-3 top-3.5 text-slate-400" size={18} />
                   <input
-                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none"
+                    required
+                    value={formData.alumno.direccion}
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#701C32] focus:outline-none"
                     placeholder="Av. Ejemplo 123, Distrito"
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormData({
-                        ...formData,
-                        alumno: { ...formData.alumno, direccion: val },
-                        familiar: { ...formData.familiar, direccion: val }
-                      });
-                    }}
+                    onChange={(e) => setAlumno("direccion", e.target.value)}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center">
+                <label className="text-sm font-bold text-slate-700 mb-2 flex items-center">
                   <Stethoscope size={16} className="mr-2" /> Enfermedades/Alergias
                 </label>
                 <input
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none"
+                  value={formData.alumno.enfermedad}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#701C32] focus:outline-none"
                   placeholder="Ninguna"
-                  onChange={(e) => setFormData({ ...formData, alumno: { ...formData.alumno, enfermedad: e.target.value } })}
+                  onChange={(e) => setAlumno("enfermedad", e.target.value)}
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center">
+                <label className="text-sm font-bold text-slate-700 mb-2 flex items-center">
                   <School size={16} className="mr-2" /> Colegio de Procedencia
                 </label>
                 <input
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none"
-                  onChange={(e) => setFormData({ ...formData, alumno: { ...formData.alumno, colegio_procedencia: e.target.value } })}
+                  value={formData.alumno.colegio_procedencia}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#701C32] focus:outline-none"
+                  onChange={(e) => setAlumno("colegio_procedencia", e.target.value)}
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center">
+                <label className="text-sm font-bold text-slate-700 mb-2 flex items-center">
                   <School size={16} className="mr-2" /> Grado al que Postula
                 </label>
                 <select
                   required
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#701C32] focus:outline-none transition-all"
                   value={formData.alumno.id_grado_ingreso}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    alumno: { ...formData.alumno, id_grado_ingreso: e.target.value }
-                  })}
+                  onChange={(e) => setAlumno("id_grado_ingreso", e.target.value)}
                 >
                   <option value="">Seleccione un grado</option>
                   {grados.map((g) => (
@@ -264,12 +343,12 @@ export default function AdmisionPage() {
           </div>
 
           {/* SECCIÓN FAMILIAR */}
-          <div className="bg-white rounded-[2rem] shadow-xl p-8 md:p-12 border border-slate-100">
+          <div className="bg-white rounded-[2rem] shadow-xl p-6 sm:p-8 md:p-12 border border-slate-100">
             <div className="flex items-center space-x-4 mb-8 border-b border-slate-100 pb-4">
-              <div className="bg-slate-100 p-3 rounded-2xl text-[#093E7A]">
+              <div className="bg-slate-100 p-3 rounded-2xl text-[#093E7A] shrink-0">
                 <Users size={28} />
               </div>
-              <h2 className="text-2xl font-black text-[#093E7A]">Datos del Padre / Madre / Tutor</h2>
+              <h2 className="text-xl md:text-2xl font-black text-[#093E7A]">Datos del Padre / Madre / Tutor</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -277,20 +356,20 @@ export default function AdmisionPage() {
                 <label className="block text-sm font-bold text-slate-700 mb-2">DNI del Familiar</label>
                 <input
                   required
+                  inputMode="numeric"
                   maxLength={8}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none"
-                  onChange={(e) => setFormData({ ...formData, familiar: { ...formData.familiar, dni: e.target.value } })}
+                  value={formData.familiar.dni}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#701C32] focus:outline-none"
+                  placeholder="8 dígitos"
+                  onChange={(e) => setFamiliar("dni", soloDigitos(e.target.value))}
                 />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Parentesco</label>
                 <select
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none"
-                  value={formData.tipo_parentesco} // Vinculación controlada
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    tipo_parentesco: e.target.value
-                  })}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#701C32] focus:outline-none"
+                  value={formData.tipo_parentesco}
+                  onChange={(e) => setFormData(prev => ({ ...prev, tipo_parentesco: e.target.value }))}
                 >
                   <option value="PADRE">Padre</option>
                   <option value="MADRE">Madre</option>
@@ -302,61 +381,91 @@ export default function AdmisionPage() {
                 <label className="block text-sm font-bold text-slate-700 mb-2">Nombres</label>
                 <input
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none"
-                  onChange={(e) => setFormData({ ...formData, familiar: { ...formData.familiar, nombres: e.target.value } })}
+                  value={formData.familiar.nombres}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#701C32] focus:outline-none"
+                  onChange={(e) => setFamiliar("nombres", e.target.value)}
                 />
               </div>
               <div>
                 <label className="block text-sm font-bold text-slate-700 mb-2">Apellidos</label>
                 <input
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none"
-                  onChange={(e) => setFormData({ ...formData, familiar: { ...formData.familiar, apellidos: e.target.value } })}
+                  value={formData.familiar.apellidos}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#701C32] focus:outline-none"
+                  onChange={(e) => setFamiliar("apellidos", e.target.value)}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center">
+                <label className="text-sm font-bold text-slate-700 mb-2 flex items-center">
                   <Phone size={16} className="mr-2" /> Teléfono
                 </label>
                 <input
                   required
+                  inputMode="numeric"
                   maxLength={9}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none"
-                  onChange={(e) => setFormData({ ...formData, familiar: { ...formData.familiar, telefono: e.target.value } })}
+                  value={formData.familiar.telefono}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#701C32] focus:outline-none"
+                  placeholder="9 dígitos"
+                  onChange={(e) => setFamiliar("telefono", soloDigitos(e.target.value))}
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2 flex items-center">
+                <label className="text-sm font-bold text-slate-700 mb-2 flex items-center">
                   <Mail size={16} className="mr-2" /> Correo Electrónico
                 </label>
                 <input
                   type="email"
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none"
-                  onChange={(e) => setFormData({ ...formData, familiar: { ...formData.familiar, email: e.target.value } })}
+                  value={formData.familiar.email}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#701C32] focus:outline-none"
+                  onChange={(e) => setFamiliar("email", e.target.value)}
                 />
+              </div>
+
+              {/* Dirección del familiar */}
+              <div className="md:col-span-2">
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-700 mb-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={mismaDireccion}
+                    onChange={(e) => setMismaDireccion(e.target.checked)}
+                    className="w-4 h-4 accent-[#701C32]"
+                  />
+                  El apoderado reside en la misma dirección del alumno
+                </label>
+                {!mismaDireccion && (
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-3.5 text-slate-400" size={18} />
+                    <input
+                      required
+                      value={formData.familiar.direccion}
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#701C32] focus:outline-none"
+                      placeholder="Dirección del apoderado"
+                      onChange={(e) => setFamiliar("direccion", e.target.value)}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           <div className="flex flex-col items-center justify-center space-y-4">
             <p className="text-slate-500 text-sm max-w-md text-center">
-              Al hacer clic en "Enviar Postulación", usted declara que la información proporcionada es verídica y acepta ser contactado por nuestra oficina de admisiones.
+              Al hacer clic en &ldquo;Enviar Postulación&rdquo;, usted declara que la información proporcionada es verídica y acepta ser contactado por nuestra oficina de admisiones.
             </p>
             <button
               type="submit"
               disabled={loading}
-              className={`bg-[#093E7A] text-white px-12 py-5 rounded-full font-bold text-xl hover:scale-105 transition-all shadow-2xl flex items-center space-x-3 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+              className={`bg-[#093E7A] text-white px-10 md:px-12 py-4 md:py-5 rounded-full font-bold text-lg md:text-xl hover:scale-105 transition-all shadow-2xl flex items-center space-x-3 ${loading ? 'opacity-70 cursor-not-allowed hover:scale-100' : ''}`}
             >
               <span>{loading ? "Enviando..." : "Enviar Postulación"}</span>
-              <Send size={20} />
+              {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
             </button>
           </div>
 
         </form>
-      </main>
-      <Footer />
+      </div>
     </div>
   );
 }

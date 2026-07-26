@@ -431,7 +431,7 @@ function EditorListaDinamica({ data, onChange, tipo }: { data: any[], onChange: 
                 <LucideIcons.X size={24} />
               </button>
             </div>
-            <div className="grid grid-cols-5 gap-4 max-h-[300px] overflow-y-auto p-2">
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 max-h-[300px] overflow-y-auto p-2">
               {ICONOS_SUGERIDOS.map((iconName) => {
                 const Icon = (LucideIcons as any)[iconName];
                 return (
