@@ -11,10 +11,15 @@ export function useEventos(tipo: 'actual' | 'todos' = 'actual') {
     try {
       const endpoint = tipo === 'actual' ? '/web/eventos/actual' : '/web/eventos/todos';
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`);
+      if (!response.ok) {
+        setEventos([]);
+        return;
+      }
       const data = await response.json();
-      setEventos(data);
+      setEventos(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error cargando eventos:", error);
+      setEventos([]);
     } finally {
       setLoading(false);
     }
