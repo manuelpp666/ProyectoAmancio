@@ -72,7 +72,7 @@ export default function DetalleNoticiaPage() {
                             </span>
                         </div>
 
-                        <h1 className="text-3xl md:text-5xl font-black text-[#701C32] leading-[1.1] mb-8">
+                        <h1 className="text-4xl md:text-6xl font-black text-[#701C32] leading-[1.08] mb-8">
                             {noticia.titulo}
                         </h1>
 

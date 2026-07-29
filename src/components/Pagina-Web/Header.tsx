@@ -14,7 +14,7 @@ export default function Header() {
   const navLinks = [
     { name: "Inicio", href: "/" },
     { name: "Noticias", href: "/noticias" },
-    { name: "Acerca de", href: "/acerca-de" },
+    { name: "Sobre Nosotros", href: "/acerca-de" },
     { name: "Docentes", href: "/docentes" },
     { name: "Calendario", href: "/calendario" },
   ];
@@ -52,8 +52,10 @@ export default function Header() {
                 key={link.name}
                 href={link.href}
                 aria-current={isActive(link.href) ? "page" : undefined}
-                className={`font-bold text-sm uppercase tracking-wider transition-colors ${
-                  isActive(link.href) ? "text-[#701C32]" : "text-slate-700 hover:text-[#701C32]"
+                className={`relative font-bold text-sm uppercase tracking-wider transition-colors after:absolute after:-bottom-1.5 after:left-0 after:h-0.5 after:rounded-full after:bg-[#701C32] after:transition-all after:duration-300 ${
+                  isActive(link.href)
+                    ? "text-[#701C32] after:w-full"
+                    : "text-slate-700 hover:text-[#701C32] after:w-0 hover:after:w-full"
                 }`}
               >
                 {link.name}

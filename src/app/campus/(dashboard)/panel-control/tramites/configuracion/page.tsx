@@ -104,7 +104,8 @@ export default function GestionFinancieraPage() {
     requisitos: "",
     alcance: "TODOS" as "TODOS" | "GRADOS",
     grados_seleccionados: [] as number[],
-    periodo_academico: "REGULAR" as "REGULAR" | "VERANO" | "AMBOS"
+    periodo_academico: "REGULAR" as "REGULAR" | "VERANO" | "AMBOS",
+    dias_vencimiento: 15
   });
   const [respuestaAdmin, setRespuestaAdmin] = useState("");
 
@@ -195,7 +196,7 @@ export default function GestionFinancieraPage() {
   const openNew = () => {
     setFormData({
       nombre: "", costo: 0, requisitos: "", alcance: "TODOS", grados_seleccionados: [],
-      periodo_academico: "REGULAR"
+      periodo_academico: "REGULAR", dias_vencimiento: 15
     });
     setIsEditing(false);
     setIsModalOpen(true);
@@ -208,7 +209,8 @@ export default function GestionFinancieraPage() {
       requisitos: t.requisitos || "",
       alcance: t.alcance,
       grados_seleccionados: t.grados_permitidos ? t.grados_permitidos.split(",").map(Number) : [],
-      periodo_academico: t.periodo_academico
+      periodo_academico: t.periodo_academico,
+      dias_vencimiento: t.dias_vencimiento ?? 15
     });
     setCurrentId(t.id_tipo_tramite);
     setIsEditing(true);
@@ -480,8 +482,10 @@ export default function GestionFinancieraPage() {
                     <tr key={s.id_solicitud_tramite} className="hover:bg-gray-50 transition-colors">
                       <td className="p-4 text-sm">{new Date(s.fecha_solicitud).toLocaleDateString()}</td>
                       <td className="p-4">
-                        <p className="text-sm font-bold text-gray-800">{s.alumno?.dni || '---'}</p>
-                        <p className="text-xs text-gray-400">{s.alumno?.dni || '---'}</p>
+                        <p className="text-sm font-bold text-gray-800">
+                          {s.alumno ? `${s.alumno.nombres} ${s.alumno.apellidos || ''}`.trim() : '---'}
+                        </p>
+                        <p className="text-xs text-gray-400">DNI: {s.alumno?.dni || '---'}</p>
                       </td>
                       <td className="p-4">
                         <span className="px-2 py-1 bg-blue-50 text-[#093E7A] rounded text-xs font-bold">{s.tipo?.nombre}</span>
@@ -802,6 +806,19 @@ export default function GestionFinancieraPage() {
                     <option value="VERANO">Vacacional / Verano</option>
                     <option value="AMBOS">Ambos Periodos</option>
                   </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Días para pagar</label>
+                  <input
+                    required
+                    type="number"
+                    min={1}
+                    max={365}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
+                    value={formData.dias_vencimiento}
+                    onChange={e => setFormData({ ...formData, dias_vencimiento: parseInt(e.target.value) || 1 })}
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1 italic">Plazo de pago (solo aplica a trámites con costo).</p>
                 </div>
               </div>
 

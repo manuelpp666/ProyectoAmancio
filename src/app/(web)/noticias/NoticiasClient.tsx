@@ -35,14 +35,14 @@ export default function NoticiasClient({
     <div className="bg-white text-slate-800">
       {/* Banner con degradado de marca */}
       <section className="relative py-20 md:py-24 overflow-hidden bg-gradient-to-br from-[#701C32] via-[#701C32] to-[#093E7A]">
-        <div className="absolute -top-16 -right-16 w-64 h-64 md:w-80 md:h-80 bg-white/10 rounded-full blur-3xl z-0"></div>
-        <div className="absolute -bottom-24 -left-10 w-80 h-80 md:w-96 md:h-96 bg-[#093E7A]/40 rounded-full blur-3xl z-0"></div>
+        <div className="absolute -top-16 -right-16 w-64 h-64 md:w-80 md:h-80 bg-white/10 rounded-full blur-3xl z-0 animate-float-slow"></div>
+        <div className="absolute -bottom-24 -left-10 w-80 h-80 md:w-96 md:h-96 bg-[#093E7A]/40 rounded-full blur-3xl z-0 animate-float-slower"></div>
         <div className="max-w-3xl mx-auto px-4 text-center relative z-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/15 backdrop-blur-md border border-white/25 text-white font-bold text-xs uppercase tracking-widest rounded-full mb-5">
             <span className="material-symbols-outlined text-base">campaign</span>
             Actualidad
           </span>
-          <h1 className="text-4xl md:text-5xl font-black text-white mb-4 drop-shadow-lg">{getVal('noticias_titulo', 'Noticias Amancistas')}</h1>
+          <h1 className="text-5xl md:text-6xl font-black text-white mb-4 drop-shadow-lg">{getVal('noticias_titulo', 'Noticias Amancistas')}</h1>
           <div className="w-24 h-1.5 bg-white/80 mx-auto rounded-full mb-5"></div>
           <p className="text-white/90 max-w-2xl mx-auto mb-8">{getVal('noticias_subtitulo', 'Mantente al día con los comunicados, logros y actividades de nuestra comunidad.')}</p>
           <div className="max-w-2xl mx-auto relative group">
@@ -65,7 +65,7 @@ export default function NoticiasClient({
             {noticiasMostradas.map((noticia) => (
               <article
                 key={noticia.id_noticia}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all border border-slate-100 flex flex-col"
+                className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-slate-100 flex flex-col"
               >
                 <div className="relative h-60 overflow-hidden group">
                   <img
@@ -94,7 +94,7 @@ export default function NoticiasClient({
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-3">
                     {formatearFechaCorta(noticia.fecha_publicacion)}
                   </span>
-                  <h4 className="text-lg sm:text-xl font-black text-[#701C32] mb-6 leading-tight line-clamp-2">
+                  <h4 className="text-xl sm:text-2xl font-black text-[#701C32] mb-6 leading-snug line-clamp-2">
                     {noticia.titulo}
                   </h4>
                   <div className="mt-auto">

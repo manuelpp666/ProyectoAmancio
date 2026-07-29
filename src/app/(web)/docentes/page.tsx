@@ -61,20 +61,20 @@ export default async function Page() {
         {/* Imagen de fondo opcional */}
         {heroImagen && (
           <div className="absolute inset-0 z-0">
-            <img alt="" className="w-full h-full object-cover opacity-25" src={heroImagen} />
-            <div className="absolute inset-0 bg-gradient-to-br from-[#701C32]/90 to-[#093E7A]/90"></div>
+            <img alt="" className="w-full h-full object-cover opacity-45" src={heroImagen} />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#701C32]/72 to-[#093E7A]/75"></div>
           </div>
         )}
         {/* Formas decorativas difuminadas */}
-        <div className="absolute -top-16 -right-16 w-64 h-64 md:w-80 md:h-80 bg-white/10 rounded-full blur-3xl z-0"></div>
-        <div className="absolute -bottom-24 -left-10 w-80 h-80 md:w-96 md:h-96 bg-[#093E7A]/40 rounded-full blur-3xl z-0"></div>
+        <div className="absolute -top-16 -right-16 w-64 h-64 md:w-80 md:h-80 bg-white/10 rounded-full blur-3xl z-0 animate-float-slow"></div>
+        <div className="absolute -bottom-24 -left-10 w-80 h-80 md:w-96 md:h-96 bg-[#093E7A]/40 rounded-full blur-3xl z-0 animate-float-slower"></div>
 
         <div className="max-w-7xl mx-auto px-4 text-center relative z-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
           <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/15 backdrop-blur-md border border-white/25 text-white font-bold text-xs uppercase tracking-widest rounded-full mb-5">
             <span className="material-symbols-outlined text-base">school</span>
             Plana Docente
           </span>
-          <h1 className="text-4xl md:text-6xl font-black text-white mb-5 leading-tight drop-shadow-lg">
+          <h1 className="text-5xl md:text-6xl font-black text-white mb-5 leading-tight drop-shadow-lg">
             {titulo}
           </h1>
           <div className="w-24 h-1.5 bg-white/80 mx-auto rounded-full mb-6"></div>
@@ -121,7 +121,7 @@ export default async function Page() {
                     <span className="inline-block bg-[#093E7A]/10 text-[#093E7A] font-bold text-[10px] uppercase tracking-widest px-3 py-1 rounded-full w-fit mx-auto mb-3">
                       {docente.especialidad || 'Docente'}
                     </span>
-                    <h3 className="text-lg md:text-xl font-black text-[#701C32] mb-2">
+                    <h3 className="text-xl md:text-2xl font-black text-[#701C32] mb-2 leading-tight">
                       {docente.nombres} {docente.apellidos}
                     </h3>
                     <p className="text-slate-600 text-sm leading-relaxed line-clamp-3">

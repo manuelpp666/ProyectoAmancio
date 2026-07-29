@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
 import { useUser } from "@/src/context/userContext";
 import { toast } from "sonner";
 import { FileText, Plus, Clock, CheckCircle, XCircle, AlertCircle, Loader2, X, Paperclip } from "lucide-react";
@@ -192,11 +191,20 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
                     <p className="text-xs font-bold text-gray-400 uppercase mb-1">Estado</p>
                     {getStatusBadge(sol.estado)}
                   </div>
-                  {sol.estado === 'PENDIENTE_PAGO' && (
-                    <Link href={`/campus/campus-estudiante/inicio-campus/tramites/pago?id=${sol.id_solicitud_tramite}`} className="text-sm font-bold text-[#701C32] border border-[#701C32] px-4 py-2 rounded-lg hover:bg-[#701C32] hover:text-white transition-colors">
-                      Pagar Ahora
-                    </Link>
-                  )}
+                  {sol.estado === 'PENDIENTE_PAGO' && (() => {
+                    const venc = new Date(sol.fecha_solicitud);
+                    venc.setDate(venc.getDate() + (sol.tipo?.dias_vencimiento ?? 15));
+                    return (
+                      <div className="max-w-[190px] text-right">
+                        <p className="text-xs font-bold text-amber-700 leading-snug">
+                          Paga antes del {venc.toLocaleDateString('es-PE')}
+                        </p>
+                        <p className="text-[10px] text-gray-500 italic mt-0.5">
+                          Realiza el pago desde la app del BCP.
+                        </p>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             ))}
@@ -245,8 +253,12 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
                       <p className="text-sm text-blue-800 mt-1">
                         {tiposTramite.find(t => t.id_tipo_tramite.toString() === formData.id_tipo_tramite)?.requisitos || "No se especificaron requisitos adicionales."}
                       </p>
-                      {tiposTramite.find(t => t.id_tipo_tramite.toString() === formData.id_tipo_tramite)?.costo === 0 && (
+                      {tiposTramite.find(t => t.id_tipo_tramite.toString() === formData.id_tipo_tramite)?.costo === 0 ? (
                         <p className="text-[10px] font-black text-blue-600 mt-2 italic">* Este trámite es administrativo y no requiere pago bancario.</p>
+                      ) : (
+                        <p className="text-[10px] font-black text-blue-600 mt-2 italic">
+                          * Tendrás {tiposTramite.find(t => t.id_tipo_tramite.toString() === formData.id_tipo_tramite)?.dias_vencimiento ?? 15} días para pagar este trámite (desde la app del BCP) una vez lo solicites.
+                        </p>
                       )}
                     </div>
                   </div>

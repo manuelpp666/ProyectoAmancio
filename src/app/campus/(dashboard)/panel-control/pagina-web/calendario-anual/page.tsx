@@ -149,7 +149,7 @@ export default function CalendarioPage() {
                         </td>
                       </tr>
                     ) : eventosFiltrados.length > 0 ? (
-                      eventosFiltrados.slice(0, 10).map((evento) => (
+                      eventosFiltrados.map((evento) => (
                         <EventRow
                           key={evento.id_evento}
                           evento={evento}

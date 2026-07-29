@@ -7,4 +7,5 @@ export interface Tramite {
   grados_permitidos: string | null;
   activo: boolean;
   periodo_academico: "REGULAR" | "VERANO" | "AMBOS";
+  dias_vencimiento: number;
 }

@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useConfiguracion } from '@/src/hooks/useConfiguracion';
 import ImageUpload from '@/src/components/utils/ImageUpload';
-import { uploadToCloudinary } from "@/src/components/utils/cloudinary";
+import MediaUpload from '@/src/components/utils/MediaUpload';
+import { uploadToCloudinary, uploadMediaToCloudinary } from "@/src/components/utils/cloudinary";
 import * as LucideIcons from "lucide-react";
 import HeaderPanel from '@/src/components/Campus/PanelControl/Header';
-import { Save, Home, Users, Footprints, Loader2, GraduationCap, CalendarDays, Newspaper, ClipboardList } from 'lucide-react';
+import { Save, Home, Users, Footprints, Loader2, GraduationCap, CalendarDays, Newspaper, ClipboardList, RotateCcw, AlertTriangle } from 'lucide-react';
 import { toast } from "sonner";
 import { apiFetch } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
@@ -16,7 +17,7 @@ const SECCIONES = [
     id: 'inicio', label: 'Inicio', icon: Home, campos: [
       { clave: 'hero_titulo', label: 'Título Principal', tipo: 'text' },
       { clave: 'hero_subtitulo', label: 'Subtítulo Hero', tipo: 'text' },
-      { clave: 'hero_imagen', label: 'Imagen de Fondo', tipo: 'image' },
+      { clave: 'hero_imagen', label: 'Fondo del Hero (Imagen o Video)', tipo: 'media' },
       { clave: 'home_enfoques', label: 'Enfoques Educativos (Lista)', tipo: 'enfoques' },
       { clave: 'home_niveles', label: 'Niveles Académicos (Lista)', tipo: 'niveles' },
     ]
@@ -25,11 +26,16 @@ const SECCIONES = [
     id: 'nosotros', label: 'Sobre Nosotros', icon: Users, campos: [
       { clave: 'nosotros_header_titulo', label: 'Título de Cabecera', tipo: 'text' },
       { clave: 'nosotros_header_desc', label: 'Descripción de Cabecera', tipo: 'textarea' },
+      { clave: 'nosotros_header_imagen', label: 'Imagen de Portada', tipo: 'image' },
       { clave: 'nosotros_titulo', label: 'Título Sección', tipo: 'text' },
       { clave: 'nosotros_contenido', label: 'Historia / Contenido', tipo: 'textarea' },
       { clave: 'nosotros_imagen', label: 'Imagen Historia', tipo: 'image' },
       { clave: 'mision', label: 'Misión', tipo: 'textarea' },
+      { clave: 'mision_imagen', label: 'Imagen de Misión', tipo: 'image' },
       { clave: 'vision', label: 'Visión', tipo: 'textarea' },
+      { clave: 'vision_imagen', label: 'Imagen de Visión', tipo: 'image' },
+      { clave: 'himno_titulo', label: 'Título del Himno', tipo: 'text' },
+      { clave: 'himno_contenido', label: 'Letra del Himno', tipo: 'textarea' },
       { clave: 'nosotros_frase', label: 'Frase Inspiradora', tipo: 'textarea' },
       { clave: 'nosotros_frase_autor', label: 'Subtexto de la Frase', tipo: 'text' },
     ]
@@ -76,7 +82,10 @@ const SECCIONES = [
 export default function GestionWebPage() {
   const [tab, setTab] = useState('inicio');
   const [uploadingField, setUploadingField] = useState<string | null>(null);
-  const { data, updateField, loading } = useConfiguracion(tab);
+  const [guardando, setGuardando] = useState(false);
+  // Pestaña a la que se quiere ir cuando hay cambios sin guardar (dispara el aviso)
+  const [pestanaPendiente, setPestanaPendiente] = useState<string | null>(null);
+  const { data, updateField, loading, isDirty, revert, commit } = useConfiguracion(tab);
 
   const getVal = (clave: string) => data.find(i => i.clave === clave)?.valor || "";
   const getJsonVal = (clave: string, defecto: any) => {
@@ -84,14 +93,17 @@ export default function GestionWebPage() {
     try { return val ? JSON.parse(val) : defecto; }
     catch { return defecto; }
   };
-  const handleSave = async () => {
 
+  // Guarda los cambios de la pestaña actual. Devuelve true si todo salió bien.
+  const handleSave = async (): Promise<boolean> => {
     if (uploadingField) {
-      toast.error("Espera a que la imagen termine de subirse");
-      return;
+      toast.error("Espera a que el archivo termine de subirse");
+      return false;
     }
+    if (!isDirty) return true; // nada que guardar
     const camposActuales = (SECCIONES.find(s => s.id === tab)?.campos || [])
       .filter(campo => campo.tipo !== 'docentes_visibilidad');
+    setGuardando(true);
     try {
       await Promise.all(camposActuales.map(async (campo) => {
         const valor = getVal(campo.clave);
@@ -105,11 +117,51 @@ export default function GestionWebPage() {
           throw new Error(err.detail || `Error ${res.status}`);
         }
       }));
+      commit(); // el estado actual pasa a ser el "guardado" (ya no hay cambios pendientes)
       toast.success("¡Cambios guardados correctamente!");
+      return true;
     } catch (error: any) {
       toast.error(error.message || "Error al guardar los cambios");
+      return false;
+    } finally {
+      setGuardando(false);
     }
   };
+
+  // Intento de cambio de pestaña: si hay cambios sin guardar, pide confirmación
+  const intentarCambiarTab = (nuevoTab: string) => {
+    if (nuevoTab === tab) return;
+    if (isDirty) {
+      setPestanaPendiente(nuevoTab);
+    } else {
+      setTab(nuevoTab);
+    }
+  };
+
+  // Acciones del aviso de cambios sin guardar
+  const guardarYCambiar = async () => {
+    const ok = await handleSave();
+    if (ok && pestanaPendiente) {
+      setTab(pestanaPendiente);
+      setPestanaPendiente(null);
+    }
+  };
+  const descartarYCambiar = () => {
+    revert();
+    if (pestanaPendiente) setTab(pestanaPendiente);
+    setPestanaPendiente(null);
+  };
+
+  // Aviso del navegador al recargar/cerrar la pestaña con cambios sin guardar
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
 
   return (
     <RoleGuard modulo="contenido_web" subModulo="info_general">
@@ -124,13 +176,32 @@ export default function GestionWebPage() {
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[#093E7A]">language</span>
             <h2 className="text-xl font-bold text-gray-800">Editor Web</h2>
+            {isDirty && (
+              <span className="ml-2 flex items-center gap-1.5 text-[11px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                Cambios sin guardar
+              </span>
+            )}
           </div>
-          <button
-            onClick={handleSave}
-            className="flex items-center gap-2 px-5 py-2 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d59] transition-all active:scale-95"
-          >
-            <Save size={16} /> Guardar Cambios
-          </button>
+          <div className="flex items-center gap-3">
+            {isDirty && (
+              <button
+                onClick={revert}
+                disabled={guardando}
+                className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-gray-100 rounded-lg font-bold text-sm hover:bg-gray-200 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RotateCcw size={16} /> Revertir
+              </button>
+            )}
+            <button
+              onClick={handleSave}
+              disabled={!isDirty || guardando || !!uploadingField}
+              className="flex items-center gap-2 px-5 py-2 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d59] transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#093E7A] disabled:active:scale-100"
+            >
+              {guardando ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              {guardando ? "Guardando..." : "Guardar Cambios"}
+            </button>
+          </div>
         </div>
 
         {/* TABS DE SECCIÓN */}
@@ -138,7 +209,7 @@ export default function GestionWebPage() {
           {SECCIONES.map(s => (
             <button
               key={s.id}
-              onClick={() => setTab(s.id)}
+              onClick={() => intentarCambiarTab(s.id)}
               className={`py-4 px-2 text-sm font-bold whitespace-nowrap border-b-[3px] transition-all flex items-center gap-2 ${
                 tab === s.id
                   ? 'text-[#093E7A] border-[#093E7A]'
@@ -149,6 +220,49 @@ export default function GestionWebPage() {
             </button>
           ))}
         </div>
+
+        {/* AVISO DE CAMBIOS SIN GUARDAR AL CAMBIAR DE PESTAÑA */}
+        {pestanaPendiente && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200">
+              <div className="flex items-start gap-4 mb-5">
+                <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="text-amber-600" size={24} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-gray-800">Cambios sin guardar</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Tienes cambios sin guardar en esta sección. ¿Qué deseas hacer antes de continuar?
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={guardarYCambiar}
+                  disabled={guardando || !!uploadingField}
+                  className="flex items-center justify-center gap-2 w-full px-5 py-2.5 bg-[#093E7A] text-white rounded-lg font-bold text-sm hover:bg-[#072d59] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {guardando ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                  {guardando ? "Guardando..." : "Guardar y continuar"}
+                </button>
+                <button
+                  onClick={descartarYCambiar}
+                  disabled={guardando}
+                  className="w-full px-5 py-2.5 bg-red-50 text-red-600 rounded-lg font-bold text-sm hover:bg-red-100 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  Descartar cambios
+                </button>
+                <button
+                  onClick={() => setPestanaPendiente(null)}
+                  disabled={guardando}
+                  className="w-full px-5 py-2.5 text-gray-500 rounded-lg font-bold text-sm hover:bg-gray-100 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* CUERPO DEL EDITOR */}
         <div className="flex-1 overflow-y-auto p-8">
@@ -163,7 +277,45 @@ export default function GestionWebPage() {
                     tipo={campo.tipo}
                     data={getJsonVal(campo.clave, [])}
                     onChange={(newData) => updateField(campo.clave, JSON.stringify(newData))}
+                    onUploadingChange={(activo) => setUploadingField(activo ? campo.clave : null)}
                   />
+                ) : campo.tipo === 'media' ? (
+                  <div className="relative">
+                    <MediaUpload
+                      label={campo.label}
+                      maxVideoMB={80}
+                      initialMedia={getVal(campo.clave)}
+                      onMediaChange={async (file) => {
+                        if (file) {
+                          setUploadingField(campo.clave);
+                          try {
+                            const url = await uploadMediaToCloudinary(file);
+                            if (url) {
+                              updateField(campo.clave, url);
+                              toast.success("Archivo listo para guardar");
+                            } else {
+                              toast.error("No se pudo subir el archivo");
+                            }
+                          } catch {
+                            toast.error("Error al subir el archivo");
+                          } finally {
+                            setUploadingField(null);
+                          }
+                        } else {
+                          updateField(campo.clave, "");
+                        }
+                      }}
+                    />
+                    <p className="mt-3 text-xs text-gray-400">
+                      Puedes subir una imagen o un video corto. El video se reproduce en bucle,
+                      silenciado y sin controles, como fondo animado.
+                    </p>
+                    {uploadingField === campo.clave && (
+                      <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-3xl backdrop-blur-[2px]">
+                        <Loader2 className="animate-spin text-[#093E7A]" size={32} />
+                      </div>
+                    )}
+                  </div>
                 ) : campo.tipo === 'image' ? (
                   <div className="relative">
                     <ImageUpload
@@ -325,19 +477,22 @@ function EditorVisibilidadDocentes() {
   );
 }
 
-const ICONOS_SUGERIDOS = [
-  "Beaker", "Book", "BookOpen", "GraduationCap", "Trophy", "Music", "Palette",
-  "Dribbble", "Baby", "Award", "Lightbulb", "Library", "Microscope", "Globe",
-  "Calculator", "Languages", "Users", "Star", "Heart", "Rocket"
-];
-
-function EditorListaDinamica({ data, onChange, tipo }: { data: any[], onChange: (d: any[]) => void, tipo: 'enfoques' | 'niveles' }) {
-  const [selectorAbierto, setSelectorAbierto] = useState<{ index: number, campo: string } | null>(null);
+function EditorListaDinamica({ data, onChange, tipo, onUploadingChange }: { data: any[], onChange: (d: any[]) => void, tipo: 'enfoques' | 'niveles', onUploadingChange?: (activo: boolean) => void }) {
+  // Contador de subidas en curso; avisa al padre para bloquear "Guardar"
+  const [subiendo, setSubiendo] = useState(0);
+  const cambiarSubiendo = (delta: number) => {
+    setSubiendo(prev => {
+      const next = Math.max(0, prev + delta);
+      onUploadingChange?.(next > 0);
+      return next;
+    });
+  };
 
   const agregar = () => {
+    // Se conserva un icono por defecto como respaldo por si aún no se sube imagen
     const nuevoItem = tipo === 'enfoques'
-      ? { titulo: "", descripcion: "", icon: "Beaker", badge: "Lightbulb" }
-      : { titulo: "", descripcion: "", icon: "BookOpen" };
+      ? { titulo: "", descripcion: "", imagen: "", icon: "Beaker", badge: "Lightbulb" }
+      : { titulo: "", descripcion: "", imagen: "", icon: "BookOpen" };
     onChange([...data, nuevoItem]);
   };
 
@@ -363,48 +518,45 @@ function EditorListaDinamica({ data, onChange, tipo }: { data: any[], onChange: 
           <div key={i} className="relative group bg-white p-6 rounded-[1.5rem] border border-gray-200 shadow-sm hover:shadow-md transition-all">
             <button
               onClick={() => onChange(data.filter((_, idx) => idx !== i))}
-              className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 hover:text-white"
+              className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 hover:text-white z-10"
             >
               <LucideIcons.Trash2 size={16} />
             </button>
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              {/* SELECTORES DE ICONOS */}
-              <div className="md:col-span-3 flex flex-row md:flex-col gap-4 justify-center items-center bg-gray-50 p-4 rounded-2xl border border-dashed border-gray-300">
-                <div className="text-center">
-                  <p className="text-[9px] font-black text-gray-400 uppercase mb-2">Icono Principal</p>
-                  <button
-                    onClick={() => setSelectorAbierto({ index: i, campo: 'icon' })}
-                    className="w-16 h-16 bg-white rounded-2xl border-2 border-[#093E7A]/20 flex items-center justify-center text-[#093E7A] hover:border-[#093E7A] hover:bg-[#093E7A]/5 transition-all"
-                  >
-                    {(() => {
-                      const Icon = (LucideIcons as any)[item.icon] || LucideIcons.HelpCircle;
-                      return <Icon size={32} />;
-                    })()}
-                  </button>
-                </div>
-
-                {tipo === 'enfoques' && (
-                  <div className="text-center">
-                    <p className="text-[9px] font-black text-gray-400 uppercase mb-2">Badge</p>
-                    <button
-                      onClick={() => setSelectorAbierto({ index: i, campo: 'badge' })}
-                      className="w-12 h-12 bg-white rounded-xl border-2 border-[#701C32]/20 flex items-center justify-center text-[#701C32] hover:border-[#701C32] hover:bg-[#701C32]/5 transition-all"
-                    >
-                      {(() => {
-                        const Icon = (LucideIcons as any)[item.badge] || LucideIcons.HelpCircle;
-                        return <Icon size={20} />;
-                      })()}
-                    </button>
-                  </div>
-                )}
+              {/* IMAGEN DEL ITEM */}
+              <div className="md:col-span-4">
+                <ImageUpload
+                  label="Imagen"
+                  initialImage={item.imagen || ""}
+                  onImageChange={async (file) => {
+                    if (file) {
+                      cambiarSubiendo(1);
+                      try {
+                        const url = await uploadToCloudinary(file);
+                        if (url) {
+                          actualizar(i, 'imagen', url);
+                          toast.success("Imagen lista para guardar");
+                        } else {
+                          toast.error("No se pudo subir la imagen");
+                        }
+                      } catch {
+                        toast.error("Error al subir imagen");
+                      } finally {
+                        cambiarSubiendo(-1);
+                      }
+                    } else {
+                      actualizar(i, 'imagen', "");
+                    }
+                  }}
+                />
               </div>
 
               {/* TEXTOS */}
-              <div className="md:col-span-9 space-y-4">
+              <div className="md:col-span-8 space-y-4">
                 <input
                   className="w-full text-lg font-black text-[#093E7A] border-b border-gray-100 focus:border-[#093E7A] outline-none transition-all"
-                  placeholder="Título del enfoque..."
+                  placeholder={tipo === 'enfoques' ? "Título del enfoque..." : "Título del nivel..."}
                   value={item.titulo}
                   onChange={e => actualizar(i, 'titulo', e.target.value)}
                 />
@@ -419,40 +571,10 @@ function EditorListaDinamica({ data, onChange, tipo }: { data: any[], onChange: 
             </div>
           </div>
         ))}
+        {data.length === 0 && (
+          <p className="text-sm text-gray-400 italic py-4">Aún no hay elementos. Usa “+ Añadir nuevo” para crear el primero.</p>
+        )}
       </div>
-
-      {/* MODAL SELECTOR DE ICONOS */}
-      {selectorAbierto && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-[2rem] p-8 max-w-lg w-full shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-black text-[#701C32]">Selecciona un Icono</h3>
-              <button onClick={() => setSelectorAbierto(null)} className="p-2 hover:bg-gray-100 rounded-full">
-                <LucideIcons.X size={24} />
-              </button>
-            </div>
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 max-h-[300px] overflow-y-auto p-2">
-              {ICONOS_SUGERIDOS.map((iconName) => {
-                const Icon = (LucideIcons as any)[iconName];
-                return (
-                  <button
-                    key={iconName}
-                    onClick={() => {
-                      actualizar(selectorAbierto.index, selectorAbierto.campo, iconName);
-                      setSelectorAbierto(null);
-                    }}
-                    className="flex flex-col items-center justify-center p-4 rounded-2xl hover:bg-[#093E7A] hover:text-white transition-all border border-gray-100"
-                  >
-                    <Icon size={24} />
-                    <span className="text-[8px] mt-2 opacity-50 uppercase">{iconName}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
-    
   );
 }
