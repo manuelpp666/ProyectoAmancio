@@ -108,7 +108,8 @@ export default function AsignacionEstudiantesPage() {
             apellidos: m.alumno.apellidos,
             dni: m.alumno.dni,
             id_seccion: m.id_seccion,
-            id_grado: m.id_grado
+            id_grado: m.id_grado,
+            condicion: m.condicion
           }));
         setAlumnos(alumnosMapeados);
         // Guardamos qué matrículas ya venían con sección desde el servidor
@@ -440,7 +441,12 @@ export default function AsignacionEstudiantesPage() {
                           <span className="material-symbols-outlined text-gray-400">person</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-gray-900 truncate">{alumno.nombres} {alumno.apellidos}</p>
+                          <p className="text-sm font-bold text-gray-900 truncate flex items-center gap-2">
+                            {alumno.nombres} {alumno.apellidos}
+                            {alumno.condicion === "CONDICIONADA" && (
+                              <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[9px] font-black uppercase shrink-0" title="Matrícula condicionada — apoyo académico adicional">Condicionada</span>
+                            )}
+                          </p>
                           <p className="text-xs text-gray-500">DNI: {alumno.dni}</p>
                         </div>
                         <span className={`material-symbols-outlined transition-colors ${seleccionado ? 'text-[#093E7A]' : 'text-gray-300 group-hover:text-[#093E7A]'}`}>

@@ -161,17 +161,17 @@ export default function HomeClient({
 
       {/* NIVELES ACADÉMICOS DINÁMICOS */}
       <section className="py-16 md:py-24 px-4 bg-gradient-to-b from-slate-50 to-white">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[86rem] mx-auto">
           <div className="text-center mb-12 md:mb-16">
             <h2 className="text-4xl md:text-5xl font-black text-[#701C32] mb-4">Nuestros niveles académicos</h2>
             <p className="text-slate-500 font-medium">Adaptamos el aprendizaje a cada etapa del desarrollo</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             {niveles.map((nivel: any, idx: number) => (
-              <div key={idx} className="group relative bg-white p-6 sm:p-8 rounded-[2rem] shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 border border-slate-100 overflow-hidden">
+              <div key={idx} className="group relative bg-white p-8 sm:p-10 rounded-[2.5rem] shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 border border-slate-100 overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#701C32] to-[#093E7A] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300 z-10"></div>
                 {nivel.imagen ? (
-                  <div className="-mt-6 sm:-mt-8 -mx-6 sm:-mx-8 mb-6 h-56 overflow-hidden">
+                  <div className="-mt-8 sm:-mt-10 -mx-8 sm:-mx-10 mb-8 h-72 sm:h-80 overflow-hidden">
                     <img
                       src={nivel.imagen}
                       alt={nivel.titulo}
@@ -181,12 +181,12 @@ export default function HomeClient({
                     />
                   </div>
                 ) : (
-                  <div className="w-20 h-20 bg-gradient-to-br from-[#FFF1E3] to-[#f8e0cf] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <RenderIcon name={nivel.icon} size={40} className="text-[#701C32]" />
+                  <div className="w-24 h-24 bg-gradient-to-br from-[#FFF1E3] to-[#f8e0cf] rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300">
+                    <RenderIcon name={nivel.icon} size={48} className="text-[#701C32]" />
                   </div>
                 )}
-                <h3 className="text-2xl sm:text-3xl font-black text-[#093E7A] mb-3">{nivel.titulo}</h3>
-                <p className="text-slate-600 mb-6 leading-relaxed">{nivel.descripcion}</p>
+                <h3 className="text-3xl sm:text-4xl font-black text-[#093E7A] mb-4">{nivel.titulo}</h3>
+                <p className="text-slate-600 mb-2 leading-relaxed text-base sm:text-lg">{nivel.descripcion}</p>
               </div>
             ))}
           </div>

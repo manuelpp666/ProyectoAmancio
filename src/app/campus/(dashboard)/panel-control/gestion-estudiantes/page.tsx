@@ -22,8 +22,10 @@ export default function GestionEstudiantesPage() {
     const [busqueda, setBusqueda] = useState("");
     const [alumnos, setAlumnos] = useState<AlumnoBase[]>([]);
     const [loading, setLoading] = useState(true);
-    // Vista actual: "estudiantes" | "postulantes" | "renovaciones"
-    const [vista, setVista] = useState<"estudiantes" | "postulantes" | "renovaciones">("estudiantes");
+    // Vista actual: "estudiantes" | "postulantes" | "renovaciones" | "verano"
+    const [vista, setVista] = useState<"estudiantes" | "postulantes" | "renovaciones" | "verano">("estudiantes");
+    // --- Inscripciones de verano ---
+    const [veranoSolicitudes, setVeranoSolicitudes] = useState<any[]>([]);
     const [modalInfo, setModalInfo] = useState<{ abierto: boolean, datos: any | null }>({
         abierto: false,
         datos: null
@@ -96,9 +98,38 @@ export default function GestionEstudiantesPage() {
         }
     };
 
+    const cargarVerano = async () => {
+        setLoading(true);
+        try {
+            const response = await apiFetch(`/verano/solicitudes`);
+            if (!response.ok) throw new Error("Error al obtener inscripciones de verano");
+            const data = await response.json();
+            setVeranoSolicitudes(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error("Error cargando inscripciones de verano:", error);
+            toast.error("No se pudieron cargar las inscripciones de verano");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const admitirVerano = async (id: number) => {
+        const promise = apiFetch(`/verano/solicitudes/${id}/admitir`, { method: "POST" }).then(async (res) => {
+            const body = await res.json().catch(() => null);
+            if (!res.ok) throw new Error(body?.detail || "No se pudo admitir");
+            cargarVerano();
+            return body;
+        });
+        toast.promise(promise, { loading: "Procesando...", success: "Alumno admitido y matrícula de verano creada", error: (e) => e.message });
+    };
+
     useEffect(() => {
         if (vista === "renovaciones") {
             cargarRenovaciones();
+            return;
+        }
+        if (vista === "verano") {
+            cargarVerano();
             return;
         }
         const delayDebounceFn = setTimeout(() => {
@@ -210,6 +241,7 @@ export default function GestionEstudiantesPage() {
                                 <h2 className="text-xl font-bold text-gray-800">
                                     {vista === "postulantes" ? "Solicitudes de Admisión"
                                         : vista === "renovaciones" ? "Renovaciones de Matrícula"
+                                            : vista === "verano" ? "Inscripciones de Verano"
                                             : "Gestión de Estudiantes"}
                                 </h2>
                             </div>
@@ -221,6 +253,7 @@ export default function GestionEstudiantesPage() {
                                 { id: "estudiantes", label: "Estudiantes", icon: "group" },
                                 { id: "postulantes", label: "Solicitudes de Admisión", icon: "pending_actions" },
                                 { id: "renovaciones", label: "Renovaciones de Matrícula", icon: "autorenew" },
+                                { id: "verano", label: "Inscripciones de Verano", icon: "wb_sunny" },
                             ] as const).map((tab) => (
                                 <button
                                     key={tab.id}
@@ -240,7 +273,7 @@ export default function GestionEstudiantesPage() {
                     {/* CUERPO */}
                     <div className="flex-1 p-8 overflow-y-auto">
                         {/* Barra de búsqueda + registro dedicado */}
-                        {vista !== "renovaciones" && (
+                        {vista !== "renovaciones" && vista !== "verano" && (
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
                                 <div className="relative w-full sm:max-w-md">
                                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -344,6 +377,71 @@ export default function GestionEstudiantesPage() {
                                             </tbody>
                                         </table>
                                     </div>
+                                </div>
+                            </div>
+                        ) : vista === "verano" ? (
+                            <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden shadow-sm">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-[#fcfafa] border-b border-[#e5e7eb]">
+                                                <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Estudiante</th>
+                                                <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">DNI</th>
+                                                <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Origen</th>
+                                                <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Aula / Grupo</th>
+                                                <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Modalidad</th>
+                                                <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Cursos / Talleres</th>
+                                                <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Pago</th>
+                                                <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Estado</th>
+                                                <th className="px-6 py-4 text-xs font-black uppercase text-[#617489] text-right">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-[#f3f4f6]">
+                                            {loading ? (
+                                                <tr><td colSpan={9} className="text-center py-10 text-gray-400 text-sm italic">Cargando inscripciones...</td></tr>
+                                            ) : veranoSolicitudes.length === 0 ? (
+                                                <tr><td colSpan={9} className="text-center py-12 text-gray-400 text-sm">No hay inscripciones de verano registradas.</td></tr>
+                                            ) : (
+                                                veranoSolicitudes.map((s) => (
+                                                    <tr key={s.id} className="hover:bg-[#fcfafa] transition-colors">
+                                                        <td className="px-6 py-4 text-sm font-bold text-[#111418]">{s.alumno_nombre || "—"}</td>
+                                                        <td className="px-6 py-4 text-sm text-[#4b5563]">{s.alumno_dni || "—"}</td>
+                                                        <td className="px-6 py-4 text-sm text-[#4b5563]">
+                                                            <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                                                                s.origen === 'EXTERNO' ? 'bg-purple-100 text-purple-700' :
+                                                                s.origen === 'NIVELACION' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+                                                            }`}>{s.origen}</span>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-sm font-bold text-[#4b5563]">{s.grupo_label || "—"}</td>
+                                                        <td className="px-6 py-4 text-sm text-[#4b5563]">{s.modalidad}</td>
+                                                        <td className="px-6 py-4 text-xs text-[#4b5563] max-w-xs">
+                                                            {(s.cursos || []).length ? (s.cursos || []).join(", ") : "—"}
+                                                        </td>
+                                                        <td className="px-6 py-4 text-sm">
+                                                            <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold uppercase ${s.estado_pago === 'PAGADO' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                                {s.estado_pago || "—"}
+                                                            </span>
+                                                            {s.monto != null && <span className="ml-2 text-xs text-gray-500">S/ {Number(s.monto).toFixed(2)}</span>}
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${s.estado === 'ADMITIDO' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-[#093E7A]'}`}>{s.estado}</span>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-right">
+                                                            {s.estado !== "ADMITIDO" ? (
+                                                                <button
+                                                                    onClick={() => admitirVerano(s.id)}
+                                                                    className="px-3 py-1 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 transition-colors"
+                                                                    title="Confirmar pago y admitir"
+                                                                >ADMITIR</button>
+                                                            ) : (
+                                                                <span className="text-xs text-gray-400 italic">Admitido</span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         ) : (
@@ -551,6 +649,35 @@ export default function GestionEstudiantesPage() {
                                                     </div>
                                                 </div>
                                             ))}
+                                        </div>
+                                    </div>
+                                    {/* Documentos de admisión */}
+                                    <div>
+                                        <h4 className="text-[#701C32] font-black text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+                                            <span className="w-2 h-2 bg-[#701C32] rounded-full"></span>
+                                            Documentos de Admisión
+                                        </h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {[
+                                                { campo: "doc_dni_menor", label: "DNI del menor" },
+                                                { campo: "doc_dni_apoderado", label: "DNI del apoderado" },
+                                                { campo: "doc_fum", label: "Ficha Única de Matrícula" },
+                                                { campo: "doc_certificado_estudios", label: "Certificado de estudios" },
+                                            ].map((d) => {
+                                                const url = modalInfo.datos.alumno[d.campo];
+                                                return (
+                                                    <div key={d.campo} className="flex items-center justify-between p-3 border border-slate-100 rounded-xl bg-white">
+                                                        <span className="text-xs font-bold text-slate-600">{d.label}</span>
+                                                        {url ? (
+                                                            <a href={url} target="_blank" rel="noreferrer" className="text-xs font-black text-[#093E7A] underline flex items-center gap-1">
+                                                                <span className="material-symbols-outlined text-[16px]">description</span> Ver
+                                                            </a>
+                                                        ) : (
+                                                            <span className="text-[10px] text-slate-300 font-bold uppercase">No adjunto</span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 </div>

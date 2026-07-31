@@ -30,6 +30,8 @@ interface InfoRenovacion {
   anio_destino: string;
   grado_destino?: string;
   egresa: boolean;
+  repite?: boolean;
+  condicion_academica?: string | null;
   ya_matriculado_destino: boolean;
   puede_solicitar: boolean;
   inscripcion_estado: "NO_CONFIGURADO" | "PROXIMAMENTE" | "ABIERTA" | "CERRADA";
@@ -55,6 +57,60 @@ export default function MatriculaPage() {
   const [comentario, setComentario] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // --- Inscripción a verano ---
+  const [verano, setVerano] = useState<any>(null);
+  const [veranoCursos, setVeranoCursos] = useState<{ fijos: any[]; talleres: any[] }>({ fijos: [], talleres: [] });
+  const [modalidadVerano, setModalidadVerano] = useState<"CURSOS" | "TALLER" | "CURSOS_Y_TALLER">("CURSOS");
+  const [cursosSelV, setCursosSelV] = useState<number[]>([]);
+  const [talleresSelV, setTalleresSelV] = useState<number[]>([]);
+  const [veranoSubmitting, setVeranoSubmitting] = useState(false);
+  const toggle = (arr: number[], id: number) => arr.includes(id) ? arr.filter(x => x !== id) : [...arr, id];
+
+  const fetchVerano = useCallback(async () => {
+    if (!id_usuario) return;
+    try {
+      const res = await apiFetch(`/verano/estado-inscripcion/${id_usuario}`);
+      if (res.ok) {
+        const data = await res.json();
+        setVerano(data);
+        if (data?.disponible && data?.abierto && data?.elegible && data?.condicion === "NORMAL" && data?.id_grado) {
+          const rc = await apiFetch(`/verano/cursos/${data.id_grado}`);
+          if (rc.ok) setVeranoCursos(await rc.json());
+        }
+      }
+    } catch { /* silencioso */ }
+  }, [id_usuario]);
+
+  const handleInscribirVerano = async () => {
+    if (!id_usuario || !verano?.id_anio_escolar) return;
+    const esNivelacion = verano?.condicion === "REQUIERE_NIVELACION";
+    setVeranoSubmitting(true);
+    try {
+      const res = await apiFetch(`/verano/inscribir-interno`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id_usuario: Number(id_usuario),
+          id_anio_escolar: verano.id_anio_escolar,
+          modalidad: esNivelacion ? "NIVELACION" : modalidadVerano,
+          cursos_ids: esNivelacion || modalidadVerano === "TALLER" ? [] : cursosSelV,
+          talleres_ids: esNivelacion || modalidadVerano === "CURSOS" ? [] : talleresSelV,
+        })
+      });
+      const body = await res.json().catch(() => null);
+      if (res.ok) {
+        toast.success("Inscripción a verano registrada. Realiza el pago para ser admitido.");
+        fetchVerano();
+      } else {
+        toast.error(body?.detail || "No se pudo registrar la inscripción");
+      }
+    } catch {
+      toast.error("Error de conexión");
+    } finally {
+      setVeranoSubmitting(false);
+    }
+  };
+
   const fetchInfo = useCallback(async () => {
     if (!id_usuario) return;
     setLoading(true);
@@ -75,8 +131,8 @@ export default function MatriculaPage() {
   }, [id_usuario]);
 
   useEffect(() => {
-    if (!userLoading && id_usuario) fetchInfo();
-  }, [userLoading, id_usuario, fetchInfo]);
+    if (!userLoading && id_usuario) { fetchInfo(); fetchVerano(); }
+  }, [userLoading, id_usuario, fetchInfo, fetchVerano]);
 
   const handleSolicitar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -231,6 +287,17 @@ export default function MatriculaPage() {
                 </div>
               </div>
 
+              {/* AVISO ACADÉMICO: REPITE */}
+              {info.repite && (
+                <div className="bg-red-50 border border-red-100 rounded-xl p-3 mb-4 flex items-start gap-2">
+                  <AlertCircle size={16} className="text-red-500 shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-700 leading-relaxed">
+                    <span className="font-bold">Repetirás el año académico</span> por desaprobar 4 o más cursos.
+                    Al renovar, tu matrícula quedará en el mismo grado.
+                  </p>
+                </div>
+              )}
+
               {/* ESTADO DE LA VENTANA DE INSCRIPCIÓN */}
               {info.inscripcion_estado === "ABIERTA" ? (
                 <div className="bg-green-50 border border-green-100 rounded-xl p-3 mb-4 flex items-start gap-2">
@@ -286,6 +353,120 @@ export default function MatriculaPage() {
           )}
         </div>
       </div>
+
+      {/* INSCRIPCIÓN A VERANO */}
+      {verano?.disponible && (
+        <div className="bg-white rounded-3xl p-7 border border-orange-100 shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 mb-4 flex items-center gap-2">
+            <CalendarClock size={14} /> Inscripción a Verano
+          </p>
+          {verano.grupo_label && (
+            <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-100 text-orange-700 text-xs font-bold">
+              <School size={14} /> Aula de verano: {verano.grupo_label}
+            </div>
+          )}
+
+          {/* Fecha de inicio siempre visible */}
+          {!verano.abierto ? (
+            <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 mb-2 flex items-start gap-2">
+              <CalendarClock size={16} className="text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-800 leading-relaxed">
+                Las inscripciones a verano
+                {verano.inicio_inscripcion ? ` inician el ${formatearFecha(verano.inicio_inscripcion)}.` : " aún no están habilitadas."}
+              </p>
+            </div>
+          ) : verano.ya_inscrito ? (
+            <div className="bg-green-50 border border-green-100 rounded-xl p-4 flex items-start gap-2">
+              <CheckCircle size={18} className="text-green-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-green-800">Ya estás inscrito al verano</p>
+                <p className="text-xs text-green-700 mt-0.5">
+                  Estado: {verano.estado_solicitud === "ADMITIDO" ? "Admitido" : "Pendiente de pago"}.
+                  {verano.estado_solicitud !== "ADMITIDO" && " Realiza el pago fijo de verano para completar tu admisión."}
+                </p>
+              </div>
+            </div>
+          ) : verano.condicion === "REPITE" ? (
+            <p className="text-sm text-red-600">{verano.mensaje}</p>
+          ) : (
+            <>
+              {verano.condicion === "REQUIERE_NIVELACION" ? (
+                <div className="bg-[#FFF1E3] border border-[#F8EBDD] rounded-xl p-4 mb-4">
+                  <p className="text-sm font-bold text-[#701C32] mb-1">Requiere nivelación</p>
+                  <p className="text-xs text-gray-600 mb-2">
+                    Debes nivelar los siguientes cursos desaprobados en el verano:
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {(verano.cursos_nivelacion || []).map((c: any) => (
+                      <span key={c.id_curso} className="px-2 py-0.5 bg-white border border-[#F8EBDD] text-[#701C32] rounded text-xs font-bold">{c.nombre}</span>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Modalidad</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {[
+                        { v: "CURSOS", t: "Solo cursos fijos" },
+                        { v: "TALLER", t: "Solo taller(es)" },
+                        { v: "CURSOS_Y_TALLER", t: "Cursos + taller(es)" },
+                      ].map(opt => (
+                        <button
+                          type="button"
+                          key={opt.v}
+                          onClick={() => setModalidadVerano(opt.v as any)}
+                          className={`px-3 py-2 rounded-lg border font-bold text-xs transition-all ${
+                            modalidadVerano === opt.v ? "bg-[#701C32] text-white border-[#701C32]" : "bg-white text-slate-600 border-slate-200"
+                          }`}
+                        >{opt.t}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {modalidadVerano !== "TALLER" && (
+                      <div>
+                        <p className="text-xs font-bold text-gray-500 uppercase mb-2">Cursos fijos</p>
+                        {veranoCursos.fijos.length === 0 ? <p className="text-xs text-gray-400 italic">Sin cursos fijos.</p> :
+                          veranoCursos.fijos.map((c: any) => (
+                            <label key={c.id_curso} className="flex items-center gap-2 cursor-pointer mb-1">
+                              <input type="checkbox" className="w-4 h-4 accent-[#701C32]" checked={cursosSelV.includes(c.id_curso)} onChange={() => setCursosSelV(prev => toggle(prev, c.id_curso))} />
+                              <span className="text-sm text-gray-600">{c.nombre}</span>
+                            </label>
+                          ))}
+                      </div>
+                    )}
+                    {modalidadVerano !== "CURSOS" && (
+                      <div>
+                        <p className="text-xs font-bold text-gray-500 uppercase mb-2">Talleres</p>
+                        {veranoCursos.talleres.length === 0 ? <p className="text-xs text-gray-400 italic">Sin talleres.</p> :
+                          veranoCursos.talleres.map((c: any) => (
+                            <label key={c.id_curso} className="flex items-center gap-2 cursor-pointer mb-1">
+                              <input type="checkbox" className="w-4 h-4 accent-[#701C32]" checked={talleresSelV.includes(c.id_curso)} onChange={() => setTalleresSelV(prev => toggle(prev, c.id_curso))} />
+                              <span className="text-sm text-gray-600">{c.nombre}</span>
+                            </label>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-gray-500 mb-4 bg-orange-50 border border-orange-100 rounded-lg p-3">
+                Al inscribirte se generará un <strong>pago fijo de verano</strong> que deberás cancelar por completo para ser admitido.
+              </p>
+              <button
+                onClick={handleInscribirVerano}
+                disabled={veranoSubmitting}
+                className="w-full bg-[#701C32] hover:bg-[#5a1628] disabled:opacity-50 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2"
+              >
+                {veranoSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Send size={16} />}
+                Inscribirme al verano
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {/* HISTORIAL DE SOLICITUDES */}
       <div className="space-y-4">

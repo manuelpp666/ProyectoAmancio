@@ -1,21 +1,82 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
-import { NivelConCursos, Area } from "@/src/interfaces/academic"; 
-import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
+import { NivelConCursos, Area } from "@/src/interfaces/academic";
 import { apiFetch } from "@/src/lib/api";
-import { AnioSelector } from "@/src/components/utils/AnioSelector";
 import { toast } from "sonner";
 import { RoleGuard } from "@/src/components/auth/RoleGuard";
+import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
+
+const GRUPOS_VERANO = [
+  { clave: "PRIM_1_2", etiqueta: "1ro y 2do de Primaria" },
+  { clave: "PRIM_3_4", etiqueta: "3ro y 4to de Primaria" },
+  { clave: "PRIM_5_6", etiqueta: "5to y 6to de Primaria" },
+  { clave: "SEC_1", etiqueta: "1ro de Secundaria" },
+  { clave: "SEC_2", etiqueta: "2do de Secundaria" },
+  { clave: "SEC_3", etiqueta: "3ro de Secundaria" },
+  { clave: "PRE_ACADEMIA", etiqueta: "Pre Academia" },
+];
+
+function VeranoSeccion({ titulo, icono, cursos, tipoBadge, onEditar, onEliminar }: {
+  titulo: string; icono: string; cursos: any[]; tipoBadge: string;
+  onEditar: (c: any) => void; onEliminar: (c: any) => void;
+}) {
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+        <span className="material-symbols-outlined text-[#701C32] fill-icon">{icono}</span>
+        <h3 className="text-lg font-black text-gray-900 uppercase tracking-wide">{titulo}</h3>
+        <span className="bg-[#701C32]/10 text-[#701C32] px-2 py-0.5 rounded text-[10px] font-bold">
+          {cursos.length} CURSOS
+        </span>
+      </div>
+      <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-x-auto">
+        <table className="w-full text-left border-collapse min-w-[600px]">
+          <thead>
+            <tr className="bg-gray-50 border-b border-gray-200">
+              <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Curso</th>
+              <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Duración (Min/Sem)</th>
+              <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {cursos.length > 0 ? cursos.map((curso: any) => (
+              <tr key={curso.id_curso} className="hover:bg-slate-50 transition-colors">
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="size-8 bg-[#701C32]/10 text-[#701C32] rounded flex items-center justify-center">
+                      <span className="material-symbols-outlined text-sm">auto_stories</span>
+                    </div>
+                    <span className="font-bold text-gray-800">{curso.nombre}</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-[#701C32]/10 text-[#701C32]">{tipoBadge}</span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-center font-bold text-[#093E7A]">{curso.minutos_semanales} min</td>
+                <td className="px-6 py-4 text-right">
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => onEditar(curso)} className="p-2 text-[#093E7A] hover:bg-[#093E7A]/10 rounded-lg transition-colors" title="Editar curso">
+                      <span className="material-symbols-outlined text-xl">edit_note</span>
+                    </button>
+                    <button onClick={() => onEliminar(curso)} className="p-2 text-[#701C32] hover:bg-[#701C32]/10 rounded-lg transition-colors" title="Eliminar curso">
+                      <span className="material-symbols-outlined text-xl">delete</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            )) : (
+              <tr><td colSpan={3} className="px-6 py-8 text-center text-gray-400 italic">Sin cursos en este grupo.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
 
 export default function GestionCursosPage() {
-  const { 
-    anioPlanificacion: selectedAnio, 
-    setAnioPlanificacion: setSelectedAnio, 
-    listaAnios: anios, 
-    loadingAnios 
-  } = useAnioAcademico();
+  const [tipoAnio, setTipoAnio] = useState<"REGULAR" | "VERANO">("REGULAR");
   const [niveles, setNiveles] = useState<NivelConCursos[]>([]);
+  const [cursosVerano, setCursosVerano] = useState<{ grupos: any[]; talleres: any[] }>({ grupos: [], talleres: [] });
   const [areas, setAreas] = useState<Area[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,8 +85,8 @@ export default function GestionCursosPage() {
   const [showModal, setShowModal] = useState(false);
   const [showAreaModal, setShowAreaModal] = useState(false);
 
-  // Formulario Nuevo Curso (NUEVO: Agregado minutos_semanales)
-  const [nuevoCurso, setNuevoCurso] = useState({ nombre: "", id_area: "", minutos_semanales: 0 });
+  // Formulario Nuevo Curso
+  const [nuevoCurso, setNuevoCurso] = useState({ nombre: "", id_area: "", minutos_semanales: 0, es_verano: false, tipo_verano: "FIJO", grupo_verano: "PRIM_1_2" });
   const [gradosSeleccionados, setGradosSeleccionados] = useState<number[]>([]);
   const [nuevaAreaNombre, setNuevaAreaNombre] = useState("");
 
@@ -35,67 +96,77 @@ export default function GestionCursosPage() {
   const cerrarModalPrincipal = () => {
     setShowModal(false);
     setEditingId(null);
-    setNuevoCurso({ nombre: "", id_area: "", minutos_semanales: 0 }); // NUEVO: Reseteo de minutos
+    setNuevoCurso({ nombre: "", id_area: "", minutos_semanales: 0, es_verano: tipoAnio === "VERANO", tipo_verano: "FIJO", grupo_verano: "PRIM_1_2" });
     setGradosSeleccionados([]);
+  };
+  const abrirNuevoCurso = () => {
+    setEditingId(null);
+    setNuevoCurso({ nombre: "", id_area: "", minutos_semanales: 0, es_verano: tipoAnio === "VERANO", tipo_verano: "FIJO", grupo_verano: "PRIM_1_2" });
+    setGradosSeleccionados([]);
+    setShowModal(true);
   };
   // Función para abrir modal en modo edición
   const prepararEdicion = (cursoAgrupado: any) => {
     setEditingId(cursoAgrupado.id_curso);
     setNuevoCurso({
       nombre: cursoAgrupado.nombre,
-      id_area: cursoAgrupado.id_area.toString(),
-      minutos_semanales: cursoAgrupado.minutos_semanales || 0 // NUEVO: Carga de minutos
+      id_area: (cursoAgrupado.id_area ?? "").toString(),
+      minutos_semanales: cursoAgrupado.minutos_semanales || 0,
+      es_verano: !!cursoAgrupado.es_verano,
+      tipo_verano: cursoAgrupado.tipo_verano || "FIJO",
+      grupo_verano: cursoAgrupado.grupo_verano || "PRIM_1_2"
     });
-    setGradosSeleccionados(cursoAgrupado.id_grados); // Necesitarás guardar los IDs en el mapeo
+    setGradosSeleccionados(cursoAgrupado.id_grados || []);
     setShowModal(true);
   };
 
-  const handleEliminarCurso = async (cursoId: number, nombre: string, gradosIds: number[]) => {
-    toast(`¿Estás seguro de quitar ${nombre} de este nivel?`, {
-      action: {
-        label: "Eliminar",
-        onClick: async () => {
-          try {
-            // Construimos la URL con los IDs de los grados como parámetros: ?grados_ids=1&grados_ids=2...
-            const params = new URLSearchParams();
-            gradosIds.forEach(id => params.append('grados_ids', id.toString()));
+  const [confirmCurso, setConfirmCurso] = useState<{ abierto: boolean; id: number; nombre: string; grados: number[] }>(
+    { abierto: false, id: 0, nombre: "", grados: [] }
+  );
 
-            const res = await apiFetch(
-              `/academic/cursos/${cursoId}?${params.toString()}`,
-              { method: "DELETE" }
-            );
+  const handleEliminarCurso = (cursoId: number, nombre: string, gradosIds: number[]) => {
+    setConfirmCurso({ abierto: true, id: cursoId, nombre, grados: gradosIds || [] });
+  };
 
-            if (res.ok) {
-              toast.success("Curso quitado de este nivel");
-              fetchData();
-            }
-          } catch (error) {
-            toast.error("No se pudo procesar la solicitud");
-          }
-        },
-      },
-    });
+  const ejecutarEliminarCurso = async () => {
+    const { id, grados } = confirmCurso;
+    try {
+      const params = new URLSearchParams();
+      grados.forEach(g => params.append('grados_ids', g.toString()));
+      const res = await apiFetch(`/academic/cursos/${id}?${params.toString()}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Curso eliminado correctamente");
+        fetchData();
+      } else {
+        toast.error("No se pudo eliminar el curso");
+      }
+    } catch (error) {
+      toast.error("No se pudo procesar la solicitud");
+    }
   };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Nota: Si tu API permite filtrar por año, añade ?anio_id=${selectedAnio}
-      const [resNiveles, resAreas] = await Promise.all([
-        apiFetch(`/academic/niveles-cursos/`),
-        apiFetch(`/academic/areas/`)
-      ]);
+      const resAreas = await apiFetch(`/academic/areas/`);
+      if (resAreas.ok) setAreas(await resAreas.json());
 
-      if (resNiveles.ok && resAreas.ok) {
-        setNiveles(await resNiveles.json());
-        setAreas(await resAreas.json());
+      if (tipoAnio === "VERANO") {
+        const resVer = await apiFetch(`/academic/cursos-verano/`);
+        if (resVer.ok) setCursosVerano(await resVer.json());
+        // Los niveles se usan igualmente para el selector de área/grados regulares
+        const resNiv = await apiFetch(`/academic/niveles-cursos/`);
+        if (resNiv.ok) setNiveles(await resNiv.json());
+      } else {
+        const resNiveles = await apiFetch(`/academic/niveles-cursos/`);
+        if (resNiveles.ok) setNiveles(await resNiveles.json());
       }
     } catch (error) {
       toast.error("Error al conectar con la API");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tipoAnio]);
 
   useEffect(() => {
     fetchData();
@@ -124,17 +195,25 @@ export default function GestionCursosPage() {
   };
 
   const handleGuardarCurso = async () => {
+    const esVerano = nuevoCurso.es_verano;
+    const esFijo = esVerano && nuevoCurso.tipo_verano === "FIJO";
 
-    // NUEVO: Validación para asegurar que se ingresen los minutos semanales
-    if (!nuevoCurso.nombre.trim() || !nuevoCurso.id_area || gradosSeleccionados.length === 0 || nuevoCurso.minutos_semanales <= 0) {
-      toast.error("Por favor, completa el nombre, el área, los minutos semanales y selecciona al menos un grado.");
+    // Validaciones
+    if (!nuevoCurso.nombre.trim() || !nuevoCurso.id_area || nuevoCurso.minutos_semanales <= 0) {
+      toast.error("Completa el nombre, el área y los minutos semanales.");
+      return;
+    }
+    if (!esVerano && gradosSeleccionados.length === 0) {
+      toast.error("Selecciona al menos un grado.");
+      return;
+    }
+    if (esFijo && !nuevoCurso.grupo_verano) {
+      toast.error("Selecciona el grupo de verano al que pertenece el curso fijo.");
       return;
     }
 
     const isEditing = editingId !== null;
-    const url = isEditing
-      ? `/academic/cursos/${editingId}`
-      : `/academic/cursos/`;
+    const url = isEditing ? `/academic/cursos/${editingId}` : `/academic/cursos/`;
 
     try {
       // 1. Guardar/Actualizar Curso
@@ -144,34 +223,33 @@ export default function GestionCursosPage() {
         body: JSON.stringify({
           nombre: nuevoCurso.nombre,
           id_area: parseInt(nuevoCurso.id_area),
-          minutos_semanales: nuevoCurso.minutos_semanales // NUEVO: Envío de minutos a la API
+          minutos_semanales: nuevoCurso.minutos_semanales,
+          es_verano: esVerano,
+          tipo_verano: esVerano ? nuevoCurso.tipo_verano : null,
+          grupo_verano: esFijo ? nuevoCurso.grupo_verano : null,
         })
       });
       const cursoData = await resCurso.json();
 
-      // 2. Actualizar Plan de Estudio
-      // Si editamos, usamos el batch endpoint que creamos arriba
-      const planUrl = isEditing
-        ? `/academic/plan-estudio/batch/${editingId}`
-        : null;
-
-      if (isEditing) {
-        await apiFetch(planUrl!, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(gradosSeleccionados)
-        });
-      } else {
-        // Lógica de creación (la que ya tenías con Promise.all)
-        await Promise.all(
-          gradosSeleccionados.map(gradoId =>
-            apiFetch(`/academic/plan-estudio/`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ id_curso: cursoData.id_curso, id_grado: gradoId })
-            })
-          )
-        );
+      // 2. Plan de estudio SOLO para cursos regulares (los de verano se agrupan por grupo)
+      if (!esVerano) {
+        if (isEditing) {
+          await apiFetch(`/academic/plan-estudio/batch/${editingId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(gradosSeleccionados)
+          });
+        } else {
+          await Promise.all(
+            gradosSeleccionados.map(gradoId =>
+              apiFetch(`/academic/plan-estudio/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id_curso: cursoData.id_curso, id_grado: gradoId })
+              })
+            )
+          );
+        }
       }
 
       toast.success(isEditing ? "Curso actualizado" : "Curso creado");
@@ -188,13 +266,17 @@ export default function GestionCursosPage() {
     const mapaCursos = new Map();
     grados.forEach(grado => {
       grado.planes_estudio?.forEach((plan: any) => {
+        // La vista Regular no muestra cursos de verano
+        if (plan.curso.es_verano) return;
         const cursoId = plan.curso.id_curso;
         if (!mapaCursos.has(cursoId)) {
           mapaCursos.set(cursoId, {
             id_curso: cursoId,
             id_area: plan.curso.id_area,
             nombre: plan.curso.nombre,
-            minutos_semanales: plan.curso.minutos_semanales, // NUEVO: Agrupamos los minutos para pintarlos en la tabla
+            minutos_semanales: plan.curso.minutos_semanales,
+            es_verano: plan.curso.es_verano,
+            tipo_verano: plan.curso.tipo_verano,
             grados: [grado.nombre],
             id_grados: [grado.id_grado] // Importante para el check del modal
           });
@@ -237,26 +319,32 @@ export default function GestionCursosPage() {
                 <h2 className="text-xl font-bold text-gray-800">Cursos y Carga Horaria</h2>
               </div>
               <div className="h-6 w-px bg-gray-200 mx-2"></div>
-              <div className="flex items-center gap-2">
-                <AnioSelector 
-                  value={selectedAnio}
-                  onChange={setSelectedAnio}
-                  anios={anios}
-                  loading={loadingAnios}
-                />
+              {/* Toggle Tipo de año */}
+              <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                {(["REGULAR", "VERANO"] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTipoAnio(t)}
+                    className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${
+                      tipoAnio === t ? (t === "VERANO" ? "bg-[#701C32] text-white" : "bg-[#093E7A] text-white") : "text-gray-500"
+                    }`}
+                  >
+                    {t === "REGULAR" ? "Año Regular" : "Verano"}
+                  </button>
+                ))}
               </div>
             </div>
             <button
-              onClick={() => setShowModal(true)}
+              onClick={abrirNuevoCurso}
               className="flex items-center gap-2 px-6 py-2.5 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-all"
             >
               <span className="material-symbols-outlined text-sm">add</span> Nuevo Curso
             </button>
           </div>
 
-          {/* Renderizado Dinámico por Niveles */}
+          {/* Renderizado Dinámico por Niveles (REGULAR) */}
           <div className="flex-1 overflow-y-auto p-8 space-y-12">
-            {niveles.map((nivel) => {
+            {tipoAnio === "REGULAR" && niveles.map((nivel) => {
               const cursos = obtenerCursosAgrupados(nivel.grados);
 
               return (
@@ -292,6 +380,13 @@ export default function GestionCursosPage() {
                                   <span className="material-symbols-outlined text-sm">auto_stories</span>
                                 </div>
                                 <span className="font-bold text-gray-800">{curso.nombre}</span>
+                                {curso.es_verano && (
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                                    curso.tipo_verano === 'TALLER' ? 'bg-[#093E7A]/10 text-[#093E7A]' : 'bg-[#701C32]/10 text-[#701C32]'
+                                  }`}>
+                                    Verano · {curso.tipo_verano === 'TALLER' ? 'Taller' : 'Fijo'}
+                                  </span>
+                                )}
                               </div>
                             </td>
                             <td className="px-6 py-4">
@@ -340,6 +435,31 @@ export default function GestionCursosPage() {
                 </section>
               );
             })}
+
+            {/* VERANO: cursos fijos por grupo + talleres */}
+            {tipoAnio === "VERANO" && (
+              <>
+                {cursosVerano.grupos.map((grupo: any) => (
+                  <VeranoSeccion
+                    key={grupo.clave}
+                    titulo={grupo.etiqueta}
+                    icono={grupo.clave === "PRE_ACADEMIA" ? "workspace_premium" : grupo.clave.startsWith("PRIM") ? "child_care" : "school"}
+                    cursos={grupo.cursos}
+                    tipoBadge="Fijo"
+                    onEditar={(c: any) => prepararEdicion({ ...c, es_verano: true, tipo_verano: "FIJO", grupo_verano: grupo.clave })}
+                    onEliminar={(c: any) => handleEliminarCurso(c.id_curso, c.nombre, [])}
+                  />
+                ))}
+                <VeranoSeccion
+                  titulo="Talleres"
+                  icono="sports_esports"
+                  cursos={cursosVerano.talleres}
+                  tipoBadge="Taller"
+                  onEditar={(c: any) => prepararEdicion({ ...c, es_verano: true, tipo_verano: "TALLER" })}
+                  onEliminar={(c: any) => handleEliminarCurso(c.id_curso, c.nombre, [])}
+                />
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -408,10 +528,43 @@ export default function GestionCursosPage() {
                       <button onClick={() => setShowAreaModal(true)} title="Nueva área" className="px-3 bg-[#093E7A]/10 rounded-lg text-[#093E7A] hover:bg-[#093E7A]/20 transition-colors"><span className="material-symbols-outlined">add</span></button>
                     </div>
                   </div>
+                  {/* Curso de verano: tipo (Fijo/Taller) + grupo */}
+                  {nuevoCurso.es_verano && (
+                    <div className="col-span-2 bg-[#FFF1E3] border border-[#701C32]/20 rounded-lg p-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-gray-500 uppercase">Tipo en verano</label>
+                        <select
+                          className="w-full border border-[#701C32]/20 rounded-lg px-4 py-2.5 outline-none bg-white"
+                          value={nuevoCurso.tipo_verano}
+                          onChange={(e) => setNuevoCurso({ ...nuevoCurso, tipo_verano: e.target.value })}
+                        >
+                          <option value="FIJO">Curso fijo</option>
+                          <option value="TALLER">Taller (electivo)</option>
+                        </select>
+                      </div>
+                      {nuevoCurso.tipo_verano === "FIJO" && (
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-gray-500 uppercase">Grupo / Aula</label>
+                          <select
+                            className="w-full border border-[#701C32]/20 rounded-lg px-4 py-2.5 outline-none bg-white"
+                            value={nuevoCurso.grupo_verano}
+                            onChange={(e) => setNuevoCurso({ ...nuevoCurso, grupo_verano: e.target.value })}
+                          >
+                            {GRUPOS_VERANO.map(g => <option key={g.clave} value={g.clave}>{g.etiqueta}</option>)}
+                          </select>
+                        </div>
+                      )}
+                      <p className="col-span-full text-[10px] text-gray-500">
+                        Los <strong>cursos fijos</strong> (por grupo) y <strong>talleres</strong> son para externos o internos sin cursos desaprobados.
+                        La <strong>nivelación</strong> no se configura aquí: son los cursos reales que el alumno desaprobó y retoma en verano.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </section>
 
-              {/* SECCIÓN: GRADOS */}
+              {/* SECCIÓN: GRADOS (solo cursos regulares) */}
+              {!nuevoCurso.es_verano && (
               <section className="space-y-3">
                 <h4 className="text-[11px] font-black text-[#093E7A] uppercase tracking-widest flex items-center gap-2">
                   <span className="material-symbols-outlined text-[16px]">school</span> Grados donde se dicta
@@ -438,6 +591,7 @@ export default function GestionCursosPage() {
                   ))}
                 </div>
               </section>
+              )}
             </div>
 
             <div className="p-4 border-t bg-gray-50 flex gap-3 shrink-0">
@@ -483,6 +637,16 @@ export default function GestionCursosPage() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmCurso.abierto}
+        onClose={() => setConfirmCurso({ abierto: false, id: 0, nombre: "", grados: [] })}
+        onConfirm={ejecutarEliminarCurso}
+        type="danger"
+        title="Eliminar curso"
+        message={`¿Seguro que deseas eliminar el curso "${confirmCurso.nombre}"? Esta acción no se puede deshacer.`}
+        confirmText="Sí, eliminar"
+      />
     </>
     </RoleGuard>
   );

@@ -8,6 +8,7 @@ import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
 import { apiFetch } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
+import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
 
 export default function GestionAcademicaPage() {
 
@@ -56,9 +57,42 @@ export default function GestionAcademicaPage() {
   const [seccionEnEdicion, setSeccionEnEdicion] = useState<Seccion | null>(null);
   const [nuevaSeccion, setNuevaSeccion] = useState({ nombre: "", vacantes: 30 });
 
-  // --- MODAL COPIAR ---
-  const [isCopiarModalOpen, setIsCopiarModalOpen] = useState(false);
-  const [anioOrigenCopiar, setAnioOrigenCopiar] = useState("");
+
+  // --- CIERRE / EVALUACIÓN ---
+  const [notaMinima, setNotaMinima] = useState("11");
+  const [guardandoNota, setGuardandoNota] = useState(false);
+
+  useEffect(() => {
+    const cargarNotaMinima = async () => {
+      try {
+        const res = await apiFetch(`/configuracion/academico`);
+        if (res.ok) {
+          const data = await res.json();
+          const fila = Array.isArray(data) ? data.find((d: any) => d.clave === "nota_minima_aprobatoria") : null;
+          if (fila?.valor) setNotaMinima(String(fila.valor));
+        }
+      } catch { /* usa el default 11 */ }
+    };
+    cargarNotaMinima();
+  }, []);
+
+  const handleGuardarNota = async () => {
+    setGuardandoNota(true);
+    try {
+      const res = await apiFetch(`/configuracion/nota_minima_aprobatoria?seccion=academico`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ valor: String(notaMinima) })
+      });
+      if (res.ok) toast.success("Nota mínima aprobatoria actualizada");
+      else toast.error("No se pudo guardar la nota mínima");
+    } catch {
+      toast.error("Error de conexión");
+    } finally {
+      setGuardandoNota(false);
+    }
+  };
+
 
   // --- ACORDEÓN DE NIVELES (colapsar/expandir) ---
   const [nivelesColapsados, setNivelesColapsados] = useState<Set<number>>(new Set());
@@ -282,35 +316,18 @@ export default function GestionAcademicaPage() {
     } catch (error) { toast.error("Error al guardar sección"); }
   };
 
-  const handleEliminarSeccion = async (id: number) => {
-    toast("¿Eliminar sección?", {
-      action: {
-        label: "Eliminar",
-        onClick: async () => {
-          try {
-            const res = await apiFetch(`/academic/secciones/${id}`, { method: "DELETE" });
-            if (res.ok) { toast.success("Sección eliminada"); fetchSeccionesDelAnio(anioSeleccionado); }
-          } catch (e) { toast.error("Error al eliminar"); }
-        },
-      },
-    });
+  const [confirmSeccion, setConfirmSeccion] = useState<{ abierto: boolean; id: number }>({ abierto: false, id: 0 });
+
+  const handleEliminarSeccion = (id: number) => {
+    setConfirmSeccion({ abierto: true, id });
   };
 
-  const handleCopiarEstructura = async () => {
-    if (!anioOrigenCopiar) return toast.error("Selecciona un año origen");
-    if (!anioSeleccionado) return toast.error("Selecciona un año destino");
+  const ejecutarEliminarSeccion = async () => {
     try {
-      const res = await apiFetch(`/academic/anios/copiar-estructura`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ anio_origen: anioOrigenCopiar, anio_destino: anioSeleccionado })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        toast.success(data.message);
-        setIsCopiarModalOpen(false);
-        fetchSeccionesDelAnio(anioSeleccionado);
-      } else { toast.error("Error al copiar estructura"); }
-    } catch (error) { toast.error("Error de conexión"); }
+      const res = await apiFetch(`/academic/secciones/${confirmSeccion.id}`, { method: "DELETE" });
+      if (res.ok) { toast.success("Sección eliminada correctamente"); fetchSeccionesDelAnio(anioSeleccionado); }
+      else { toast.error("No se pudo eliminar la sección"); }
+    } catch (e) { toast.error("Error al eliminar la sección"); }
   };
 
   const prepararNuevaSeccion = (gradoId: number) => { setSeccionEnEdicion(null); setSelectedGradoId(gradoId); setNuevaSeccion({ nombre: "", vacantes: 30 }); setIsSeccionModalOpen(true); };
@@ -475,28 +492,36 @@ export default function GestionAcademicaPage() {
                   </button>
                 </div>
 
-                {/* COPIAR ESTRUCTURA */}
+                {/* NOTA MÍNIMA APROBATORIA */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between">
                   <div className="mb-4">
                     <h4 className="font-bold text-gray-800 flex items-center gap-2">
-                      <span className="material-symbols-outlined text-amber-500">content_copy</span>
-                      Herramienta Especial
+                      <span className="material-symbols-outlined text-[#093E7A] bg-blue-50 rounded-lg p-1.5">grading</span>
+                      Nota Mínima Aprobatoria
                     </h4>
-                    <p className="text-xs text-gray-400 mt-1">Clone la estructura de grados y secciones del año anterior.</p>
+                    <p className="text-xs text-gray-400 mt-1">Umbral para determinar los cursos desaprobados en la evaluación de fin de año.</p>
+                    <div className="mt-3 flex items-end gap-2">
+                      <div className="flex-1">
+                        <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nota mínima (0 - 20)</label>
+                        <input
+                          type="number" min={1} max={20} step={1}
+                          value={notaMinima}
+                          onChange={(e) => setNotaMinima(e.target.value)}
+                          className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A]"
+                        />
+                      </div>
+                      <button
+                        onClick={handleGuardarNota}
+                        disabled={guardandoNota}
+                        className="py-2 px-4 bg-[#093E7A] text-white rounded-lg font-bold text-xs hover:bg-[#072d5a] disabled:opacity-50"
+                      >
+                        {guardandoNota ? "..." : "Guardar"}
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => setIsCopiarModalOpen(true)}
-                    disabled={!isAnioSinComenzar()}
-                    className="w-full py-2.5 bg-gray-100 text-gray-700 border border-gray-200 font-bold rounded-lg text-sm hover:bg-gray-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span className="material-symbols-outlined text-sm text-gray-500">auto_awesome_motion</span>
-                    Copiar Estructura
-                  </button>
-                  {!isAnioSinComenzar() && anioObj && (
-                    <p className="text-[10px] text-red-400 mt-1 text-center">
-                      Solo antes del inicio de clases
-                    </p>
-                  )}
+                  <p className="text-[10px] text-gray-400 text-center bg-[#FFF1E3] rounded-lg py-2 px-2">
+                    El cierre del año (evaluación de desaprobados + aviso a los padres) se ejecuta <strong>automáticamente</strong> al terminar el periodo académico según la fecha configurada.
+                  </p>
                 </div>
               </div>
             </section>
@@ -778,45 +803,15 @@ export default function GestionAcademicaPage() {
         </div>
       )}
 
-      {/* --- MODAL COPIAR --- */}
-      {isCopiarModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div className="bg-[#093E7A] px-6 py-5 text-white flex justify-between items-start">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">content_copy</span></div>
-                <div>
-                  <h3 className="font-black text-lg leading-tight">Copiar Estructura</h3>
-                  <p className="text-[11px] text-white/70 mt-0.5">Replica las secciones de un año anterior.</p>
-                </div>
-              </div>
-              <button onClick={() => setIsCopiarModalOpen(false)} className="text-white/70 hover:text-white transition-colors mt-0.5"><span className="material-symbols-outlined">close</span></button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="bg-yellow-50 text-yellow-800 p-3 rounded-lg text-xs border border-yellow-100">
-                Se copiarán todas las secciones al año actual <strong>{anioSeleccionado}</strong>.
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Año Origen</label>
-                <select
-                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
-                  value={anioOrigenCopiar}
-                  onChange={(e) => setAnioOrigenCopiar(e.target.value)}
-                >
-                  <option value="">Selecciona...</option>
-                  {anios.filter(a => a.id_anio_escolar !== anioSeleccionado).map(a => (
-                    <option key={a.id_anio_escolar} value={a.id_anio_escolar}>{a.id_anio_escolar}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="pt-4 flex gap-3">
-                <button onClick={() => setIsCopiarModalOpen(false)} className="flex-1 py-2 text-sm font-bold text-gray-500">Cancelar</button>
-                <button onClick={handleCopiarEstructura} className="flex-1 py-2 bg-amber-500 text-white rounded-lg font-bold text-sm">Copiar Todo</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={confirmSeccion.abierto}
+        onClose={() => setConfirmSeccion({ abierto: false, id: 0 })}
+        onConfirm={ejecutarEliminarSeccion}
+        type="danger"
+        title="Eliminar sección"
+        message="¿Seguro que deseas eliminar esta sección? Esta acción no se puede deshacer y solo es posible si no tiene estudiantes matriculados."
+        confirmText="Sí, eliminar"
+      />
     </>
     </RoleGuard>
   );

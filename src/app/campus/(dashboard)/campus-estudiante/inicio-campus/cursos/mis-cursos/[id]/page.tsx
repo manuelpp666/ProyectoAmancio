@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { DetalleCurso, Tarea } from "@/src/interfaces/academic";
 import { apiFetch } from "@/src/lib/api";
 import { registrarCursoVisitado } from "@/src/lib/cursosRecientes";
+import ClasesVirtualesAlumno from "@/src/components/Virtual/ClasesVirtualesAlumno";
 
 const NOMBRES_BIMESTRE = ["I Bimestre", "II Bimestre", "III Bimestre", "IV Bimestre"];
 
@@ -26,6 +27,7 @@ export default function DetalleCursoPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tareaSeleccionada, setTareaSeleccionada] = useState<Tarea | null>(null);
+  const [activeTab, setActiveTab] = useState<"contenido" | "clases">("contenido");
 
   // Agrupar tareas por bimestre (1 al 4)
   const tareasPorBimestre: Record<number, Tarea[]> = (data?.tareas || []).reduce((acc: any, tarea: Tarea) => {
@@ -140,7 +142,26 @@ export default function DetalleCursoPage() {
         </div>
       </div>
 
-      {/* CONTENIDO DEL CURSO: dividido en 4 bimestres */}
+      {/* TABS */}
+      <div className="border-b border-gray-200 flex gap-6">
+        <button
+          onClick={() => setActiveTab("contenido")}
+          className={`pb-3 text-sm font-bold transition-colors ${activeTab === "contenido" ? "border-b-2 border-[#701C32] text-[#701C32]" : "text-gray-500 hover:text-gray-700"}`}
+        >
+          Contenido del curso
+        </button>
+        <button
+          onClick={() => setActiveTab("clases")}
+          className={`pb-3 text-sm font-bold transition-colors ${activeTab === "clases" ? "border-b-2 border-[#701C32] text-[#701C32]" : "text-gray-500 hover:text-gray-700"}`}
+        >
+          Clases Virtuales
+        </button>
+      </div>
+
+      {activeTab === "clases" ? (
+        <ClasesVirtualesAlumno idCurso={id as string} idUsuario={id_usuario} anio={anio || ""} />
+      ) : (
+      /* CONTENIDO DEL CURSO: dividido en 4 bimestres */
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -306,6 +327,7 @@ export default function DetalleCursoPage() {
           );
         })}
       </div>
+      )}
 
       {/* MODAL DE ENTREGA */}
       {tareaSeleccionada && (

@@ -20,6 +20,7 @@ interface TipoPago {
   mora: number;
   accion_vencimiento: string;
   activo: boolean;
+  periodo_academico: string; // REGULAR / VERANO / AMBOS
 }
 
 export default function GestionFinancieraPage() {
@@ -111,7 +112,7 @@ export default function GestionFinancieraPage() {
 
   // Formulario Tipo Pago
   const [formDataTipoPago, setFormDataTipoPago] = useState({
-    categoria: "OTRO", nombre: "", costo: 0, fecha_inicio: "", fecha_vencimiento: "", mora: 0, accion_vencimiento: "APLICAR_MORA", activo: true
+    categoria: "OTRO", nombre: "", costo: 0, fecha_inicio: "", fecha_vencimiento: "", mora: 0, accion_vencimiento: "APLICAR_MORA", activo: true, periodo_academico: "REGULAR"
   });
 
   // --- NUEVOS ESTADOS PARA FECHAS MM-DD ---
@@ -274,7 +275,7 @@ export default function GestionFinancieraPage() {
 
   // --- HANDLERS MODAL TIPOS DE PAGO ---
   const openNewTipoPago = () => { 
-    setFormDataTipoPago({ categoria: "OTRO", nombre: "", costo: 0, fecha_inicio: "", fecha_vencimiento: "", mora: 0, accion_vencimiento: "APLICAR_MORA", activo: true }); 
+    setFormDataTipoPago({ categoria: "OTRO", nombre: "", costo: 0, fecha_inicio: "", fecha_vencimiento: "", mora: 0, accion_vencimiento: "APLICAR_MORA", activo: true, periodo_academico: "REGULAR" });
     setMesInicio("01"); setDiaInicio("01"); setMesFin("12"); setDiaFin("31");
     setIsEditingTipoPago(false); 
     setIsModalTipoPagoOpen(true); 
@@ -539,6 +540,7 @@ export default function GestionFinancieraPage() {
                     <tr>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase">Categoría</th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase">Nombre del Pago</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase">Periodo</th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase">Rango de Fechas</th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase text-center">Costo</th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase text-right">Acciones</th>
@@ -546,7 +548,7 @@ export default function GestionFinancieraPage() {
                   </thead>
                   <tbody className="divide-y">
                     {tiposPago.length === 0 ? (
-                      <tr><td colSpan={5} className="p-10 text-center text-gray-400 italic">No hay plantillas de pago registradas</td></tr>
+                      <tr><td colSpan={6} className="p-10 text-center text-gray-400 italic">No hay plantillas de pago registradas</td></tr>
                     ) : tiposPago.map(p => {
                       const [mI, dI] = p.fecha_inicio.split("-");
                       const [mF, dF] = p.fecha_vencimiento.split("-");
@@ -564,6 +566,15 @@ export default function GestionFinancieraPage() {
                           </span>
                         </td>
                         <td className="p-4 font-bold text-gray-800">{p.nombre}</td>
+                        <td className="p-4">
+                          <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                            p.periodo_academico === 'VERANO' ? 'bg-orange-100 text-orange-600' :
+                            p.periodo_academico === 'REGULAR' ? 'bg-blue-100 text-blue-600' :
+                            'bg-gray-100 text-gray-600'
+                          }`}>
+                            {p.periodo_academico === 'VERANO' ? 'Vacacional' : p.periodo_academico || 'REGULAR'}
+                          </span>
+                        </td>
                         <td className="p-4 text-xs font-medium text-gray-600">
                           {p.categoria === 'PENSION'
                             ? <span>Vence el <span className="font-black text-[#093E7A]">día {dF}</span> de cada mes</span>
@@ -994,7 +1005,17 @@ export default function GestionFinancieraPage() {
                   </select>
                 </div>
               </div>
-              
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Periodo Académico</label>
+                <select className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" value={formDataTipoPago.periodo_academico} onChange={e => setFormDataTipoPago({...formDataTipoPago, periodo_academico: e.target.value})}>
+                  <option value="REGULAR">Año Regular</option>
+                  <option value="VERANO">Vacacional / Verano</option>
+                  <option value="AMBOS">Ambos Periodos</option>
+                </select>
+                <p className="text-[10px] text-gray-400 mt-1">El pago fijo de la inscripción a verano usa un tipo marcado como Vacacional / Verano.</p>
+              </div>
+
               {formDataTipoPago.accion_vencimiento === "APLICAR_MORA" && (formDataTipoPago.categoria === "PENSION" || formDataTipoPago.categoria === "MODULO") && (
                 <div>
                   <label className="block text-xs font-bold text-orange-500 uppercase mb-1">Monto de Mora (S/)</label>

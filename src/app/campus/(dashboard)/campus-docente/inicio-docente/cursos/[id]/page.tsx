@@ -10,6 +10,7 @@ import ModalCrearTarea from "@/src/components/Tarea/ModalCrearTarea";
 import ModalCrearMaterial from "@/src/components/Tarea/ModalCrearMaterial";
 import ModalVerEntregas from "@/src/components/Tarea/ModalVerEntregas";
 import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
+import ClasesVirtualesDocente from "@/src/components/Virtual/ClasesVirtualesDocente";
 import { toast } from "sonner";
 import { apiFetch } from "@/src/lib/api";
 
@@ -29,7 +30,7 @@ export default function DetalleCursoDocente() {
   const idCarga = params.id;
   const anio = searchParams.get("anio");
 
-  const [activeTab, setActiveTab] = useState<"contenido" | "notas">("contenido");
+  const [activeTab, setActiveTab] = useState<"contenido" | "notas" | "clases">("contenido");
 
   // --- Datos del curso (header + tareas de los 4 bimestres) ---
   const [info, setInfo] = useState<any>(null);
@@ -299,6 +300,12 @@ export default function DetalleCursoDocente() {
           Contenido del curso
         </button>
         <button
+          onClick={() => setActiveTab("clases")}
+          className={`pb-3 text-sm font-bold transition-colors ${activeTab === "clases" ? "border-b-2 border-[#701C32] text-[#701C32]" : "text-gray-500 hover:text-gray-700"}`}
+        >
+          Clases Virtuales
+        </button>
+        <button
           onClick={() => setActiveTab("notas")}
           className={`pb-3 text-sm font-bold transition-colors ${activeTab === "notas" ? "border-b-2 border-[#701C32] text-[#701C32]" : "text-gray-500 hover:text-gray-700"}`}
         >
@@ -503,7 +510,7 @@ export default function DetalleCursoDocente() {
             );
           })}
         </div>
-      ) : (
+      ) : activeTab === "notas" ? (
         /* --- REGISTRO DE NOTAS --- */
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
           <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center bg-gray-50/50 gap-4">
@@ -582,7 +589,14 @@ export default function DetalleCursoDocente() {
                   {alumnosFiltrados?.map((alumno: any, index: number) => (
                     <tr key={alumno.id_alumno} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">{index + 1}</td>
-                      <td className="px-6 py-4 font-bold text-gray-800">{alumno.nombres_completos}</td>
+                      <td className="px-6 py-4 font-bold text-gray-800">
+                        <span className="flex items-center gap-2">
+                          {alumno.nombres_completos}
+                          {alumno.condicion === "CONDICIONADA" && (
+                            <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[9px] font-black uppercase" title="Matrícula condicionada — requiere apoyo académico adicional">Apoyo</span>
+                          )}
+                        </span>
+                      </td>
                       {datos?.evaluaciones.map((evalu: any) => (
                         <td key={evalu.id_tarea} className="px-4 py-4 text-center">
                           {editandoNotas ? (
@@ -618,6 +632,9 @@ export default function DetalleCursoDocente() {
             </div>
           )}
         </div>
+      ) : (
+        /* --- CLASES VIRTUALES --- */
+        <ClasesVirtualesDocente idCarga={idCarga as string} />
       )}
 
       {/* MODALES */}

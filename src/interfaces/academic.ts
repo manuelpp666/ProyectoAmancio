@@ -90,6 +90,10 @@ export interface Curso {
   nombre: string;
   id_area: number;
   docente?: string;
+  minutos_semanales?: number;
+  es_verano?: boolean;
+  tipo_verano?: string | null; // FIJO / TALLER
+  grupo_verano?: string | null; // PRIM_1_2, ..., PRE_ACADEMIA
 }
 
 export interface PlanEstudio {

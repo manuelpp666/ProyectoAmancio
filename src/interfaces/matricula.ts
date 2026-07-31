@@ -6,4 +6,5 @@ export interface AlumnoMatriculado {
   dni: string;
   id_seccion: number | null;
   id_grado: number;
+  condicion?: string | null; // NORMAL / CONDICIONADA / REPITE
 }

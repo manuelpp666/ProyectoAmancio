@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/src/context/userContext";
-import { Megaphone, Star, Wallet, Calendar, CheckCheck, Clock, Loader2, HeartPulse, MessageSquare, ArrowLeft } from "lucide-react";
+import { Megaphone, Star, Wallet, Calendar, CheckCheck, Clock, Loader2, HeartPulse, MessageSquare, ArrowLeft, GraduationCap } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 // Helper para definir estilos e iconos según el tipo de notificación
 const getNotifStyle = (tipo: string) => {
@@ -14,6 +14,7 @@ const getNotifStyle = (tipo: string) => {
     case "evento": return { icono: Calendar, color: "text-purple-600", bg: "bg-purple-50" };
     case "cita": return { icono: HeartPulse, color: "text-blue-600", bg: "bg-blue-50" };
     case "mensaje": return { icono: MessageSquare, color: "text-[#701C32]", bg: "bg-[#701C32]/10" };
+    case "academico": return { icono: GraduationCap, color: "text-orange-600", bg: "bg-orange-50" };
     default: return { icono: Megaphone, color: "text-blue-600", bg: "bg-blue-50" };
   }
 };

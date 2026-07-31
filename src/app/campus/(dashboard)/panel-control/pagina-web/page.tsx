@@ -7,7 +7,7 @@ import MediaUpload from '@/src/components/utils/MediaUpload';
 import { uploadToCloudinary, uploadMediaToCloudinary } from "@/src/components/utils/cloudinary";
 import * as LucideIcons from "lucide-react";
 import HeaderPanel from '@/src/components/Campus/PanelControl/Header';
-import { Save, Home, Users, Footprints, Loader2, GraduationCap, CalendarDays, Newspaper, ClipboardList, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Save, Home, Users, Footprints, Loader2, GraduationCap, CalendarDays, Newspaper, ClipboardList, RotateCcw, AlertTriangle, LogIn } from 'lucide-react';
 import { toast } from "sonner";
 import { apiFetch } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
@@ -20,6 +20,11 @@ const SECCIONES = [
       { clave: 'hero_imagen', label: 'Fondo del Hero (Imagen o Video)', tipo: 'media' },
       { clave: 'home_enfoques', label: 'Enfoques Educativos (Lista)', tipo: 'enfoques' },
       { clave: 'home_niveles', label: 'Niveles Académicos (Lista)', tipo: 'niveles' },
+    ]
+  },
+  {
+    id: 'login', label: 'Inicio de Sesión', icon: LogIn, campos: [
+      { clave: 'login_imagen', label: 'Imagen de Fondo (Login)', tipo: 'image' },
     ]
   },
   {

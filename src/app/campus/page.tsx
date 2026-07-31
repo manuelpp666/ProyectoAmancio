@@ -1,10 +1,13 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/src/context/userContext";
 import Link from "next/link";
 import { User, Lock, GraduationCap, Loader2, AlertCircle } from "lucide-react";
 
+// Imagen de fondo por defecto del panel visual del login
+const DEFAULT_LOGIN_BG =
+  "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=2070&auto=format&fit=crop";
 
 const ROLE_ROUTES = {
   ADMIN: "/campus/panel-control",
@@ -21,6 +24,18 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState(""); // 3. Estado para la contraseña
   const [error, setError] = useState<string | null>(null); // 4. Estado para errores visuales
+  const [bgImagen, setBgImagen] = useState<string>(DEFAULT_LOGIN_BG); // Fondo configurable
+
+  // Carga la imagen de fondo configurada desde Contenido Web (sección pública)
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/configuracion/login`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        const item = Array.isArray(data) ? data.find((i: any) => i.clave === "login_imagen") : null;
+        if (item?.valor?.trim()) setBgImagen(item.valor.trim());
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,10 +84,13 @@ export default function LoginPage() {
         {/* Imagen de fondo con filtro oscuro */}
         <img
           alt="Campus Amancio Varona"
-          className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay"
-          src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=2070&auto=format&fit=crop"
+          className="absolute inset-0 w-full h-full object-cover"
+          src={bgImagen}
         />
-        <div className="absolute inset-0 bg-black/40"></div>
+        {/* Tinte institucional (guinda→azul), como estaba antes */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#701C32]/85 via-[#701C32]/70 to-[#093E7A]/85"></div>
+        {/* Degradado inferior para que el texto de bienvenida siga legible */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent"></div>
 
         {/* Contenido de bienvenida */}
         <div className="relative z-10 h-full flex flex-col justify-center md:justify-end p-8 md:p-16 text-white">
