@@ -269,11 +269,6 @@ export default function MisDatos() {
                       <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">Estado: {datos.estado_ingreso}</span>
                     )}
                     <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">DNI: {datos.dni}</span>
-                    {esPersonal && !esAdmin && (
-                      <span className="bg-emerald-500/40 px-3 py-1 rounded-full text-sm font-bold backdrop-blur-sm border border-emerald-400">
-                        Sueldo: S/ {datos.sueldo}
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>

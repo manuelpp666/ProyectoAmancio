@@ -31,7 +31,6 @@ export interface Personal {
   apellidos: string;
   telefono: string;
   email: string;
-  sueldo: number;
   permisos?: PermisosAdmin | null;
   usuario: { activo: boolean; username: string };
 }

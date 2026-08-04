@@ -1,9 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useUser } from "@/src/context/userContext";
-import { Lock, Eye, EyeOff, Save, Loader2, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Lock, Eye, EyeOff, Save, Loader2, CheckCircle2, AlertCircle, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { useRouter, useSearchParams } from "next/navigation";
 import { apiFetch } from "@/src/lib/api";
 
 interface FastApiValidationError {
@@ -26,17 +25,22 @@ const homePorRol = (rol: string | null): string => {
 
 export default function SecurityPage() {
   const router = useRouter();
+  const params = useSearchParams();
   const { username, role, loading: authLoading } = useUser();
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState({ current: false, new: false, confirm: false });
   const [formData, setFormData] = useState({ current: "", new: "", confirm: "" });
   const [status, setStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null);
 
-  // Esta pantalla es exclusiva del administrador. Si otro rol entra por URL
-  // directa, lo redirigimos a su panel de inicio.
+  // Modo "primer ingreso": el usuario llega aquí obligado tras iniciar sesión
+  // con la contraseña inicial. No puede salir sin cambiarla.
+  const esPrimerIngreso = params.get("inicial") === "1";
+
+  // Cualquier rol puede cambiar SU propia contraseña; el backend ya impide
+  // tocar la de otro usuario. Solo se exige tener sesión iniciada.
   useEffect(() => {
-    if (!authLoading && role !== "ADMIN") {
-      router.replace(homePorRol(role));
+    if (!authLoading && !role) {
+      router.replace("/campus");
     }
   }, [authLoading, role, router]);
 
@@ -86,6 +90,10 @@ export default function SecurityPage() {
       if (res.ok) {
         setStatus({ type: 'success', msg: 'Contraseña actualizada correctamente' });
         setFormData({ current: "", new: "", confirm: "" });
+        // Tras el cambio obligatorio ya puede entrar a su panel
+        if (esPrimerIngreso) {
+          setTimeout(() => router.replace(homePorRol(role)), 1200);
+        }
       } else {
         // --- MANEJO DE ERRORES CORREGIDO ---
         let errorMsg = "Error al actualizar";
@@ -112,8 +120,8 @@ export default function SecurityPage() {
     }
   };
 
-  // Mientras verificamos el rol (o si no es ADMIN, en pleno redirect) no mostramos el formulario
-  if (authLoading || role !== "ADMIN") {
+  // Mientras verificamos la sesión no mostramos el formulario
+  if (authLoading || !role) {
     return (
       <div className="min-h-full flex items-center justify-center">
         <Loader2 className="animate-spin text-[#093E7A]" size={40} />
@@ -124,23 +132,42 @@ export default function SecurityPage() {
   return (
     <div className="min-h-full flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-[#093E7A] transition-colors"
-        >
-          <ArrowLeft size={18} /> Volver
-        </button>
+        {/* En el primer ingreso no se ofrece salida: debe definir su clave */}
+        {!esPrimerIngreso && (
+          <button
+            type="button"
+            onClick={handleBack}
+            className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-[#093E7A] transition-colors"
+          >
+            <ArrowLeft size={18} /> Volver
+          </button>
+        )}
 
         <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
 
-        <div className="mb-8 text-center">
-          <div className="w-16 h-16 bg-[#093E7A]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Lock className="text-[#093E7A]" size={32} />
+        {esPrimerIngreso ? (
+          <div className="mb-8 text-center">
+            <div className="w-16 h-16 bg-[#FFF1E3] rounded-full flex items-center justify-center mx-auto mb-4">
+              <ShieldAlert className="text-[#701C32]" size={32} />
+            </div>
+            <h2 className="text-2xl font-black text-gray-800">Cambia tu contraseña</h2>
+            <p className="text-gray-500 mt-2 text-sm">
+              Estás usando la contraseña inicial que te entregó el colegio.
+              Por seguridad, define una propia antes de continuar.
+            </p>
+            <p className="text-gray-400 mt-2 text-xs">
+              Tu contraseña actual es tu número de DNI.
+            </p>
           </div>
-          <h2 className="text-2xl font-black text-gray-800">Seguridad</h2>
-          <p className="text-gray-500 mt-2 text-sm">Gestiona el acceso a tu cuenta de {username}</p>
-        </div>
+        ) : (
+          <div className="mb-8 text-center">
+            <div className="w-16 h-16 bg-[#093E7A]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="text-[#093E7A]" size={32} />
+            </div>
+            <h2 className="text-2xl font-black text-gray-800">Seguridad</h2>
+            <p className="text-gray-500 mt-2 text-sm">Gestiona el acceso a tu cuenta de {username}</p>
+          </div>
+        )}
 
         {status && (
           <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${status.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>

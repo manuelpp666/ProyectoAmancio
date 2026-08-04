@@ -65,6 +65,13 @@ export default function LoginPage() {
         data.permisos 
       )
 
+      // Si todavía usa la contraseña inicial y el colegio exige cambiarla,
+      // entra directo al cambio de contraseña en lugar de a su panel.
+      if (data.debe_cambiar_password) {
+        router.push("/campus/perfil/cambiar-contrasena?inicial=1");
+        return;
+      }
+
       // Redirección "ciega" basada en el diccionario
       const destination = ROLE_ROUTES[data.rol as keyof typeof ROLE_ROUTES] || "/campus/campus-estudiante/inicio-campus";
       router.push(destination);

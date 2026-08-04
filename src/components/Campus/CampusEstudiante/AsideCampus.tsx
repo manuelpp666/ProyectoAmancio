@@ -89,11 +89,12 @@ export function AsideCampus({ isOpen, onClose }: { isOpen: boolean; onClose: () 
             <ChevronDown size={16} className={`transition-transform duration-300 ${isAlumnoOpen ? "rotate-180" : ""}`} />
           </button>
 
-          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isAlumnoOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0"}`}>
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isAlumnoOpen ? "max-h-72 opacity-100" : "max-h-0 opacity-0"}`}>
             <div className="ml-7 pr-4 py-1 space-y-1 border-l border-white/10">
               <Link href={`${BASE}/alumno/conducta`} onClick={onClose} className={claseSubLink(esActivo(`${BASE}/alumno/conducta`))}>Conducta</Link>
               <Link href={`${BASE}/alumno/citas`} onClick={onClose} className={claseSubLink(esActivo(`${BASE}/alumno/citas`))}>Citas psicología</Link>
               <Link href={`${BASE}/alumno/notas`} onClick={onClose} className={claseSubLink(esActivo(`${BASE}/alumno/notas`))}>Notas</Link>
+              <Link href={`${BASE}/alumno/asistencia`} onClick={onClose} className={claseSubLink(esActivo(`${BASE}/alumno/asistencia`))}>Asistencia</Link>
               <Link href={`${BASE}/alumno`} onClick={onClose} className={claseSubLink(esActivo(`${BASE}/alumno`, true))}>Horario</Link>
               <Link href={`${BASE}/alumno/matricula`} onClick={onClose} className={claseSubLink(esActivo(`${BASE}/alumno/matricula`))}>Matrícula</Link>
             </div>

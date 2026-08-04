@@ -12,7 +12,8 @@ import {
   LayoutDashboard,
   ClipboardList,
   UserCog,
-  MessageSquare
+  MessageSquare,
+  ShieldCheck
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { usePermisos } from "@/src/hooks/usePermisos";
@@ -149,6 +150,17 @@ const getAcademicaPath = () => {
               icon={<MessageSquare size={20} />}
               label="Mensajería"
               active={pathname.includes("/panel-control/mensajeria")}
+              onClick={onClose}
+            />
+          )}
+
+          {/* 9. Seguridad de las cuentas */}
+          {tienePermiso('panel_control') && (
+            <SidebarLink
+              href="/campus/panel-control/seguridad"
+              icon={<ShieldCheck size={20} />}
+              label="Seguridad"
+              active={pathname.includes("/panel-control/seguridad")}
               onClick={onClose}
             />
           )}
