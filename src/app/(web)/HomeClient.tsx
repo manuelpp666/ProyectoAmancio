@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import * as LucideIcons from "lucide-react";
-import { ArrowRight, ChevronRight, PlayCircle, CalendarClock } from "lucide-react";
+import { ArrowRight, ChevronRight, PlayCircle, CalendarClock, Sun, GraduationCap } from "lucide-react";
 import { NoticiaResponse } from "@/src/interfaces/noticia";
 import { getNoticiaImagen } from "@/src/components/utils/youtube";
 import { extractoTexto } from "@/src/components/utils/html";
@@ -10,7 +10,37 @@ import { formatearFechaLarga } from "@/src/components/utils/fecha";
 import { esVideo } from "@/src/components/utils/media";
 import type { ConfigItem } from "@/src/hooks/useConfiguracion";
 
-interface AdmisionEstado { abierto: boolean; tipo?: string; proxima_inscripcion?: string; }
+interface InscripcionAbierta {
+  id_anio_escolar: string;
+  tipo: string;
+  fin_inscripcion?: string;
+}
+
+interface AdmisionEstado {
+  abierto: boolean;
+  tipo?: string;
+  proxima_inscripcion?: string;
+  // El backend puede devolver más de una inscripción vigente a la vez
+  // (por ejemplo, el año regular y el de verano solapados).
+  inscripciones?: InscripcionAbierta[];
+}
+
+// Etiqueta y descripción de cada tipo, para que se distinga a qué postula uno
+const ETIQUETA_ADMISION: Record<string, { titulo: string; detalle: string }> = {
+  VERANO: { titulo: "Admisión Verano", detalle: "Año académico de verano" },
+  REGULAR: { titulo: "Admisión Regular", detalle: "Año escolar 2026" },
+};
+
+const etiquetaDe = (tipo: string, anio?: string) => {
+  const base = ETIQUETA_ADMISION[(tipo || "").toUpperCase()];
+  if (base) {
+    return {
+      titulo: base.titulo,
+      detalle: tipo.toUpperCase() === "REGULAR" && anio ? `Año escolar ${anio}` : base.detalle,
+    };
+  }
+  return { titulo: `Admisión ${tipo}`, detalle: anio ? `Año ${anio}` : "" };
+};
 
 export default function HomeClient({
   config,
@@ -34,6 +64,16 @@ export default function HomeClient({
   const propuestas = getJsonVal<any[]>('home_enfoques', []);
   const niveles = getJsonVal<any[]>('home_niveles', []);
   const heroImagen = getVal('hero_imagen');
+
+  // Inscripciones vigentes. Si el backend es una versión anterior y solo manda
+  // `tipo`, se arma una lista de un elemento para no perder el botón.
+  const inscripciones: InscripcionAbierta[] =
+    admision.inscripciones && admision.inscripciones.length > 0
+      ? admision.inscripciones
+      : admision.abierto && admision.tipo
+        ? [{ id_anio_escolar: "", tipo: admision.tipo }]
+        : [];
+  const varias = inscripciones.length > 1;
 
   // Carrusel automático de propuestas
   useEffect(() => {
@@ -86,13 +126,41 @@ export default function HomeClient({
           <p className="text-lg sm:text-xl md:text-2xl text-white/85 mb-10 font-light max-w-2xl mx-auto leading-relaxed">
             {getVal('hero_subtitulo', "Excelencia académica y valores que trascienden generaciones.")}
           </p>
-          {admision.abierto ? (
-            <Link href="/admision">
-              <button className="bg-white text-[#701C32] px-8 sm:px-10 py-4 rounded-full font-bold text-base sm:text-lg hover:scale-105 transition-transform shadow-2xl flex items-center gap-2 mx-auto">
-                <span>{admision.tipo === "VERANO" ? "Admisión Verano" : "Admisión Regular"}</span>
-                <ArrowRight size={20} />
-              </button>
-            </Link>
+          {admision.abierto && inscripciones.length > 0 ? (
+            <div className={`flex flex-col sm:flex-row items-center justify-center gap-4 ${varias ? "sm:gap-5" : ""}`}>
+              {inscripciones.map((ins) => {
+                const { titulo, detalle } = etiquetaDe(ins.tipo, ins.id_anio_escolar);
+                const esVeranoIns = ins.tipo?.toUpperCase() === "VERANO";
+                return (
+                  <Link
+                    key={ins.id_anio_escolar}
+                    href={`/admision?tipo=${encodeURIComponent(ins.tipo)}&anio=${encodeURIComponent(ins.id_anio_escolar)}`}
+                    className="w-full sm:w-auto"
+                  >
+                    <button
+                      className={`w-full px-8 sm:px-10 py-4 rounded-full font-bold text-base sm:text-lg hover:scale-105 transition-transform shadow-2xl flex items-center justify-center gap-3 ${
+                        esVeranoIns && varias
+                          ? "bg-[#093E7A] text-white"
+                          : "bg-white text-[#701C32]"
+                      }`}
+                    >
+                      {esVeranoIns ? <Sun size={20} /> : <GraduationCap size={20} />}
+                      <span className="flex flex-col items-start leading-tight">
+                        <span>{titulo}</span>
+                        {/* Con dos convocatorias abiertas hay que dejar clarísimo
+                            cuál es cuál, así que se muestra el detalle debajo */}
+                        {varias && detalle && (
+                          <span className="text-[11px] font-semibold opacity-70 uppercase tracking-wide">
+                            {detalle}
+                          </span>
+                        )}
+                      </span>
+                      <ArrowRight size={20} />
+                    </button>
+                  </Link>
+                );
+              })}
+            </div>
           ) : admision.proxima_inscripcion ? (
             <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/30 text-white px-6 sm:px-8 py-4 rounded-full font-bold text-sm sm:text-lg shadow-lg mx-auto">
               <CalendarClock size={22} />

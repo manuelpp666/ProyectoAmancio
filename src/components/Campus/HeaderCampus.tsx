@@ -6,7 +6,7 @@ import { useUser } from "@/src/context/userContext";
 import { apiFetch } from "@/src/lib/api";
 
 export function HeaderCampus({ onOpenMenu }: { onOpenMenu: () => void }) {
-  const { username, role, id_usuario, logout } = useUser();
+  const { username, id_usuario, logout } = useUser();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [nombreCompleto, setNombreCompleto] = useState<string | null>(null);
   const [noVistas, setNoVistas] = useState(0);
@@ -125,16 +125,16 @@ export function HeaderCampus({ onOpenMenu }: { onOpenMenu: () => void }) {
               >
                 <User size={18} className="text-gray-400" /> Mis Datos
               </Link>
-              {/* Cambiar contraseña: solo disponible para el administrador */}
-              {role === "ADMIN" && (
-                <Link
-                  href="/campus/perfil/cambiar-contrasena"
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#701C32] transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <Key size={18} className="text-gray-400" /> Cambiar Contraseña
-                </Link>
-              )}
+              {/* Disponible para todos los roles: cada quien cambia SU propia
+                  contraseña. El backend impide tocar la de otro usuario, y este
+                  menú solo existe dentro del campus (con sesión iniciada). */}
+              <Link
+                href="/campus/perfil/cambiar-contrasena"
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#701C32] transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Key size={18} className="text-gray-400" /> Cambiar Contraseña
+              </Link>
 
               <div className="my-1 border-t border-gray-100" />
 

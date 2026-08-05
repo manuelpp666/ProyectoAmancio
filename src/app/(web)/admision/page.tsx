@@ -114,8 +114,17 @@ export default function AdmisionPage() {
     };
     fetchGrados();
 
-    // ¿Hay un año VERANO con inscripción abierta? -> activa el modo verano
+    // Modo verano. Cuando hay DOS convocatorias abiertas a la vez (regular y
+    // verano) no basta con detectar que verano está disponible: hay que
+    // respetar el botón que pulsó el postulante, que llega en ?tipo=.
+    // Tipo elegido en el inicio (?tipo=REGULAR o ?tipo=VERANO). Se lee aquí
+    // y no con useSearchParams para no obligar a envolver la página en un
+    // <Suspense>, que es lo que exige Next al prerenderizarla.
+    const tipoPedido = new URLSearchParams(window.location.search)
+      .get("tipo")?.toUpperCase() || "";
+
     const fetchVerano = async () => {
+      if (tipoPedido === "REGULAR") return;  // eligió explícitamente regular
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/verano/estado`);
         if (res.ok) {

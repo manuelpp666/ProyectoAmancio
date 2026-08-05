@@ -11,11 +11,12 @@ export default function Header() {
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
+  // "Docentes" queda deshabilitado a pedido del colegio. La página
+  // /docentes sigue existiendo; solo se quitó del menú público.
   const navLinks = [
     { name: "Inicio", href: "/" },
     { name: "Noticias", href: "/noticias" },
     { name: "Sobre Nosotros", href: "/acerca-de" },
-    { name: "Docentes", href: "/docentes" },
     { name: "Calendario", href: "/calendario" },
   ];
 

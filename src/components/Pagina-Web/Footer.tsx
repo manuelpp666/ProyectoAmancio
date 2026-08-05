@@ -100,7 +100,7 @@ export default function Footer() {
               <li><Link className="hover:text-[#FFF1E3] transition-colors" href="/campus">Campus</Link></li>
               <li><Link className="hover:text-[#FFF1E3] transition-colors" href="/noticias">Noticias</Link></li>
               <li><Link className="hover:text-[#FFF1E3] transition-colors" href="/acerca-de">Sobre Nosotros</Link></li>
-              <li><Link className="hover:text-[#FFF1E3] transition-colors" href="/docentes">Docentes</Link></li>
+              <li><Link className="hover:text-[#FFF1E3] transition-colors" href="/calendario">Calendario</Link></li>
             </ul>
           </div>
 

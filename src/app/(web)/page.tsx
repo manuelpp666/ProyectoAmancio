@@ -6,7 +6,13 @@ import { NoticiaResponse } from "@/src/interfaces/noticia";
 // Se revalida cada 60s: las visitas comparten la respuesta cacheada.
 export const revalidate = 60;
 
-interface AdmisionEstado { abierto: boolean; tipo?: string; proxima_inscripcion?: string; }
+interface InscripcionAbierta { id_anio_escolar: string; tipo: string; fin_inscripcion?: string; }
+interface AdmisionEstado {
+  abierto: boolean;
+  tipo?: string;
+  proxima_inscripcion?: string;
+  inscripciones?: InscripcionAbierta[];
+}
 
 export default async function Home() {
   const [config, noticias, admision] = await Promise.all([

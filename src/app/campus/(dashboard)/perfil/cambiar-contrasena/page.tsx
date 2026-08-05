@@ -113,7 +113,7 @@ export default function SecurityPage() {
 
         setStatus({ type: 'error', msg: errorMsg });
       }
-    } catch (error) {
+    } catch {
       setStatus({ type: 'error', msg: 'Error de conexión con el servidor' });
     } finally {
       setLoading(false);
