@@ -4,8 +4,10 @@ import { useUser } from "@/src/context/userContext";
 import { toast } from "sonner";
 import {
   Loader2, GraduationCap, CalendarCheck, ArrowRight, Send, X,
-  CheckCircle, Clock, XCircle, AlertCircle, FileText, School, BadgeCheck, Lock, CalendarClock
+  CheckCircle, Clock, XCircle, AlertCircle, FileText, School, BadgeCheck, Lock, CalendarClock,
+  AlertTriangle, Wallet
 } from "lucide-react";
+import Link from "next/link";
 import { apiFetch } from "@/src/lib/api";
 
 interface SolicitudMatricula {
@@ -38,8 +40,22 @@ interface InfoRenovacion {
   inscripciones_abiertas: boolean;
   inscripcion_inicio?: string | null;
   inscripcion_fin?: string | null;
+  // Estado de cuenta: con cargos vencidos no se puede renovar
+  al_dia: boolean;
+  deuda_vencida: number;
+  pagos_vencidos: PagoVencido[];
   solicitudes: SolicitudMatricula[];
 }
+
+interface PagoVencido {
+  id_pago: number;
+  concepto: string;
+  monto: number;
+  fecha_vencimiento?: string | null;
+}
+
+const soles = (n: number) =>
+  `S/ ${Number(n || 0).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const formatearFecha = (fecha?: string | null) =>
   fecha
@@ -333,6 +349,55 @@ export default function MatriculaPage() {
                 </div>
               )}
 
+              {/* DEUDA VENCIDA: bloquea la renovación */}
+              {!info.al_dia && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle size={16} className="text-red-600 shrink-0 mt-0.5" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-red-800 leading-relaxed">
+                        <span className="font-bold">Tienes pagos pendientes.</span> Para renovar tu
+                        matrícula primero debes regularizar tu deuda vencida.
+                      </p>
+
+                      <div className="mt-3 bg-white/70 rounded-lg border border-red-100 divide-y divide-red-50">
+                        {info.pagos_vencidos.slice(0, 4).map((p) => (
+                          <div key={p.id_pago} className="flex items-center justify-between gap-3 px-3 py-2">
+                            <span className="text-[11px] font-bold text-gray-700 truncate">
+                              {p.concepto}
+                            </span>
+                            <span className="text-[11px] font-black text-red-600 shrink-0">
+                              {soles(p.monto)}
+                            </span>
+                          </div>
+                        ))}
+                        {info.pagos_vencidos.length > 4 && (
+                          <p className="px-3 py-2 text-[11px] text-gray-400 font-medium">
+                            y {info.pagos_vencidos.length - 4} cargo(s) más...
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-red-200">
+                        <span className="text-[10px] font-black text-red-700 uppercase tracking-widest">
+                          Total vencido
+                        </span>
+                        <span className="text-lg font-black text-red-600">
+                          {soles(info.deuda_vencida)}
+                        </span>
+                      </div>
+
+                      <Link
+                        href="/campus/campus-estudiante/inicio-campus/tramites"
+                        className="mt-3 w-full inline-flex items-center justify-center gap-2 bg-[#093E7A] hover:bg-[#073365] text-white py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-colors"
+                      >
+                        <Wallet size={14} /> Ir a mi estado de cuenta
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <button
                 onClick={() => setIsModalOpen(true)}
                 disabled={!info.puede_solicitar}
@@ -343,11 +408,13 @@ export default function MatriculaPage() {
                   ? "Solicitar renovación de matrícula"
                   : info.solicitudes.some(s => s.anio_destino === info.anio_destino && ["PENDIENTE", "APROBADA"].includes(s.estado))
                     ? "Ya tienes una solicitud en curso"
-                    : info.inscripcion_estado === "PROXIMAMENTE"
-                      ? "Inscripciones aún no abiertas"
-                      : info.inscripcion_estado === "CERRADA"
-                        ? "Inscripciones cerradas"
-                        : "Renovación no disponible"}
+                    : !info.al_dia
+                      ? "Regulariza tu deuda para renovar"
+                      : info.inscripcion_estado === "PROXIMAMENTE"
+                        ? "Inscripciones aún no abiertas"
+                        : info.inscripcion_estado === "CERRADA"
+                          ? "Inscripciones cerradas"
+                          : "Renovación no disponible"}
               </button>
             </>
           )}

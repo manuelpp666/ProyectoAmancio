@@ -72,7 +72,8 @@ export default function GestionFinancieraPage() {
 
   //Estados para los filtros
   const [filtroTipoPago, setFiltroTipoPago] = useState("TODOS");
-  const [criterioFecha, setCriterioFecha] = useState<"pago" | "vencimiento">("vencimiento");
+  // Estado del pago: TODOS / PENDIENTE / VENCIDO / PAGADO
+  const [filtroEstado, setFiltroEstado] = useState("TODOS");
   const [anioFiltro, setAnioFiltro] = useState(new Date().getFullYear());
 
   // 2. Esta función es la que realmente llama a la API (se pasa al onConfirm del modal)
@@ -160,8 +161,18 @@ export default function GestionFinancieraPage() {
   const fetchTiposPago = async () => {
     try {
       const res = await apiFetch(`/finance/tipos-pago`);
-      if (res.ok) setTiposPago(await res.json());
-    } catch (e) { toast.error("Error cargando los tipos de pago"); }
+      if (res.ok) {
+        setTiposPago(await res.json());
+      } else {
+        let detalle = `El servidor respondió ${res.status}`;
+        try {
+          const err = await res.json();
+          if (typeof err?.detail === "string") detalle = err.detail;
+        } catch { /* respuesta sin cuerpo JSON */ }
+        setTiposPago([]);
+        toast.error("No se pudieron cargar los tipos de pago", { description: detalle });
+      }
+    } catch { toast.error("Error cargando los tipos de pago"); }
   };
 
   const fetchPagos = async () => {
@@ -170,15 +181,29 @@ export default function GestionFinancieraPage() {
       const params = new URLSearchParams();
       if (busqueda) params.append("busqueda", busqueda);
       if (filtroTipoPago !== "TODOS") params.append("tipo", filtroTipoPago);
+      if (filtroEstado !== "TODOS") params.append("estado", filtroEstado);
       params.append("anio", anioFiltro.toString());
-      params.append("criterio_fecha", criterioFecha);
+      // criterio_fecha ya no se envía: el backend elige la fecha adecuada
+      // según el estado (pagados por fecha de pago, deudas por vencimiento).
 
       const res = await apiFetch(`/finance/pagos/?${params.toString()}`);
       if (res.ok) {
         setPagos(await res.json());
+      } else {
+        // Antes un 4xx/5xx se ignoraba en silencio y la tabla quedaba vacía
+        // sin explicación. Ahora se muestra el detalle que manda el servidor.
+        let detalle = `El servidor respondió ${res.status}`;
+        try {
+          const err = await res.json();
+          if (typeof err?.detail === "string") detalle = err.detail;
+        } catch { /* respuesta sin cuerpo JSON */ }
+        setPagos([]);
+        toast.error("No se pudieron cargar los pagos", { description: detalle });
       }
-    } catch (e) {
-      toast.error("Error al filtrar pagos");
+    } catch {
+      toast.error("Error al filtrar pagos", {
+        description: "No se pudo contactar con el servidor.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -191,7 +216,7 @@ export default function GestionFinancieraPage() {
       }, 400); // Debounce para no saturar el servidor al escribir
       return () => clearTimeout(timer);
     }
-  }, [busqueda, filtroTipoPago, criterioFecha, anioFiltro, tabActiva]);
+  }, [busqueda, filtroTipoPago, filtroEstado, anioFiltro, tabActiva]);
 
   // --- HANDLERS MODAL TRÁMITE ---
   const openNew = () => {
@@ -634,23 +659,20 @@ export default function GestionFinancieraPage() {
                   </select>
                 </div>
 
-                {/* Switch de Criterio (Recaudación vs Deudas) */}
-                <div className="w-52">
-                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">Criterio de tiempo</label>
-                  <div className="flex bg-gray-100 p-1 rounded-lg border">
-                    <button
-                      onClick={() => setCriterioFecha("pago")}
-                      className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-all ${criterioFecha === 'pago' ? 'bg-white shadow text-[#093E7A]' : 'text-gray-500'}`}
-                    >
-                      PAGADOS
-                    </button>
-                    <button
-                      onClick={() => setCriterioFecha("vencimiento")}
-                      className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-all ${criterioFecha === 'vencimiento' ? 'bg-white shadow text-[#093E7A]' : 'text-gray-500'}`}
-                    >
-                      PENDIENTES
-                    </button>
-                  </div>
+                {/* Selector de Estado del pago (sustituye al antiguo criterio de tiempo) */}
+                <div className="w-48">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">Estado</label>
+                  <select
+                    className="w-full px-3 py-2 bg-gray-50 border rounded-lg text-sm outline-none"
+                    value={filtroEstado}
+                    onChange={(e) => setFiltroEstado(e.target.value)}
+                  >
+                    <option value="TODOS">Todos</option>
+                    <option value="PAGADO">Pagados</option>
+                    <option value="VENCIDO">Vencidos</option>
+                    <option value="PENDIENTE">Por pagar</option>
+                    <option value="ANULADO">Anulados</option>
+                  </select>
                 </div>
 
                 {/* Selector de Año */}
@@ -665,31 +687,45 @@ export default function GestionFinancieraPage() {
                 </div>
               </div>
 
-              {/* Estadísticos */}
+              {/* Estadísticos: se calculan sobre lo que hay en pantalla, así
+                  que acompañan a cualquier combinación de filtros */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white p-4 rounded-xl border border-l-4 border-l-green-500 shadow-sm">
                   <p className="text-[10px] font-black text-gray-400 uppercase">
-                    {criterioFecha === 'pago' ? 'Total Cobrado' : 'Total Proyectado'} ({anioFiltro})
+                    Cobrado ({anioFiltro})
                   </p>
                   <p className="text-2xl font-black text-gray-800">
                     S/ {pagos.filter(p => p.estado === "PAGADO").reduce((acc, p) => acc + Number(p.monto_total), 0).toFixed(2)}
                   </p>
                 </div>
-                {criterioFecha === 'vencimiento' && (
-                  <div className="bg-white p-4 rounded-xl border border-l-4 border-l-orange-500 shadow-sm">
-                    <p className="text-[10px] font-black text-gray-400 uppercase">Por Cobrar (Pendientes)</p>
-                    <p className="text-2xl font-black text-orange-600">
-                      S/ {pagos.filter(p => p.estado === "PENDIENTE").reduce((acc, p) => acc + Number(p.monto_total), 0).toFixed(2)}
-                    </p>
-                  </div>
-                )}
+                <div className="bg-white p-4 rounded-xl border border-l-4 border-l-red-500 shadow-sm">
+                  <p className="text-[10px] font-black text-gray-400 uppercase">Vencido</p>
+                  <p className="text-2xl font-black text-red-600">
+                    S/ {pagos.filter(p => {
+                      if (p.estado === "VENCIDO") return true;
+                      if (p.estado !== "PENDIENTE" || !p.fecha_vencimiento) return false;
+                      return new Date(p.fecha_vencimiento) < new Date();
+                    }).reduce((acc, p) => acc + Number(p.monto_total), 0).toFixed(2)}
+                  </p>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-l-4 border-l-orange-500 shadow-sm">
+                  <p className="text-[10px] font-black text-gray-400 uppercase">Por cobrar (aún no vence)</p>
+                  <p className="text-2xl font-black text-orange-600">
+                    S/ {pagos.filter(p => {
+                      if (p.estado !== "PENDIENTE") return false;
+                      if (!p.fecha_vencimiento) return true;
+                      return new Date(p.fecha_vencimiento) >= new Date();
+                    }).reduce((acc, p) => acc + Number(p.monto_total), 0).toFixed(2)}
+                  </p>
+                </div>
               </div>
 
               <div className="bg-white rounded-xl border shadow-sm overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[600px]">
+                <table className="w-full text-left border-collapse min-w-[820px]">
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase">F. Venc.</th>
+                      <th className="p-4 text-xs font-bold text-gray-500 uppercase">Alumno</th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase">Concepto</th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase">Monto</th>
                       <th className="p-4 text-xs font-bold text-gray-500 uppercase">Estado</th>
@@ -699,9 +735,9 @@ export default function GestionFinancieraPage() {
                   </thead>
                   <tbody className="divide-y text-sm">
                     {isLoading ? (
-                      <tr><td colSpan={6} className="p-10 text-center text-gray-400">Cargando pagos...</td></tr>
+                      <tr><td colSpan={7} className="p-10 text-center text-gray-400">Cargando pagos...</td></tr>
                     ) : pagos.length === 0 ? (
-                      <tr><td colSpan={6} className="p-10 text-center text-gray-400 italic">No hay pagos para los filtros seleccionados.</td></tr>
+                      <tr><td colSpan={7} className="p-10 text-center text-gray-400 italic">No hay pagos para los filtros seleccionados.</td></tr>
                     ) : pagos.map((p: any) => {
                       const hoy = new Date();
                       hoy.setHours(0, 0, 0, 0);
@@ -717,6 +753,17 @@ export default function GestionFinancieraPage() {
                               </span>
                               {p.fecha_pago && <span className="text-[10px] text-green-600">Pagado: {new Date(p.fecha_pago).toLocaleDateString()}</span>}
                               {estaVencido && <span className="text-[9px] font-black text-red-500 uppercase leading-none">Vencido</span>}
+                            </div>
+                          </td>
+
+                          <td className="p-4">
+                            <div className="flex flex-col leading-tight">
+                              <span className="font-bold text-gray-800">
+                                {p.alumno_nombre || "Alumno no encontrado"}
+                              </span>
+                              <span className="text-[11px] font-medium text-gray-400">
+                                DNI {p.dni_alumno || "---"}
+                              </span>
                             </div>
                           </td>
 
