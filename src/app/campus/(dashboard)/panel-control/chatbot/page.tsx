@@ -1,21 +1,36 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
 import { toast } from 'sonner'
 import { ConfirmModal } from '@/src/components/utils/ConfirmModal';
 import {
   FileText, Trash2,
   PlayCircle, CheckCircle2, Loader2, X, Send, Bot, MessageSquare
 } from "lucide-react";
+import ReactMarkdown from 'react-markdown';
 import { Chatbot } from '@/src/interfaces/chatbot';
 import { ChatMessage } from '@/src/interfaces/chatbot';
 import { apiFetch } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
 
+// Etapas que se muestran mientras se procesa el archivo. No reflejan un
+// progreso real medido en el backend (la subida es una sola petición/
+// respuesta), pero comunican honestamente QUÉ está pasando en ese momento,
+// que es lo que reduce la ansiedad de "pantalla congelada".
+const UPLOAD_STAGES = [
+  { label: "Subiendo archivo al servidor...", upTo: 20 },
+  { label: "Extrayendo texto y tablas...", upTo: 45 },
+  { label: "Revisando datos sensibles...", upTo: 60 },
+  { label: "Generando conocimiento (embeddings)...", upTo: 85 },
+  { label: "Verificando en la base de conocimiento...", upTo: 96 },
+];
+
 export default function ChatbotKnowledgePage() {
   const [documents, setDocuments] = useState<Chatbot[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStage, setUploadStage] = useState("");
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- ESTADOS PARA EL CHAT DE PRUEBA ---
@@ -52,6 +67,48 @@ export default function ChatbotKnowledgePage() {
 
   useEffect(() => { fetchDocuments(); }, []);
 
+  // Avanza el progreso simulado en "cámara lenta" (trickle): rápido al
+  // inicio, más lento a medida que se acerca al 96%, para nunca prometer un
+  // 100% que todavía no llegó. El texto de la etapa cambia junto al %,
+  // dándole al usuario una historia clara de qué está pasando en vez de
+  // un spinner mudo.
+  const startUploadProgress = () => {
+    setUploadProgress(2);
+    setUploadStage(UPLOAD_STAGES[0].label);
+    let stageIndex = 0;
+
+    progressIntervalRef.current = setInterval(() => {
+      setUploadProgress((prev) => {
+        const currentStage = UPLOAD_STAGES[stageIndex];
+        if (prev >= currentStage.upTo) {
+          if (stageIndex < UPLOAD_STAGES.length - 1) {
+            stageIndex += 1;
+            setUploadStage(UPLOAD_STAGES[stageIndex].label);
+          }
+          return prev; // se queda esperando en el techo de la etapa actual
+        }
+        // Avance decreciente: pasos grandes al inicio, chiquitos al final
+        const remaining = currentStage.upTo - prev;
+        const step = Math.max(0.5, remaining * 0.12);
+        return Math.min(currentStage.upTo, prev + step);
+      });
+    }, 350);
+  };
+
+  const stopUploadProgress = (success: boolean) => {
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    if (success) {
+      setUploadProgress(100);
+      setUploadStage("¡Listo!");
+    }
+    // Pequeña pausa para que se alcance a ver el 100% antes de resetear
+    setTimeout(() => {
+      setUploading(false);
+      setUploadProgress(0);
+      setUploadStage("");
+    }, success ? 600 : 0);
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -59,6 +116,8 @@ export default function ChatbotKnowledgePage() {
     formData.append('file', file);
     try {
       setUploading(true);
+      startUploadProgress();
+
       const res = await apiFetch("/chatbot/upload", {
         method: "POST",
         body: formData, // apiFetch detectará que es FormData y no pondrá JSON header
@@ -68,15 +127,37 @@ export default function ChatbotKnowledgePage() {
         const errorData = await res.json();
         throw new Error(errorData.detail || "Error al subir");
       }
+
+      const data = await res.json();
       toast.success("Documento entrenado correctamente");
+
+      // Si el backend detectó y redactó datos sensibles (DNI, teléfonos,
+      // correos, cuentas bancarias, etc.), avisamos al admin para que
+      // revise si en verdad quería subir ese archivo.
+      if (data.advertencia_seguridad) {
+        toast.warning(data.advertencia_seguridad, { duration: 8000 });
+      }
+      // Si quedaron fragmentos sin confirmar en Pinecone tras los reintentos
+      if (data.advertencia_chunks_faltantes) {
+        toast.warning(data.advertencia_chunks_faltantes, { duration: 10000 });
+      }
+
+      stopUploadProgress(true);
       fetchDocuments();
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || "Error al subir archivo");
+      toast.error(error.response?.data?.detail || error.message || "Error al subir archivo");
+      stopUploadProgress(false);
     } finally {
-      setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
+
+  // Limpieza del intervalo si el usuario navega fuera de la página a medio subir
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    };
+  }, []);
 
   // Función que abre el modal
   const confirmDelete = (id: number) => {
@@ -106,7 +187,14 @@ export default function ChatbotKnowledgePage() {
     });
   };
 
-  // --- LÓGICA DE PREGUNTA AL CHATBOT ---
+  // --- LÓGICA DE PREGUNTA AL CHATBOT (con streaming) ---
+  // El backend ahora devuelve el texto en fragmentos a medida que el modelo
+  // los genera (StreamingResponse), en vez de un solo JSON al final. Por eso
+  // usamos fetch + ReadableStream en lugar de axios (axios no puede leer un
+  // stream incremental en el navegador). Vamos actualizando el ÚLTIMO
+  // mensaje del historial en cada fragmento, dando el efecto "typewriter" y
+  // permitiendo que el usuario empiece a leer en 1-3s en vez de esperar la
+  // respuesta completa.
   const handleAsk = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMessage.trim() || isTyping) return;
@@ -120,8 +208,52 @@ export default function ChatbotKnowledgePage() {
       const formData = new FormData();
       formData.append('question', userText);
 
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/chatbot/ask`, formData);
-      setMessages(prev => [...prev, { role: 'bot', text: res.data.answer }]);
+      const res = await apiFetch("/chatbot/ask", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok || !res.body) {
+        throw new Error("Respuesta no válida del servidor");
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let accumulated = "";
+      let receivedAny = false;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        if (!value) continue;
+
+        const chunkText = decoder.decode(value, { stream: true });
+        if (!chunkText) continue;
+
+        accumulated += chunkText;
+        receivedAny = true;
+
+        // En cuanto llega el primer fragmento real, quitamos el indicador
+        // de "escribiendo..." y creamos/actualizamos el mensaje del bot.
+        setIsTyping(false);
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          // Mientras estamos en esta pregunta, el último mensaje solo puede
+          // ser el 'user' que acabamos de agregar (primer fragmento -> hay
+          // que crear el mensaje del bot) o el propio mensaje 'bot' que ya
+          // veníamos completando (fragmentos siguientes -> lo reemplazamos).
+          if (last?.role === 'bot') {
+            return [...prev.slice(0, -1), { role: 'bot', text: accumulated }];
+          }
+          return [...prev, { role: 'bot', text: accumulated }];
+        });
+      }
+
+      // Si el stream terminó sin haber mandado ni un fragmento (error
+      // silencioso en el backend antes de empezar a generar).
+      if (!receivedAny) {
+        setMessages(prev => [...prev, { role: 'bot', text: "Lo siento, hubo un error al procesar tu pregunta. 🍎" }]);
+      }
     } catch (error) {
       setMessages(prev => [...prev, { role: 'bot', text: "Lo siento, hubo un error al procesar tu pregunta. 🍎" }]);
     } finally {
@@ -156,14 +288,35 @@ export default function ChatbotKnowledgePage() {
               <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
                 <input type="file" hidden ref={fileInputRef} onChange={handleFileUpload} accept=".pdf,.docx" />
                 <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed border-gray-200 rounded-[1.5rem] p-12 flex flex-col items-center justify-center transition-all cursor-pointer group ${uploading ? 'opacity-50 pointer-events-none' : 'hover:bg-[#701C32]/[0.02]'}`}
+                  onClick={() => !uploading && fileInputRef.current?.click()}
+                  className={`border-2 border-dashed border-gray-200 rounded-[1.5rem] p-12 flex flex-col items-center justify-center transition-all group ${uploading ? 'cursor-default' : 'cursor-pointer hover:bg-[#701C32]/[0.02]'}`}
                 >
-                  <div className="bg-white p-5 rounded-2xl shadow-sm mb-4">
-                    {uploading ? <Loader2 size={40} className="text-[#701C32] animate-spin" /> : <FileText size={40} className="text-gray-400 group-hover:text-[#701C32]" />}
-                  </div>
-                  <p className="text-gray-900 font-black text-sm uppercase">{uploading ? 'Procesando e Indexando...' : 'Subir Nueva Información'}</p>
-                  <p className="text-gray-400 text-[11px] mt-1 font-bold uppercase">PDF, DOCX (Máx. 10MB)</p>
+                  {uploading ? (
+                    <div className="w-full max-w-xs flex flex-col items-center">
+                      <div className="bg-white p-5 rounded-2xl shadow-sm mb-4 relative">
+                        <Loader2 size={40} className="text-[#701C32] animate-spin" />
+                      </div>
+                      <p className="text-gray-900 font-black text-sm uppercase text-center mb-1">{uploadStage}</p>
+                      <p className="text-[#701C32] text-xs font-black mb-3">{Math.round(uploadProgress)}%</p>
+                      <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div
+                          className="bg-[#701C32] h-full rounded-full transition-all duration-300 ease-out"
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-gray-400 text-[10px] mt-3 font-bold uppercase text-center">
+                        No cierres esta ventana, esto puede tardar unos segundos según el tamaño del archivo
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="bg-white p-5 rounded-2xl shadow-sm mb-4">
+                        <FileText size={40} className="text-gray-400 group-hover:text-[#701C32]" />
+                      </div>
+                      <p className="text-gray-900 font-black text-sm uppercase">Subir Nueva Información</p>
+                      <p className="text-gray-400 text-[11px] mt-1 font-bold uppercase">PDF, DOCX (Máx. 10MB)</p>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -236,13 +389,33 @@ export default function ChatbotKnowledgePage() {
                 </div>
               )}
               {messages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] p-4 rounded-2xl text-[13px] font-medium leading-relaxed shadow-sm ${msg.role === 'user' ? 'bg-[#093E7A] text-white rounded-tr-none' : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
-                    }`}>
-                    {msg.text}
-                  </div>
-                </div>
-              ))}
+  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+    <div className={`max-w-[85%] p-4 rounded-2xl text-[13px] font-medium leading-relaxed shadow-sm ${
+      msg.role === 'user' 
+        ? 'bg-[#093E7A] text-white rounded-tr-none' 
+        : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none prose prose-sm max-w-none'
+    }`}>
+      {msg.role === 'user' ? (
+        msg.text
+      ) : (
+        <ReactMarkdown
+          components={{
+            // Formatea listas con viñetas limpias
+            ul: ({ children }) => <ul className="list-disc pl-4 my-1 space-y-1">{children}</ul>,
+            ol: ({ children }) => <ol className="list-decimal pl-4 my-1 space-y-1">{children}</ol>,
+            li: ({ children }) => <li className="my-0.5">{children}</li>,
+            // Párrafos con separación fluida
+            p: ({ children }) => <p className="my-1.5 leading-normal">{children}</p>,
+            // Negritas sutiles
+            strong: ({ children }) => <strong className="font-black text-gray-900">{children}</strong>,
+          }}
+        >
+          {msg.text}
+        </ReactMarkdown>
+      )}
+    </div>
+  </div>
+))}
               {isTyping && (
                 <div className="flex justify-start">
                   <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-gray-100 shadow-sm flex gap-1">

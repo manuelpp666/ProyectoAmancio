@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown'; // <--- 1. Importación agregada
 import axios from 'axios';
 import { MessageCircle, X, Send, Bot, Loader2 } from 'lucide-react';
 
@@ -81,7 +82,23 @@ export default function ChatWidget() {
                   ? 'bg-[#701C32] text-white rounded-tr-none' 
                   : 'bg-white text-gray-700 border border-gray-100 rounded-tl-none'
                 }`}>
-                  {msg.text}
+                  {/* 2. Renderizado condicional según el rol */}
+                  {msg.role === 'user' ? (
+                    msg.text
+                  ) : (
+                    <ReactMarkdown
+                      components={{
+                        // Estilos adaptados para espacios reducidos en el widget flotante
+                        ul: ({ children }) => <ul className="list-disc pl-4 my-1 space-y-1">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal pl-4 my-1 space-y-1">{children}</ol>,
+                        li: ({ children }) => <li className="my-0.5">{children}</li>,
+                        p: ({ children }) => <p className="my-1 leading-normal">{children}</p>,
+                        strong: ({ children }) => <strong className="font-extrabold text-gray-900">{children}</strong>,
+                      }}
+                    >
+                      {msg.text}
+                    </ReactMarkdown>
+                  )}
                 </div>
               </div>
             ))}
