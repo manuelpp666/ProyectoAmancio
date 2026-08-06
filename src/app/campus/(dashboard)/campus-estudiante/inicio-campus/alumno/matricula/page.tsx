@@ -237,7 +237,7 @@ export default function MatriculaPage() {
               </h2>
               <p className="text-white/70 text-xs mb-6">DNI: {info.alumno.dni || "—"}</p>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
                   <p className="text-[9px] uppercase font-bold text-white/60">Año escolar</p>
                   <p className="font-black text-lg">{info.matricula_actual.anio}</p>

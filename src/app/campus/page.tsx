@@ -65,9 +65,9 @@ export default function LoginPage() {
         data.permisos 
       )
 
-      // Si todavía usa la contraseña inicial y el colegio exige cambiarla,
-      // entra directo al cambio de contraseña en lugar de a su panel.
-      if (data.debe_cambiar_password) {
+      // Si le falta algo del primer ingreso (definir su contraseña o dejar un
+      // correo de contacto), pasa por esa pantalla antes que por su panel.
+      if (data.debe_cambiar_password || data.debe_registrar_correo) {
         router.push("/campus/perfil/cambiar-contrasena?inicial=1");
         return;
       }

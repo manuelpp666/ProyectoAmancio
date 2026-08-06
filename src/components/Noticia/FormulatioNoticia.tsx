@@ -213,7 +213,7 @@ export function NoticiaForm({ initialData, onSubmit, loading }: NoticiaFormProps
                 </div>
             </div>
 
-            <footer className="h-24 border-t bg-white px-8 flex items-center justify-end gap-4 shrink-0 shadow-md">
+            <footer className="h-24 border-t bg-white px-4 md:px-8 flex items-center justify-end gap-4 shrink-0 shadow-md">
                 <button
                     type="button"
                     className="flex items-center gap-2 px-6 py-3 text-gray-500 font-bold text-xs uppercase"

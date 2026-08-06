@@ -95,7 +95,7 @@ export default function CalendarioPage() {
         <HeaderPanel />
 
         {/* BARRA SUPERIOR ESTÁNDAR */}
-        <div className="h-16 border-b bg-white flex items-center justify-between px-8 shrink-0 gap-4">
+        <div className="h-16 border-b bg-white flex items-center justify-between px-4 md:px-8 shrink-0 gap-4">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[#093E7A]">calendar_month</span>
@@ -125,7 +125,7 @@ export default function CalendarioPage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 space-y-12 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-12 custom-scrollbar">
           <section className="max-w-6xl mx-auto w-full">
 
             {/* TABLA DE EVENTOS */}

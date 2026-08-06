@@ -20,7 +20,7 @@ export default function MensajeriaAdminPage() {
   return (
     <RoleGuard modulo="mensajeria">
       <div className="flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
-        <div className="h-16 border-b bg-white flex items-center gap-2 px-8 shrink-0">
+        <div className="h-16 border-b bg-white flex items-center gap-2 px-4 md:px-8 shrink-0">
           <MessageSquare className="text-[#701C32]" size={22} />
           <h2 className="text-xl font-bold text-gray-800">Mensajería</h2>
         </div>

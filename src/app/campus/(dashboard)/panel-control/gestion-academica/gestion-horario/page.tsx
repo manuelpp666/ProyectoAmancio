@@ -345,7 +345,7 @@ export default function ConstructorHorariosPage() {
             <HeaderPanel />
           </div>
 
-          <div className="h-16 border-b bg-white flex items-center justify-between px-8 shrink-0 no-print">
+          <div className="h-16 border-b bg-white flex items-center justify-between px-4 md:px-8 shrink-0 no-print">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[#093E7A]">calendar_month</span>
               <h2 className="text-xl font-bold text-gray-800">Constructor de Horarios{anioPlanificacion ? ` ${anioPlanificacion}` : ""}</h2>
@@ -373,7 +373,7 @@ export default function ConstructorHorariosPage() {
             </div>
           </div>
 
-          <div className="bg-white px-8 border-b shrink-0 flex gap-6 overflow-x-auto no-print">
+          <div className="bg-white px-4 md:px-8 border-b shrink-0 flex gap-6 overflow-x-auto no-print">
             {secciones.length === 0 ? (
               <span className="py-4 text-sm font-medium text-gray-400 italic">
                 No hay secciones registradas para este año.
@@ -443,7 +443,7 @@ export default function ConstructorHorariosPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto bg-gray-100 p-8">
+            <div className="flex-1 overflow-auto bg-gray-100 p-4 md:p-8">
               <div ref={contentRef} id="print-content" className="bg-white rounded-xl shadow-lg border border-gray-200 min-w-[900px] overflow-hidden">
 
                 <div className="hidden print:block text-center mb-8">

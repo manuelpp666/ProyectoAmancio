@@ -7,6 +7,15 @@ import EdadBadge from "@/src/components/utils/CalcularEdad";
 import { apiFetch } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
 import { ModalEditarEstudiante } from "@/src/components/Campus/PanelControl/ModalEditarEstudiante";
+import { usePermisos } from "@/src/hooks/usePermisos";
+
+// Pestañas del apartado. Los `id` coinciden con el catálogo de permisos.
+const PESTANAS_ESTUDIANTES = [
+    { id: "estudiantes", label: "Estudiantes", icon: "group" },
+    { id: "postulantes", label: "Solicitudes de Admisión", icon: "pending_actions" },
+    { id: "renovaciones", label: "Renovaciones de Matrícula", icon: "autorenew" },
+    { id: "verano", label: "Inscripciones de Verano", icon: "wb_sunny" },
+] as const;
 
 function InfoItem({ label, value }: { label: string, value: string }) {
     return (
@@ -24,6 +33,15 @@ export default function GestionEstudiantesPage() {
     const [loading, setLoading] = useState(true);
     // Vista actual: "estudiantes" | "postulantes" | "renovaciones" | "verano"
     const [vista, setVista] = useState<"estudiantes" | "postulantes" | "renovaciones" | "verano">("estudiantes");
+    const { tienePermiso, loading: loadingPermisos } = usePermisos();
+
+    // Si la pestaña abierta no está permitida, se abre la primera que sí lo esté
+    useEffect(() => {
+        if (loadingPermisos) return;
+        if (tienePermiso("gestion_estudiantes", vista)) return;
+        const primera = PESTANAS_ESTUDIANTES.find((t) => tienePermiso("gestion_estudiantes", t.id));
+        if (primera) setVista(primera.id);
+    }, [loadingPermisos, vista, tienePermiso]);
     // --- Inscripciones de verano ---
     const [veranoSolicitudes, setVeranoSolicitudes] = useState<any[]>([]);
     const [modalInfo, setModalInfo] = useState<{ abierto: boolean, datos: any | null }>({
@@ -234,7 +252,7 @@ export default function GestionEstudiantesPage() {
                 <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
 
                     {/* HEADER CON TABS */}
-                    <div className="bg-white border-b px-8 shrink-0">
+                    <div className="bg-white border-b px-4 md:px-8 shrink-0">
                         <div className="h-16 flex items-center">
                             <div className="flex items-center gap-2">
                                 <span className="material-symbols-outlined text-[#093E7A]">school</span>
@@ -247,14 +265,9 @@ export default function GestionEstudiantesPage() {
                             </div>
                         </div>
 
-                        {/* PESTAÑAS */}
-                        <div className="flex gap-8">
-                            {([
-                                { id: "estudiantes", label: "Estudiantes", icon: "group" },
-                                { id: "postulantes", label: "Solicitudes de Admisión", icon: "pending_actions" },
-                                { id: "renovaciones", label: "Renovaciones de Matrícula", icon: "autorenew" },
-                                { id: "verano", label: "Inscripciones de Verano", icon: "wb_sunny" },
-                            ] as const).map((tab) => (
+                        {/* PESTAÑAS: solo las permitidas para este administrador */}
+                        <div className="barra-pestanas gap-6 md:gap-8">
+                            {PESTANAS_ESTUDIANTES.filter((t) => tienePermiso("gestion_estudiantes", t.id)).map((tab) => (
                                 <button
                                     key={tab.id}
                                     onClick={() => setVista(tab.id)}
@@ -271,7 +284,7 @@ export default function GestionEstudiantesPage() {
                     </div>
 
                     {/* CUERPO */}
-                    <div className="flex-1 p-8 overflow-y-auto">
+                    <div className="flex-1 p-4 md:p-8 overflow-y-auto">
                         {/* Barra de búsqueda + registro dedicado */}
                         {vista !== "renovaciones" && vista !== "verano" && (
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
@@ -608,7 +621,7 @@ export default function GestionEstudiantesPage() {
                                             <span className="w-2 h-2 bg-[#093E7A] rounded-full"></span>
                                             Información Personal
                                         </h4>
-                                        <div className="grid grid-cols-2 gap-y-6 gap-x-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
                                             <InfoItem label="Nombres" value={modalInfo.datos.alumno.nombres} />
                                             <InfoItem label="Apellidos" value={modalInfo.datos.alumno.apellidos} />
                                             <InfoItem label="DNI" value={modalInfo.datos.alumno.dni} />

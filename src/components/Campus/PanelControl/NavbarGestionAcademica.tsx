@@ -17,8 +17,8 @@ export default function HeaderPanel() {
     };
 
     return (
-        <div className="bg-white px-8">
-            <div className="flex gap-8 border-b">
+        <div className="bg-white px-4 md:px-8">
+            <div className="barra-pestanas gap-6 md:gap-8 border-b">
                 {/* Estructura Escolar */}
                 {tienePermiso("academico", "estructura") && (
                     <Link href="/campus/panel-control/gestion-academica">

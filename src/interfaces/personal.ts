@@ -1,27 +1,14 @@
 export type TipoPersonal = "admin" | "docente" | "auxiliar" | "psicologo";
 
 
-export interface PermisosAdmin {
-  panel_control?: boolean;
-  gestion_estudiantes?: boolean;
-  gestion_personal?: boolean;
-  tramites_finanzas?: boolean;
-  chatbot?: boolean;
-  mensajeria?: boolean;
-  academico?: {
-    estructura?: boolean;
-    horarios?: boolean;
-    docentes?: boolean;
-    estudiantes?: boolean;
-    cursos?: boolean;
-  };
-  contenido_web?: {
-    info_general?: boolean;
-    noticias?: boolean;
-    calendario?: boolean;
-  };
-  all?: boolean; 
-}
+/**
+ * Árbol de permisos de un administrador: apartado → pestaña → subpestaña.
+ *
+ * No se enumeran las claves aquí a propósito. La lista viva está en
+ * src/config/permisos.ts (CATALOGO_PERMISOS), y duplicarla como tipo obligaba
+ * a tocar dos sitios cada vez que el panel gana una pestaña.
+ */
+export type PermisosAdmin = Record<string, unknown>;
 
 export interface Personal {
   id: number;

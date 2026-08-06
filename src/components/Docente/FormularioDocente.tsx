@@ -92,7 +92,7 @@ export function DocenteForm({ initialData, onSubmit, loading }: DocenteFormProps
 
       {/* Sección 01: Información Personal */}
       <section className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-8 py-5 border-b border-gray-50 bg-gray-50/30 flex items-center justify-between">
+        <div className="px-4 md:px-8 py-5 border-b border-gray-50 bg-gray-50/30 flex items-center justify-between">
           <h3 className="text-[11px] font-black text-[#093E7A] uppercase tracking-[0.2em] flex items-center gap-2">
             <User size={16} />
             01. Información Personal
@@ -159,7 +159,7 @@ export function DocenteForm({ initialData, onSubmit, loading }: DocenteFormProps
 
       {/* Sección 02: Especialidad */}
       <section className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-8 py-5 border-b border-gray-50 bg-gray-50/30">
+        <div className="px-4 md:px-8 py-5 border-b border-gray-50 bg-gray-50/30">
           <h3 className="text-[11px] font-black text-[#093E7A] uppercase tracking-[0.2em] flex items-center gap-2">
             <Award size={16} />
             02. Perfil Académico

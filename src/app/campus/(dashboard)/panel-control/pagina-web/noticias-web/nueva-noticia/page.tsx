@@ -55,7 +55,7 @@ export default function CrearNoticiaPage() {
     
     <div className="h-full bg-[#F8FAFC] flex flex-col overflow-hidden">
       {/* Header Superior */}
-      <header className="h-16 bg-white border-b border-gray-100 px-8 flex items-center justify-between shrink-0">
+      <header className="h-16 bg-white border-b border-gray-100 px-4 md:px-8 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <Link href="/campus/panel-control/pagina-web/noticias-web" className="w-9 h-9 flex items-center justify-center hover:bg-gray-50 rounded-full transition-colors text-gray-400">
             <ArrowLeft size={20} />

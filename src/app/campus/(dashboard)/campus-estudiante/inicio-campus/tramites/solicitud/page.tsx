@@ -130,7 +130,7 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
     <div className="flex flex-col h-full bg-[#F8FAFC]">
 
       {/* HEADER */}
-      <div className="h-20 bg-white border-b px-8 flex items-center justify-between shrink-0">
+      <div className="h-20 bg-white border-b px-4 md:px-8 flex items-center justify-between shrink-0">
         <div>
           <h1 className="text-2xl font-black text-gray-800 flex items-center gap-3">
             <FileText className="text-[#701C32]" />
@@ -149,7 +149,7 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
       </div>
 
       {/* CONTENIDO */}
-      <div className="flex-1 p-8 overflow-y-auto">
+      <div className="flex-1 p-4 md:p-8 overflow-y-auto">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 text-gray-400">
             <Loader2 className="animate-spin mb-2" />

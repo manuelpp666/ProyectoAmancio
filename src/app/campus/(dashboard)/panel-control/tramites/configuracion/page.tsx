@@ -7,6 +7,7 @@ import { Grado } from "@/src/interfaces/academic";
 import { Tramite } from "@/src/interfaces/tramite";
 import { apiFetch } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
+import { usePermisos } from "@/src/hooks/usePermisos";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // --- NUEVA INTERFAZ PARA TIPOS DE PAGO ---
@@ -23,10 +24,35 @@ interface TipoPago {
   periodo_academico: string; // REGULAR / VERANO / AMBOS
 }
 
+const MESES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+];
+
+// Pestañas del apartado. `permiso` es su clave en el catálogo de permisos
+// (src/config/permisos.ts); el id lleva guion por compatibilidad con el estado.
+const PESTANAS_FINANZAS = [
+  { id: 'config', permiso: 'config', label: 'Tarifario/Trámites', icon: 'settings' },
+  { id: 'solicitudes', permiso: 'solicitudes', label: 'Atención de Solicitudes', icon: 'mark_as_unread' },
+  { id: 'tipos-pagos', permiso: 'tipos_pagos', label: 'Tipos de Pagos', icon: 'receipt_long' },
+  { id: 'recaudacion', permiso: 'recaudacion', label: 'Caja y Recaudación', icon: 'account_balance_wallet' },
+] as const;
+
 export default function GestionFinancieraPage() {
   // --- ESTADOS ---
   // Se agregó "tipos-pagos" a los tipos de tabActiva
+  const { tienePermiso, loading: loadingPermisos } = usePermisos();
   const [tabActiva, setTabActiva] = useState<"config" | "solicitudes" | "tipos-pagos" | "recaudacion">("config");
+
+  // Si la pestaña abierta está cerrada para este administrador, se abre la
+  // primera que sí tenga permitida.
+  useEffect(() => {
+    if (loadingPermisos) return;
+    const actual = PESTANAS_FINANZAS.find(t => t.id === tabActiva);
+    if (actual && tienePermiso("tramites_finanzas", actual.permiso)) return;
+    const primera = PESTANAS_FINANZAS.find(t => tienePermiso("tramites_finanzas", t.permiso));
+    if (primera) setTabActiva(primera.id as any);
+  }, [loadingPermisos, tabActiva, tienePermiso]);
   const [isLoading, setIsLoading] = useState(false);
   const [busqueda, setBusqueda] = useState("");
 
@@ -74,6 +100,8 @@ export default function GestionFinancieraPage() {
   const [filtroTipoPago, setFiltroTipoPago] = useState("TODOS");
   // Estado del pago: TODOS / PENDIENTE / VENCIDO / PAGADO
   const [filtroEstado, setFiltroEstado] = useState("TODOS");
+  // Mes del periodo: "TODOS" o "1".."12"
+  const [filtroMes, setFiltroMes] = useState("TODOS");
   const [anioFiltro, setAnioFiltro] = useState(new Date().getFullYear());
 
   // 2. Esta función es la que realmente llama a la API (se pasa al onConfirm del modal)
@@ -182,6 +210,7 @@ export default function GestionFinancieraPage() {
       if (busqueda) params.append("busqueda", busqueda);
       if (filtroTipoPago !== "TODOS") params.append("tipo", filtroTipoPago);
       if (filtroEstado !== "TODOS") params.append("estado", filtroEstado);
+      if (filtroMes !== "TODOS") params.append("mes", filtroMes);
       params.append("anio", anioFiltro.toString());
       // criterio_fecha ya no se envía: el backend elige la fecha adecuada
       // según el estado (pagados por fecha de pago, deudas por vencimiento).
@@ -216,7 +245,7 @@ export default function GestionFinancieraPage() {
       }, 400); // Debounce para no saturar el servidor al escribir
       return () => clearTimeout(timer);
     }
-  }, [busqueda, filtroTipoPago, filtroEstado, anioFiltro, tabActiva]);
+  }, [busqueda, filtroTipoPago, filtroEstado, filtroMes, anioFiltro, tabActiva]);
 
   // --- HANDLERS MODAL TRÁMITE ---
   const openNew = () => {
@@ -389,10 +418,14 @@ export default function GestionFinancieraPage() {
     <RoleGuard modulo="tramites_finanzas">
     
     <div className="flex h-full overflow-hidden bg-[#F8FAFC]">
-      <div className="flex-1 flex flex-col">
+      {/* min-w-0: sin esto la columna se estira hasta el ancho de su contenido
+          (regla min-width:auto de flexbox) y en móvil la barra de pestañas
+          quedaba cortada por el overflow-hidden del padre en vez de poder
+          desplazarse. */}
+      <div className="flex-1 flex flex-col min-w-0">
 
         {/* HEADER CON TABS */}
-        <div className="bg-white border-b px-8 shrink-0">
+        <div className="bg-white border-b px-4 md:px-8 shrink-0">
           <div className="h-16 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[#093E7A]">payments</span>
@@ -400,13 +433,8 @@ export default function GestionFinancieraPage() {
             </div>
           </div>
 
-          <div className="flex gap-8">
-            {[
-              { id: 'config', label: 'Tarifario/Trámites', icon: 'settings' },
-              { id: 'solicitudes', label: 'Atención de Solicitudes', icon: 'mark_as_unread' },
-              { id: 'tipos-pagos', label: 'Tipos de Pagos', icon: 'receipt_long' }, // NUEVA PESTAÑA AÑADIDA AQUÍ
-              { id: 'recaudacion', label: 'Caja y Recaudación', icon: 'account_balance_wallet' }
-            ].map(t => (
+          <div className="barra-pestanas gap-6 md:gap-8">
+            {PESTANAS_FINANZAS.filter(t => tienePermiso("tramites_finanzas", t.permiso)).map(t => (
               <button
                 key={t.id}
                 onClick={() => setTabActiva(t.id as any)}
@@ -420,7 +448,7 @@ export default function GestionFinancieraPage() {
           </div>
         </div>
 
-        <div className="flex-1 p-8 overflow-y-auto">
+        <div className="flex-1 p-4 md:p-8 overflow-y-auto">
           {tabActiva === "config" && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
@@ -675,6 +703,21 @@ export default function GestionFinancieraPage() {
                   </select>
                 </div>
 
+                {/* Selector de Mes */}
+                <div className="w-40">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">Mes</label>
+                  <select
+                    className="w-full px-3 py-2 bg-gray-50 border rounded-lg text-sm outline-none"
+                    value={filtroMes}
+                    onChange={(e) => setFiltroMes(e.target.value)}
+                  >
+                    <option value="TODOS">Todo el año</option>
+                    {MESES.map((m, i) => (
+                      <option key={m} value={String(i + 1)}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Selector de Año */}
                 <div className="w-28">
                   <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">Año</label>
@@ -684,39 +727,6 @@ export default function GestionFinancieraPage() {
                     value={anioFiltro}
                     onChange={(e) => setAnioFiltro(parseInt(e.target.value))}
                   />
-                </div>
-              </div>
-
-              {/* Estadísticos: se calculan sobre lo que hay en pantalla, así
-                  que acompañan a cualquier combinación de filtros */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white p-4 rounded-xl border border-l-4 border-l-green-500 shadow-sm">
-                  <p className="text-[10px] font-black text-gray-400 uppercase">
-                    Cobrado ({anioFiltro})
-                  </p>
-                  <p className="text-2xl font-black text-gray-800">
-                    S/ {pagos.filter(p => p.estado === "PAGADO").reduce((acc, p) => acc + Number(p.monto_total), 0).toFixed(2)}
-                  </p>
-                </div>
-                <div className="bg-white p-4 rounded-xl border border-l-4 border-l-red-500 shadow-sm">
-                  <p className="text-[10px] font-black text-gray-400 uppercase">Vencido</p>
-                  <p className="text-2xl font-black text-red-600">
-                    S/ {pagos.filter(p => {
-                      if (p.estado === "VENCIDO") return true;
-                      if (p.estado !== "PENDIENTE" || !p.fecha_vencimiento) return false;
-                      return new Date(p.fecha_vencimiento) < new Date();
-                    }).reduce((acc, p) => acc + Number(p.monto_total), 0).toFixed(2)}
-                  </p>
-                </div>
-                <div className="bg-white p-4 rounded-xl border border-l-4 border-l-orange-500 shadow-sm">
-                  <p className="text-[10px] font-black text-gray-400 uppercase">Por cobrar (aún no vence)</p>
-                  <p className="text-2xl font-black text-orange-600">
-                    S/ {pagos.filter(p => {
-                      if (p.estado !== "PENDIENTE") return false;
-                      if (!p.fecha_vencimiento) return true;
-                      return new Date(p.fecha_vencimiento) >= new Date();
-                    }).reduce((acc, p) => acc + Number(p.monto_total), 0).toFixed(2)}
-                  </p>
                 </div>
               </div>
 
@@ -837,7 +847,7 @@ export default function GestionFinancieraPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Costo (S/)</label>
                   <input required type="number" step="0.01" min="0" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
@@ -883,7 +893,7 @@ export default function GestionFinancieraPage() {
               {formData.alcance === "GRADOS" && (
                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Seleccionar Grados Permitidos</label>
-                  <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto pr-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-32 overflow-y-auto pr-2">
                     {grados.map(g => (
                       <label key={g.id_grado} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-gray-100 p-1 rounded select-none">
                         <input type="checkbox" checked={formData.grados_seleccionados.includes(g.id_grado)}
@@ -1013,7 +1023,7 @@ export default function GestionFinancieraPage() {
                   </select>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Válido Desde / Inicio</label>
                     <div className="flex gap-2">
@@ -1039,7 +1049,7 @@ export default function GestionFinancieraPage() {
                 </div>
               )}
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Costo Base (S/)</label>
                   <input required type="number" min="0" step="0.01" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" value={formDataTipoPago.costo} onChange={e => setFormDataTipoPago({...formDataTipoPago, costo: parseFloat(e.target.value)})} />
@@ -1102,7 +1112,7 @@ export default function GestionFinancieraPage() {
                 <input required type="text" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
                   value={editPagoData.concepto} onChange={e => setEditPagoData({ ...editPagoData, concepto: e.target.value })} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Monto (S/)</label>
                   <input required type="number" min="0" step="0.01" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
@@ -1114,7 +1124,7 @@ export default function GestionFinancieraPage() {
                     value={editPagoData.mora} onChange={e => setEditPagoData({ ...editPagoData, mora: parseFloat(e.target.value) || 0 })} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fecha Vencimiento</label>
                   <input type="date" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"

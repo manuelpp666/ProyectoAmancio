@@ -1,11 +1,19 @@
 "use client";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { UserPlus, Edit, ShieldCheck, BookOpen, Briefcase, HeartHandshake, Power, PowerOff, X, Globe, Search } from "lucide-react";
+import {
+  UserPlus, Edit, ShieldCheck, BookOpen, Briefcase, HeartHandshake, Power, PowerOff, X, Search,
+  LayoutDashboard, Users, UserCog, ClipboardList, GraduationCap, Globe, Bot, MessageSquare,
+} from "lucide-react";
 import { Personal } from "@/src/interfaces/personal";
 import { TipoPersonal } from "@/src/interfaces/personal";
 import { apiFetch } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
+import { usePermisos } from "@/src/hooks/usePermisos";
+import {
+  CATALOGO_PERMISOS, NodoPermiso, Permisos,
+  normalizar, establecer, estadoCasilla, contarCasillas, permisosCompletos, apagar,
+} from "@/src/config/permisos";
 
 const TIPO_CONFIG: Record<string, { label: string; icon: any; desc: string }> = {
   admin: {
@@ -30,7 +38,16 @@ const TIPO_CONFIG: Record<string, { label: string; icon: any; desc: string }> = 
   }
 };
 
+// Pestañas de este apartado. Los `id` coinciden con el catálogo de permisos.
+const PESTANAS_PERSONAL: { id: TipoPersonal; label: string; icon: any }[] = [
+  { id: "admin", label: "Administradores", icon: ShieldCheck },
+  { id: "docente", label: "Docentes", icon: BookOpen },
+  { id: "auxiliar", label: "Auxiliares", icon: Briefcase },
+  { id: "psicologo", label: "Psicólogos", icon: HeartHandshake },
+];
+
 export default function GestionPersonalPage() {
+  const { tienePermiso, loading: loadingPermisos } = usePermisos();
   const [activeTab, setActiveTab] = useState<TipoPersonal>("admin");
   const [personal, setPersonal] = useState<Personal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,42 +61,19 @@ export default function GestionPersonalPage() {
   const [isPermisosModalOpen, setIsPermisosModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<Personal | null>(null);
 
+  // Los permisos guardados se completan contra el catálogo actual: lo que ya
+  // estaba decidido se respeta y lo que nunca se configuró entra activado.
   const openPermisos = (p: Personal) => {
-  // 1. Estructura base para evitar que el modal explote si el JSON está vacío
-  const estructuraBase = {
-    panel_control: true,
-    gestion_estudiantes: false,
-    gestion_personal: false,
-    tramites_finanzas: false,
-    chatbot: false,
-    mensajeria: false,
-    academico: { estructura: false, horarios: false, docentes: false, estudiantes: false, cursos: false },
-    contenido_web: { info_general: false, noticias: false, calendario: false }
+    setSelectedUser({ ...p, permisos: normalizar(p.permisos) });
+    setIsPermisosModalOpen(true);
   };
 
-  // 2. Combinamos lo que viene de la base de datos (p.permisos) con la base
-  // Usamos una combinación manual para asegurar que los objetos anidados existan
-  const permisosActuales = {
-    ...estructuraBase,
-    ...(p.permisos || {}),
-    academico: {
-      ...estructuraBase.academico,
-      ...(p.permisos?.academico || {})
-    },
-    contenido_web: {
-      ...estructuraBase.contenido_web,
-      ...(p.permisos?.contenido_web || {})
-    }
+  // Cambia un nodo del árbol de permisos del administrador seleccionado
+  const cambiarPermiso = (ruta: string[], valor: boolean) => {
+    setSelectedUser((prev) =>
+      prev ? { ...prev, permisos: establecer((prev.permisos ?? {}) as Permisos, ruta, valor) } : prev
+    );
   };
-
-  // 3. Seteamos el usuario seleccionado con sus permisos reales
-  setSelectedUser({
-    ...p,
-    permisos: permisosActuales
-  });
-  
-  setIsPermisosModalOpen(true);
-};
   const [formData, setFormData] = useState({
     nombres: "",
     apellidos: "",
@@ -89,10 +83,20 @@ export default function GestionPersonalPage() {
     password: ""
   });
 
+  // Si la pestaña abierta no está permitida, se salta a la primera que sí lo
+  // esté; sin esto quedaría cargando datos de una pestaña que no puede ver.
+  useEffect(() => {
+    if (loadingPermisos) return;
+    if (tienePermiso("gestion_personal", activeTab)) return;
+    const primera = PESTANAS_PERSONAL.find((t) => tienePermiso("gestion_personal", t.id));
+    if (primera) setActiveTab(primera.id);
+  }, [loadingPermisos, activeTab, tienePermiso]);
+
   useEffect(() => {
     setBusquedaDni("");
+    if (!tienePermiso("gestion_personal", activeTab)) return;
     fetchPersonal(activeTab);
-  }, [activeTab]);
+  }, [activeTab, loadingPermisos]);
 
   const personalFiltrado = personal.filter(p =>
     p.dni.toLowerCase().includes(busquedaDni.trim().toLowerCase())
@@ -192,7 +196,7 @@ export default function GestionPersonalPage() {
       <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
 
         {/* HEADER CON TABS */}
-        <div className="bg-white border-b px-8 shrink-0">
+        <div className="bg-white border-b px-4 md:px-8 shrink-0">
           <div className="h-16 flex items-center">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[#093E7A]">groups</span>
@@ -200,24 +204,21 @@ export default function GestionPersonalPage() {
             </div>
           </div>
 
-          {/* TABS */}
-          <div className="flex gap-8">
-            <button onClick={() => setActiveTab("admin")} className={`py-4 border-b-2 flex items-center gap-2 text-sm font-bold transition-all ${activeTab === "admin" ? "border-[#093E7A] text-[#093E7A]" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
-              <ShieldCheck size={18} /> Administradores
-            </button>
-            <button onClick={() => setActiveTab("docente")} className={`py-4 border-b-2 flex items-center gap-2 text-sm font-bold transition-all ${activeTab === "docente" ? "border-[#093E7A] text-[#093E7A]" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
-              <BookOpen size={18} /> Docentes
-            </button>
-            <button onClick={() => setActiveTab("auxiliar")} className={`py-4 border-b-2 flex items-center gap-2 text-sm font-bold transition-all ${activeTab === "auxiliar" ? "border-[#093E7A] text-[#093E7A]" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
-              <Briefcase size={18} /> Auxiliares
-            </button>
-            <button onClick={() => setActiveTab("psicologo")} className={`py-4 border-b-2 flex items-center gap-2 text-sm font-bold transition-all ${activeTab === "psicologo" ? "border-[#093E7A] text-[#093E7A]" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
-              <HeartHandshake size={18} /> Psicólogos
-            </button>
+          {/* TABS: solo las que el administrador tenga permitidas */}
+          <div className="barra-pestanas gap-6 md:gap-8">
+            {PESTANAS_PERSONAL.filter((t) => tienePermiso("gestion_personal", t.id)).map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`py-4 border-b-2 flex items-center gap-2 text-sm font-bold transition-all ${activeTab === t.id ? "border-[#093E7A] text-[#093E7A]" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+              >
+                <t.icon size={18} /> {t.label}
+              </button>
+            ))}
           </div>
         </div>
 
-      <div className="flex-1 p-8 overflow-y-auto">
+      <div className="flex-1 p-4 md:p-8 overflow-y-auto">
 
         {/* BARRA: BÚSQUEDA POR DNI + REGISTRO DEDICADO */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-5">
@@ -331,7 +332,7 @@ export default function GestionPersonalPage() {
                 <h4 className="text-[11px] font-black text-[#093E7A] uppercase tracking-widest flex items-center gap-2">
                   <span className="material-symbols-outlined text-[16px]">badge</span> Datos personales
                 </h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nombres</label>
                     <input required type="text" placeholder="Ej. María Fernanda" className="w-full border border-gray-200 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-[#093E7A]"
@@ -357,7 +358,7 @@ export default function GestionPersonalPage() {
                 <h4 className="text-[11px] font-black text-[#093E7A] uppercase tracking-widest flex items-center gap-2">
                   <span className="material-symbols-outlined text-[16px]">contact_phone</span> Contacto
                 </h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Teléfono</label>
                     <input type="text" inputMode="numeric" maxLength={9} placeholder="9 dígitos"
@@ -405,7 +406,8 @@ export default function GestionPersonalPage() {
       {/* MODAL DE PERMISOS */}
       {isPermisosModalOpen && selectedUser && (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
+            {/* CABECERA */}
             <div className="bg-[#701C32] px-6 py-4 text-white flex justify-between items-center shrink-0">
               <div className="flex items-center gap-3">
                 <ShieldCheck size={24} />
@@ -417,126 +419,82 @@ export default function GestionPersonalPage() {
               <button onClick={() => setIsPermisosModalOpen(false)} className="hover:text-[#FFF1E3]"><X size={24} /></button>
             </div>
 
-            <div className="p-8 overflow-y-auto bg-gray-50/50">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                {/* SECCIÓN: ACCESO GENERAL */}
-                <div className="space-y-4">
-                  <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest border-b pb-2">Módulos Principales</h4>
-
-                  <PermissionToggle
-                    label="Panel de Control (Dashboard)"
-                    checked={true} // Siempre activo
-                    disabled={true} // No se puede quitar
-                    onChange={() => { }}
-                  />
-                  <PermissionToggle
-                    label="Gestión de Estudiantes"
-                    checked={selectedUser.permisos?.gestion_estudiantes || false}
-                    onChange={(val) => setSelectedUser({ ...selectedUser, permisos: { ...selectedUser.permisos, gestion_estudiantes: val } })}
-                  />
-                  <PermissionToggle
-                    label="Gestión de Personal (RRHH)"
-                    checked={selectedUser.permisos?.gestion_personal || false}
-                    onChange={(val) => setSelectedUser({ ...selectedUser, permisos: { ...selectedUser.permisos, gestion_personal: val } })}
-                  />
-                  <PermissionToggle
-                    label="Trámites y Finanzas"
-                    checked={selectedUser.permisos?.tramites_finanzas || false}
-                    onChange={(val) => setSelectedUser({ ...selectedUser, permisos: { ...selectedUser.permisos, tramites_finanzas: val } })}
-                  />
-                  <PermissionToggle
-                    label="Gestionar Chatbot AI"
-                    checked={selectedUser.permisos?.chatbot || false}
-                    onChange={(val) => setSelectedUser({ ...selectedUser, permisos: { ...selectedUser.permisos, chatbot: val } })}
-                  />
-                  <PermissionToggle
-                    label="Mensajería Interna"
-                    checked={selectedUser.permisos?.mensajeria || false}
-                    onChange={(val) => setSelectedUser({ ...selectedUser, permisos: { ...selectedUser.permisos, mensajeria: val } })}
-                  />
+            {/* BARRA DE RESUMEN: fija, para no perder el contador al bajar */}
+            {(() => {
+              const permisos = (selectedUser.permisos ?? {}) as Permisos;
+              const { activas, total } = contarCasillas({ raiz: permisos }, ["raiz"]);
+              return (
+                <div className="px-6 py-3 border-b border-gray-100 bg-white flex flex-wrap items-center justify-between gap-3 shrink-0">
+                  <p className="text-xs text-gray-500">
+                    Verá únicamente lo marcado ·{" "}
+                    <span className="font-black text-[#701C32]">{activas} de {total}</span> accesos
+                  </p>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedUser({ ...selectedUser, permisos: permisosCompletos() })}
+                      className="text-[11px] font-bold text-[#093E7A] px-3 py-1.5 rounded-lg hover:bg-[#093E7A]/5 transition-colors"
+                    >
+                      Marcar todo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedUser({ ...selectedUser, permisos: apagar(CATALOGO_PERMISOS) })}
+                      className="text-[11px] font-bold text-gray-400 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      Desmarcar todo
+                    </button>
+                  </div>
                 </div>
+              );
+            })()}
 
-                {/* SECCIÓN: PERMISOS DETALLADOS (SUB-TABS) */}
-                <div className="space-y-6">
-                  <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
-                    <h4 className="text-xs font-black text-[#093E7A] uppercase mb-4 flex items-center gap-2">
-                      <BookOpen size={16} /> Gestión Académica
-                    </h4>
-                    <div className="grid grid-cols-1 gap-3">
-                      <SubPermissionCheck
-                        label="Estructura Escolar"
-                        checked={selectedUser.permisos?.academico?.estructura || false}
-                        onChange={(val) => setSelectedUser({ ...selectedUser, permisos: { ...selectedUser.permisos, academico: { ...selectedUser.permisos?.academico, estructura: val } } })}
-                      />
-                      <SubPermissionCheck
-                        label="Gestión de Horarios"
-                        checked={selectedUser.permisos?.academico?.horarios || false}
-                        onChange={(val) => setSelectedUser({ ...selectedUser, permisos: { ...selectedUser.permisos, academico: { ...selectedUser.permisos?.academico, horarios: val } } })}
-                      />
-                      <SubPermissionCheck
-                        label="Asignación de Docentes"
-                        checked={selectedUser.permisos?.academico?.docentes || false}
-                        onChange={(val) => setSelectedUser({ ...selectedUser, permisos: { ...selectedUser.permisos, academico: { ...selectedUser.permisos?.academico, docentes: val } } })}
-                      />
-                      <SubPermissionCheck
-                        label="Asignación de Estudiantes"
-                        checked={selectedUser.permisos?.academico?.estudiantes || false}
-                        onChange={(val) => setSelectedUser({ ...selectedUser, permisos: { ...selectedUser.permisos, academico: { ...selectedUser.permisos?.academico, estudiantes: val } } })}
-                      />
-                      <SubPermissionCheck
-                        label="Gestión de Cursos"
-                        checked={selectedUser.permisos?.academico?.cursos || false}
-                        onChange={(val) => setSelectedUser({ ...selectedUser, permisos: { ...selectedUser.permisos, academico: { ...selectedUser.permisos?.academico, cursos: val } } })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
-                    <h4 className="text-xs font-black text-green-600 uppercase mb-4 flex items-center gap-2">
-                      <Globe size={16} /> Contenido Web
-                    </h4>
-                    <div className="grid grid-cols-1 gap-3">
-                      <SubPermissionCheck
-                        label="Información General"
-                        checked={selectedUser.permisos?.contenido_web?.info_general || false}
-                        onChange={(val) => setSelectedUser({
-                          ...selectedUser,
-                          permisos: {
-                            ...selectedUser.permisos,
-                            contenido_web: { ...selectedUser.permisos?.contenido_web, info_general: val }
-                          }
-                        })}
-                      />
-                      <SubPermissionCheck
-                        label="Noticias"
-                        checked={selectedUser.permisos?.contenido_web?.noticias || false}
-                        onChange={(val) => setSelectedUser({ ...selectedUser, permisos: { ...selectedUser.permisos, contenido_web: { ...selectedUser.permisos?.contenido_web, noticias: val } } })}
-                      />
-                      <SubPermissionCheck
-                        label="Calendario Anual"
-                        checked={selectedUser.permisos?.contenido_web?.calendario || false}
-                        onChange={(val) => setSelectedUser({ ...selectedUser, permisos: { ...selectedUser.permisos, contenido_web: { ...selectedUser.permisos?.contenido_web, calendario: val } } })}
-                      />
-                    </div>
-                  </div>
+            <div className="p-6 overflow-y-auto bg-[#F8FAFC] space-y-5">
+              {/* Apartados de una sola pantalla: agrupados en una lista compacta
+                  en vez de una tarjeta por cada uno, que dejaba huecos. */}
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100">
+                  <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest">
+                    Accesos directos
+                  </h4>
+                </div>
+                <div className="divide-y divide-gray-50">
+                  {CATALOGO_PERMISOS.filter((n) => !n.hijos?.length).map((nodo) => (
+                    <FilaPermiso
+                      key={nodo.id}
+                      nodo={nodo}
+                      permisos={(selectedUser.permisos ?? {}) as Permisos}
+                      onChange={cambiarPermiso}
+                    />
+                  ))}
                 </div>
               </div>
 
-              <div className="mt-8 flex gap-4">
-                <button
-                  onClick={() => setIsPermisosModalOpen(false)}
-                  className="flex-1 py-3 bg-white text-gray-500 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => handleSavePermisos(selectedUser.permisos)}
-                  className="flex-1 py-3 bg-[#701C32] text-white font-bold rounded-xl shadow-lg shadow-[#701C32]/30 hover:bg-[#5a1628] transition-all"
-                >
-                  Guardar Cambios de Acceso
-                </button>
-              </div>
+              {/* Apartados con pestañas: una tarjeta cada uno */}
+              {CATALOGO_PERMISOS.filter((n) => n.hijos?.length).map((nodo) => (
+                <ApartadoPermisos
+                  key={nodo.id}
+                  nodo={nodo}
+                  permisos={(selectedUser.permisos ?? {}) as Permisos}
+                  onChange={cambiarPermiso}
+                />
+              ))}
+            </div>
+
+            {/* PIE FIJO: los botones no se pierden al final del scroll */}
+            <div className="px-6 py-4 border-t border-gray-100 bg-white flex gap-3 shrink-0">
+              <button
+                onClick={() => setIsPermisosModalOpen(false)}
+                className="flex-1 py-3 bg-white text-gray-500 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition-all text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleSavePermisos(selectedUser.permisos)}
+                className="flex-[2] py-3 bg-[#701C32] text-white font-bold rounded-xl shadow-lg shadow-[#701C32]/25 hover:bg-[#5a1628] transition-all text-sm"
+              >
+                Guardar cambios de acceso
+              </button>
             </div>
           </div>
         </div>
@@ -547,31 +505,164 @@ export default function GestionPersonalPage() {
   );
 }
 
-function PermissionToggle({ label, checked, onChange, disabled = false }: { label: string, checked: boolean, onChange: (v: boolean) => void, disabled?: boolean }) {
+// Icono de cada apartado, para poder distinguirlos de un vistazo.
+const ICONO_APARTADO: Record<string, any> = {
+  panel_control: LayoutDashboard,
+  gestion_estudiantes: Users,
+  gestion_personal: UserCog,
+  tramites_finanzas: ClipboardList,
+  academico: GraduationCap,
+  contenido_web: Globe,
+  chatbot: Bot,
+  mensajeria: MessageSquare,
+  seguridad: ShieldCheck,
+};
+
+/** Fila de un apartado sin pestañas, dentro de la lista de accesos directos. */
+function FilaPermiso({ nodo, permisos, onChange }: {
+  nodo: NodoPermiso;
+  permisos: Permisos;
+  onChange: (ruta: string[], valor: boolean) => void;
+}) {
+  const activo = estadoCasilla(permisos, [nodo.id]) === "todo";
+  const Icono = ICONO_APARTADO[nodo.id];
+
   return (
-    <label className={`flex items-center justify-between p-3 rounded-xl border transition-all ${disabled ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-80' : 'bg-white border-gray-100 hover:border-gray-300 cursor-pointer'}`}>
-      <span className={`text-sm font-bold ${disabled ? 'text-gray-400' : 'text-gray-700'}`}>{label}</span>
-      <input
-        type="checkbox"
-        disabled={disabled}
-        className="w-5 h-5 accent-[#093E7A] cursor-pointer disabled:cursor-not-allowed"
-        checked={checked || false}
-        onChange={(e) => onChange(e.target.checked)}
-      />
+    <label className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-gray-50/70 transition-colors">
+      {Icono && (
+        <span className={`shrink-0 ${activo ? "text-[#701C32]" : "text-gray-300"}`}>
+          <Icono size={17} />
+        </span>
+      )}
+      <span className={`flex-1 text-sm font-bold ${activo ? "text-gray-800" : "text-gray-400"}`}>
+        {nodo.label}
+      </span>
+      <CasillaPermiso estado={activo ? "todo" : "nada"} onChange={(v) => onChange([nodo.id], v)} />
     </label>
   );
 }
 
-function SubPermissionCheck({ label, checked, onChange }: { label: string, checked: boolean, onChange: (v: boolean) => void }) {
+/** Una tarjeta por apartado con pestañas. */
+function ApartadoPermisos({ nodo, permisos, onChange }: {
+  nodo: NodoPermiso;
+  permisos: Permisos;
+  onChange: (ruta: string[], valor: boolean) => void;
+}) {
+  const estado = estadoCasilla(permisos, [nodo.id]);
+  const { activas, total } = contarCasillas(permisos, [nodo.id]);
+  const Icono = ICONO_APARTADO[nodo.id];
+
+  // Las pestañas con subpestañas ocupan la fila entera; las simples van de dos
+  // en dos, para que la tarjeta no crezca más de lo necesario.
+  const hijos = nodo.hijos ?? [];
+
   return (
-    <div className="flex items-center gap-3">
-      <input
-        type="checkbox"
-        className="w-4 h-4 accent-[#701C32]"
-        checked={checked || false}
-        onChange={(e) => onChange(e.target.checked)}
-      />
-      <span className="text-xs font-medium text-gray-600">{label}</span>
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <label className="flex items-center gap-3 px-5 py-3.5 bg-gray-50/70 border-b border-gray-100 cursor-pointer hover:bg-gray-100/70 transition-colors">
+        {Icono && (
+          <span className={`shrink-0 ${estado === "nada" ? "text-gray-300" : "text-[#701C32]"}`}>
+            <Icono size={18} />
+          </span>
+        )}
+        <span className={`flex-1 text-sm font-black ${estado === "nada" ? "text-gray-400" : "text-gray-800"}`}>
+          {nodo.label}
+        </span>
+        <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full ${
+          estado === "todo" ? "bg-[#701C32]/10 text-[#701C32]"
+            : estado === "parcial" ? "bg-amber-100 text-amber-700"
+            : "bg-gray-100 text-gray-400"
+        }`}>
+          {activas} / {total}
+        </span>
+        <CasillaPermiso estado={estado} onChange={(v) => onChange([nodo.id], v)} grande />
+      </label>
+
+      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {hijos.map((hijo) => (
+          <PestanaPermiso
+            key={hijo.id}
+            nodo={hijo}
+            rutaPadre={[nodo.id]}
+            permisos={permisos}
+            onChange={onChange}
+          />
+        ))}
+      </div>
     </div>
+  );
+}
+
+/** Pestaña del apartado; si tiene subpestañas, las despliega debajo. */
+function PestanaPermiso({ nodo, rutaPadre, permisos, onChange }: {
+  nodo: NodoPermiso;
+  rutaPadre: string[];
+  permisos: Permisos;
+  onChange: (ruta: string[], valor: boolean) => void;
+}) {
+  const ruta = [...rutaPadre, nodo.id];
+  const estado = estadoCasilla(permisos, ruta);
+  const tieneHijos = !!nodo.hijos?.length;
+  const { activas, total } = contarCasillas(permisos, ruta);
+
+  return (
+    <div className={`rounded-xl border transition-colors ${
+      estado === "nada" ? "border-gray-100 bg-gray-50/40" : "border-[#701C32]/15 bg-[#701C32]/[0.03]"
+    } ${tieneHijos ? "sm:col-span-2" : ""}`}>
+      <label className="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer">
+        <CasillaPermiso estado={estado} onChange={(v) => onChange(ruta, v)} />
+        <span className={`flex-1 text-xs font-bold ${estado === "nada" ? "text-gray-400" : "text-gray-700"}`}>
+          {nodo.label}
+        </span>
+        {tieneHijos && (
+          <span className="text-[10px] font-black text-gray-400 shrink-0">{activas}/{total}</span>
+        )}
+      </label>
+
+      {tieneHijos && (
+        <div className="px-3 pb-3 pt-1 grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2 border-t border-gray-100/80 mt-0.5">
+          {nodo.hijos!.map((sub) => {
+            const rutaSub = [...ruta, sub.id];
+            const activo = estadoCasilla(permisos, rutaSub) === "todo";
+            return (
+              <label key={sub.id} className="flex items-center gap-2 cursor-pointer group">
+                <CasillaPermiso
+                  estado={activo ? "todo" : "nada"}
+                  onChange={(v) => onChange(rutaSub, v)}
+                  pequena
+                />
+                <span className={`text-[11px] font-medium truncate ${
+                  activo ? "text-gray-600 group-hover:text-gray-900" : "text-gray-400"
+                }`}>
+                  {sub.label}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Casilla de tres estados: marcada, vacía o a medias cuando solo algunas de
+ * sus pestañas están activas. El "a medias" evita que un apartado parezca
+ * cerrado cuando en realidad conserva alguna pestaña abierta.
+ */
+function CasillaPermiso({ estado, onChange, grande = false, pequena = false }: {
+  estado: "todo" | "nada" | "parcial";
+  onChange: (v: boolean) => void;
+  grande?: boolean;
+  pequena?: boolean;
+}) {
+  const tamano = grande ? "w-5 h-5" : pequena ? "w-3.5 h-3.5" : "w-4 h-4";
+  return (
+    <input
+      type="checkbox"
+      className={`${tamano} shrink-0 accent-[#701C32] cursor-pointer`}
+      checked={estado === "todo"}
+      ref={(el) => { if (el) el.indeterminate = estado === "parcial"; }}
+      onChange={(e) => onChange(e.target.checked)}
+    />
   );
 }

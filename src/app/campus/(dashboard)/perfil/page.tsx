@@ -280,7 +280,7 @@ export default function MisDatos() {
               <div className="flex border-b border-slate-200 bg-slate-50/50 overflow-x-auto">
                 <button
                   onClick={() => setActiveTab("PERSONALES")}
-                  className={`px-8 py-4 font-bold whitespace-nowrap transition-all ${activeTab === "PERSONALES" ? "text-[#093E7A] border-b-2 border-[#093E7A] bg-white" : "text-slate-400"}`}
+                  className={`px-4 md:px-8 py-4 font-bold whitespace-nowrap transition-all ${activeTab === "PERSONALES" ? "text-[#093E7A] border-b-2 border-[#093E7A] bg-white" : "text-slate-400"}`}
                 >
                   DATOS PERSONALES
                 </button>
@@ -288,13 +288,13 @@ export default function MisDatos() {
                   <>
                     <button
                       onClick={() => setActiveTab("MEDICOS")}
-                      className={`px-8 py-4 font-bold whitespace-nowrap transition-all ${activeTab === "MEDICOS" ? "text-[#093E7A] border-b-2 border-[#093E7A] bg-white" : "text-slate-400"}`}
+                      className={`px-4 md:px-8 py-4 font-bold whitespace-nowrap transition-all ${activeTab === "MEDICOS" ? "text-[#093E7A] border-b-2 border-[#093E7A] bg-white" : "text-slate-400"}`}
                     >
                       DATOS MÉDICOS
                     </button>
                     <button
                       onClick={() => setActiveTab("FAMILIARES")}
-                      className={`px-8 py-4 font-bold whitespace-nowrap transition-all ${activeTab === "FAMILIARES" ? "text-[#093E7A] border-b-2 border-[#093E7A] bg-white" : "text-slate-400"}`}
+                      className={`px-4 md:px-8 py-4 font-bold whitespace-nowrap transition-all ${activeTab === "FAMILIARES" ? "text-[#093E7A] border-b-2 border-[#093E7A] bg-white" : "text-slate-400"}`}
                     >
                       FAMILIARES
                     </button>

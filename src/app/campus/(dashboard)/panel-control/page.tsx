@@ -7,7 +7,7 @@ import { apiFetch } from "@/src/lib/api";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
 import {
-  LayoutDashboard, Users, UserPlus, Loader2, Wallet, TrendingUp, TrendingDown,
+  LayoutDashboard, Users, UserPlus, Loader2,
   AlertTriangle, ClipboardList, CalendarCheck, HeartPulse, ArrowRight,
   Clock, XCircle, CheckCircle2, FileCheck, School, ShieldAlert,
 } from "lucide-react";
@@ -27,9 +27,6 @@ const fechaLarga = () => {
   return t.charAt(0).toUpperCase() + t.slice(1);
 };
 
-const soles = (n: number) =>
-  `S/ ${n.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
 // Permisos anidados (ej: "contenido_web.noticias")
 const tienePermiso = (permisos: unknown, ruta: string): boolean => {
   if (!permisos) return false;
@@ -48,17 +45,13 @@ const tienePermiso = (permisos: unknown, ruta: string): boolean => {
 };
 
 // ── Tipos de la respuesta del backend ──────────────────────────────────────
-interface Deudor { id_alumno: number; nombre: string; aula: string; deuda: number; }
+// El resumen no incluye finanzas a propósito: ver el comentario del bloque
+// retirado más abajo.
 interface Aula {
   id_seccion: number; nivel: string; grado: string; seccion: string;
   matriculados: number; vacantes: number;
 }
 interface Resumen {
-  finanzas: {
-    recaudado_mes: number; recaudado_mes_anterior: number;
-    deuda_vencida: number; por_cobrar: number;
-    alumnos_con_deuda: number; top_deudores: Deudor[];
-  };
   asistencia_hoy: {
     presentes: number; tardanzas: number; faltas: number; justificados: number;
     secciones_registradas: number; secciones_total: number;
@@ -126,14 +119,7 @@ export default function DashboardPage() {
   }
   if (role?.toUpperCase() !== "ADMIN") return null;
 
-  const f = datos?.finanzas;
   const a = datos?.asistencia_hoy;
-
-  // Variación de la recaudación respecto al mes anterior
-  const variacion =
-    f && f.recaudado_mes_anterior > 0
-      ? ((f.recaudado_mes - f.recaudado_mes_anterior) / f.recaudado_mes_anterior) * 100
-      : null;
 
   const marcadosHoy = a ? a.presentes + a.tardanzas + a.faltas + a.justificados : 0;
   const seccionesPendientes = a ? a.secciones_total - a.secciones_registradas : 0;
@@ -250,77 +236,10 @@ export default function DashboardPage() {
               </section>
             )}
 
-            {/* FINANZAS */}
-            {puedeFinanzas && f && (
-              <section>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
-                    <Wallet size={18} className="text-[#701C32]" /> Situación económica
-                  </h3>
-                  <Link href="/campus/panel-control/tramites/configuracion"
-                        className="text-xs font-bold text-[#093E7A] hover:underline">
-                    Ver finanzas
-                  </Link>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Recaudado este mes</p>
-                    <p className="text-2xl font-black text-gray-900 mt-2">{soles(f.recaudado_mes)}</p>
-                    {variacion !== null && (
-                      <p className={`text-xs font-bold mt-2 flex items-center gap-1 ${variacion >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                        {variacion >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                        {Math.abs(variacion).toFixed(0)}% vs. mes anterior
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Deuda vencida</p>
-                    <p className="text-2xl font-black text-red-600 mt-2">{soles(f.deuda_vencida)}</p>
-                    <p className="text-xs font-bold text-gray-400 mt-2">
-                      {f.alumnos_con_deuda} alumnos con atraso
-                    </p>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Por cobrar</p>
-                    <p className="text-2xl font-black text-amber-600 mt-2">{soles(f.por_cobrar)}</p>
-                    <p className="text-xs font-bold text-gray-400 mt-2">Aún no vencido</p>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mes anterior</p>
-                    <p className="text-2xl font-black text-gray-900 mt-2">{soles(f.recaudado_mes_anterior)}</p>
-                    <p className="text-xs font-bold text-gray-400 mt-2">Referencia de comparación</p>
-                  </div>
-                </div>
-
-                {f.top_deudores.length > 0 && (
-                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mt-5">
-                    <div className="px-6 py-4 bg-gray-50/70 border-b border-gray-100">
-                      <h4 className="text-sm font-black text-gray-800 uppercase tracking-wide">
-                        Mayores deudas vencidas
-                      </h4>
-                    </div>
-                    <div className="divide-y divide-gray-100">
-                      {f.top_deudores.map((d, i) => (
-                        <div key={d.id_alumno} className="px-6 py-3.5 flex items-center gap-4">
-                          <span className="w-6 h-6 rounded-lg bg-[#FFF1E3] text-[#701C32] text-[11px] font-black flex items-center justify-center shrink-0">
-                            {i + 1}
-                          </span>
-                          <p className="font-bold text-gray-800 text-sm truncate flex-1">{d.nombre}</p>
-                          <span className="text-[10px] font-bold text-gray-400 uppercase shrink-0">{d.aula}</span>
-                          <span className="font-black text-red-600 text-sm shrink-0 w-24 text-right">
-                            {soles(d.deuda)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </section>
-            )}
+            {/* Aquí iba la situación económica (recaudación, deuda vencida y
+                los alumnos más morosos). Se retiró del dashboard por ser
+                información sensible: vive en Trámites y Finanzas, donde el
+                acceso se controla por permiso. El backend tampoco la envía. */}
 
             {/* ASISTENCIA DE HOY */}
             {a && a.secciones_total > 0 && (

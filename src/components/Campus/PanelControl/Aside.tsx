@@ -41,7 +41,6 @@ const getAcademicaPath = () => {
     return "/campus/panel-control/gestion-academica"; // Fallback
 };
   const isActive = (path: string) => pathname === path;
-  console.log("¿Tengo permiso personal?:", tienePermiso('gestion_personal'));
   return (
     <>
       {/* Overlay para móviles */}
@@ -52,7 +51,7 @@ const getAcademicaPath = () => {
         />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#701C32] text-white flex flex-col h-screen transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#701C32] text-white flex flex-col h-screen transition-transform duration-300 ease-in-out lg:sticky lg:top-0 ${isOpen ? "translate-x-0" : "max-lg:-translate-x-full"}`}>
 
         {/* Header del Sidebar */}
         <div className="h-20 flex items-center justify-between px-6 border-b border-white/10 shrink-0">
@@ -155,7 +154,7 @@ const getAcademicaPath = () => {
           )}
 
           {/* 9. Seguridad de las cuentas */}
-          {tienePermiso('panel_control') && (
+          {tienePermiso('seguridad') && (
             <SidebarLink
               href="/campus/panel-control/seguridad"
               icon={<ShieldCheck size={20} />}

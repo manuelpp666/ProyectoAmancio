@@ -312,7 +312,7 @@ export default function GestionCursosPage() {
           <HeaderPanel />
 
           {/* Sub-Header Dinámico */}
-          <div className="h-16 border-b bg-white flex items-center justify-between px-8 shrink-0">
+          <div className="h-16 border-b bg-white flex items-center justify-between px-4 md:px-8 shrink-0">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#093E7A]">menu_book</span>
@@ -343,7 +343,7 @@ export default function GestionCursosPage() {
           </div>
 
           {/* Renderizado Dinámico por Niveles (REGULAR) */}
-          <div className="flex-1 overflow-y-auto p-8 space-y-12">
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-12">
             {tipoAnio === "REGULAR" && niveles.map((nivel) => {
               const cursos = obtenerCursosAgrupados(nivel.grados);
 
@@ -491,7 +491,7 @@ export default function GestionCursosPage() {
                 <h4 className="text-[11px] font-black text-[#093E7A] uppercase tracking-widest flex items-center gap-2">
                   <span className="material-symbols-outlined text-[16px]">auto_stories</span> Datos del curso
                 </h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-gray-500 uppercase">Nombre del Curso</label>
                     <input

@@ -293,7 +293,7 @@ export function ModalEditarEstudiante({ alumno, onClose, onSaved }: Props) {
         </div>
 
         {/* TABS */}
-        <div className="flex gap-6 px-6 border-b border-gray-100 bg-white shrink-0">
+        <div className="barra-pestanas gap-6 px-6 border-b border-gray-100 bg-white shrink-0">
           {([
             { id: "datos", label: "Datos del estudiante", icon: "person" },
             { id: "familiares", label: `Familiares (${familiares.length})`, icon: "family_restroom" },

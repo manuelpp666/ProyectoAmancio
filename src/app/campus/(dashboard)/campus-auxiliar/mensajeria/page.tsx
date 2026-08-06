@@ -1,6 +1,6 @@
 "use client";
 import { useUser } from "@/src/context/userContext";
-import { useChat } from "@/src/hooks/useChat"; // Tu hook
+import { useChat } from "@/src/hooks/useChat";
 import ListaContactos from "@/src/components/Chat/ListaContactos";
 import VentanaChat from "@/src/components/Chat/VentanaChat";
 import { Loader2, MessageSquare } from "lucide-react";
@@ -22,7 +22,7 @@ export default function MensajeriaPage() {
         <MessageSquare className="text-[#701C32]" size={22} />
         <div>
           <h2 className="text-xl font-bold text-gray-800 leading-tight">Mensajería</h2>
-          <p className="text-[11px] text-gray-400">Conversa con tus alumnos, docentes y colegas</p>
+          <p className="text-[11px] text-gray-400">Conversa con los docentes del colegio</p>
         </div>
       </div>
       <div className="flex-1 overflow-hidden bg-white border-t border-gray-100 flex relative">

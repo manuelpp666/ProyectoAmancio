@@ -158,7 +158,7 @@ export default function RegistroEstudiantePage() {
             <div className="flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
 
                 {/* --- HEADER --- */}
-                <header className="h-16 border-b flex items-center gap-3 px-8 bg-white shrink-0">
+                <header className="h-16 border-b flex items-center gap-3 px-4 md:px-8 bg-white shrink-0">
                     <Link href="/campus/panel-control/gestion-estudiantes" className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-[#093E7A] transition-all">
                         <ArrowLeft size={22} />
                     </Link>
@@ -172,7 +172,7 @@ export default function RegistroEstudiantePage() {
                 </header>
 
                 {/* --- FORMULARIO --- */}
-                <div className="flex-1 overflow-y-auto p-8">
+                <div className="flex-1 overflow-y-auto p-4 md:p-8">
                     <form onSubmit={handleSubmit} className="max-w-5xl mx-auto space-y-6">
 
                         {/* Sección 1: Datos Personales (ALUMNO) */}

@@ -39,7 +39,7 @@ export function AsideCampus({ isOpen, onClose }: { isOpen: boolean; onClose: () 
     }`;
 
   return (
-    <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#701C32] text-white flex flex-col h-screen transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}>
+    <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#701C32] text-white flex flex-col h-screen transition-transform duration-300 ease-in-out lg:sticky lg:top-0 ${isOpen ? "translate-x-0" : "max-lg:-translate-x-full"}`}>
       <div className="h-20 flex items-center justify-between px-6 border-b border-white/10 shrink-0">
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />

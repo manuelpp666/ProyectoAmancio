@@ -292,7 +292,7 @@ export default function DetalleCursoDocente() {
       </div>
 
       {/* TABS */}
-      <div className="border-b border-gray-200 flex gap-6">
+      <div className="border-b border-gray-200 barra-pestanas gap-6">
         <button
           onClick={() => setActiveTab("contenido")}
           className={`pb-3 text-sm font-bold transition-colors ${activeTab === "contenido" ? "border-b-2 border-[#701C32] text-[#701C32]" : "text-gray-500 hover:text-gray-700"}`}

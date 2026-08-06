@@ -51,6 +51,29 @@ aside :focus-visible {
   background: color-mix(in srgb, currentColor 45%, transparent);
 }
 
+/*
+ * Barra de pestañas de los paneles.
+ *
+ * En pantallas anchas se ve como siempre; cuando no caben (móvil o etiquetas
+ * largas como "Renovaciones de Matrícula") se desplaza en horizontal en vez de
+ * apretujar las pestañas o desbordar la página. La barra de scroll se oculta
+ * porque el gesto en móvil ya es evidente y en escritorio nunca aparece.
+ */
+.barra-pestanas {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.barra-pestanas::-webkit-scrollbar {
+  display: none;
+}
+.barra-pestanas > * {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 /* Entrada de superficies (paneles que aparecen tras cargar datos) */
 @keyframes surface-in {
   from { opacity: 0; transform: translateY(8px); }

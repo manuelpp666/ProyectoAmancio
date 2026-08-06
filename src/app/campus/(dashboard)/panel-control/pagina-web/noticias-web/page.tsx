@@ -69,7 +69,7 @@ export default function GestionContenidoPage() {
           <HeaderPanel />
 
           {/* BARRA SUPERIOR ESTÁNDAR */}
-          <div className="h-16 border-b bg-white flex items-center justify-between px-8 shrink-0 gap-4">
+          <div className="h-16 border-b bg-white flex items-center justify-between px-4 md:px-8 shrink-0 gap-4">
             <div className="flex items-center gap-2 shrink-0">
               <span className="material-symbols-outlined text-[#093E7A]">newspaper</span>
               <h2 className="text-xl font-bold text-gray-800">Gestión de Noticias</h2>
@@ -97,7 +97,7 @@ export default function GestionContenidoPage() {
           </div>
 
           {/* Content Container */}
-          <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 custom-scrollbar">
 
             {/* STATS CARDS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

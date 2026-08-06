@@ -154,7 +154,7 @@ export function ModalRegistrarReporte({ isOpen, onClose, onSuccess }: Props) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="titulo-registrar-reporte"
-        className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden modal-in"
+        className="bg-white w-full max-w-2xl max-h-[92vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col modal-in"
       >
         {/* MODAL HEADER */}
         <div className="bg-[#701C32] px-6 py-5 text-white flex justify-between items-start">
@@ -172,7 +172,11 @@ export function ModalRegistrarReporte({ isOpen, onClose, onSuccess }: Props) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
+        {/* El alto lo marca la tarjeta (max-h-[92vh]); el formulario ocupa lo que
+            queda bajo la cabecera y hace scroll dentro. Con max-h-[80vh] propio,
+            en pantallas bajas la cabecera más el formulario pasaban del alto de
+            la ventana y el final del formulario quedaba fuera. */}
+        <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
 
           {/* 1. ALUMNO */}
           <div>

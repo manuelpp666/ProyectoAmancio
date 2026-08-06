@@ -11,6 +11,7 @@ import { Save, Home, Users, Footprints, Loader2, GraduationCap, CalendarDays, Ne
 import { toast } from "sonner";
 import { apiFetch } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
+import { usePermisos } from "@/src/hooks/usePermisos";
 
 const SECCIONES = [
   {
@@ -86,6 +87,21 @@ const SECCIONES = [
 
 export default function GestionWebPage() {
   const [tab, setTab] = useState('inicio');
+  const { tienePermiso, loading: loadingPermisos } = usePermisos();
+
+  // Secciones que este administrador tiene permitidas dentro de la pestaña de
+  // información general (contenido_web > info_general > sección).
+  const seccionesVisibles = SECCIONES.filter(
+    s => loadingPermisos || tienePermiso("contenido_web", "info_general", s.id)
+  );
+
+  // Si la sección abierta está cerrada para él, se pasa a la primera permitida
+  useEffect(() => {
+    if (loadingPermisos) return;
+    if (tienePermiso("contenido_web", "info_general", tab)) return;
+    const primera = SECCIONES.find(s => tienePermiso("contenido_web", "info_general", s.id));
+    if (primera) setTab(primera.id);
+  }, [loadingPermisos, tab, tienePermiso]);
   const [uploadingField, setUploadingField] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   // Pestaña a la que se quiere ir cuando hay cambios sin guardar (dispara el aviso)
@@ -177,7 +193,7 @@ export default function GestionWebPage() {
         <HeaderPanel />
 
         {/* BARRA SUPERIOR ESTÁNDAR */}
-        <div className="h-16 border-b bg-white flex items-center justify-between px-8 shrink-0">
+        <div className="h-16 border-b bg-white flex items-center justify-between px-4 md:px-8 shrink-0">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[#093E7A]">language</span>
             <h2 className="text-xl font-bold text-gray-800">Editor Web</h2>
@@ -210,8 +226,8 @@ export default function GestionWebPage() {
         </div>
 
         {/* TABS DE SECCIÓN */}
-        <div className="bg-white px-8 border-b shrink-0 flex gap-6 overflow-x-auto">
-          {SECCIONES.map(s => (
+        <div className="bg-white px-4 md:px-8 border-b shrink-0 barra-pestanas gap-6">
+          {seccionesVisibles.map(s => (
             <button
               key={s.id}
               onClick={() => intentarCambiarTab(s.id)}
@@ -270,7 +286,7 @@ export default function GestionWebPage() {
         )}
 
         {/* CUERPO DEL EDITOR */}
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-5xl mx-auto space-y-8">
             {SECCIONES.find(s => s.id === tab)?.campos.map(campo => (
               <div key={campo.clave} className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 transition-all hover:shadow-md">

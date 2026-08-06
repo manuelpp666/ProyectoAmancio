@@ -394,7 +394,7 @@ export default function AsignacionEstudiantesPage() {
             )}
           </div>
 
-          <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden p-4 md:p-8 gap-4 md:gap-8">
+          <div className="flex-1 flex flex-col lg:flex-row lg:overflow-hidden min-w-0 p-4 md:p-8 gap-4 md:gap-8">
 
             {/* --- LISTA IZQUIERDA --- */}
             <div
@@ -474,7 +474,7 @@ export default function AsignacionEstudiantesPage() {
 
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 shrink-0">
                 <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Paso 1: Seleccionar Nivel</h3>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {nivelesVisibles.map(nivel => (
                     <button
                       key={nivel.id_nivel}

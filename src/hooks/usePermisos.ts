@@ -1,51 +1,26 @@
 // src/hooks/usePermisos.ts
 import { useUser } from "@/src/context/userContext";
+import { tieneAcceso } from "@/src/config/permisos";
 
 export const usePermisos = () => {
-  const { role, permisos,loading } = useUser();
+  const { role, permisos, loading } = useUser();
 
-  const tienePermiso = (modulo: string, subModulo?: string): boolean => {
+  /**
+   * ¿Puede entrar a este punto del panel?
+   *
+   * Acepta la ruta del catálogo con tantos niveles como haga falta:
+   *   tienePermiso("academico")
+   *   tienePermiso("academico", "horarios")
+   *   tienePermiso("contenido_web", "info_general", "inicio")
+   *
+   * La lógica (incluido qué pasa con una clave sin configurar) vive en
+   * src/config/permisos.ts, para que el panel y los checkboxes que los
+   * editan usen exactamente la misma regla.
+   */
+  const tienePermiso = (...ruta: string[]): boolean => {
     if (loading) return false;
     if (!role || !permisos) return false;
-
-    // --- CORRECCIÓN CRÍTICA ---
-    // Si 'permisos' llega como String por un error de parseo en el Contexto, lo convertimos.
-    let permisosObj = permisos;
-    if (typeof permisos === 'string') {
-      try {
-        permisosObj = JSON.parse(permisos);
-      } catch (e) {
-        console.error("Error al parsear permisos en el hook:", e);
-        return false;
-      }
-    }
-    // ---------------------------
-
-    // Super-admin: si tiene 'all', tiene acceso a todo (incluidos módulos nuevos)
-    if ((permisosObj as any).all === true) return true;
-
-    const dataModulo = (permisosObj as any)[modulo];
-
-    // Si el módulo no existe en el objeto
-    if (dataModulo === undefined) return false;
-
-    // CASO A: Módulo simple (ej: gestion_personal)
-    if (!subModulo) {
-      if (typeof dataModulo === 'boolean') return dataModulo;
-      
-      // Si es un objeto (ej: academico), devolvemos true si tiene alguna sub-propiedad en true
-      if (typeof dataModulo === 'object' && dataModulo !== null) {
-        return Object.values(dataModulo).some(val => val === true);
-      }
-      return false;
-    }
-
-    // CASO B: Sub-módulo (ej: modulo='academico', subModulo='horarios')
-    if (typeof dataModulo === 'object' && dataModulo !== null) {
-      return !!dataModulo[subModulo];
-    }
-
-    return false;
+    return tieneAcceso(permisos, ...ruta);
   };
 
   return { tienePermiso, loading };
