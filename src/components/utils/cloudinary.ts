@@ -1,7 +1,7 @@
 // src/components/utils/cloudinary.ts
 
-const CLOUD_NAME = "dteucmell";
-const UPLOAD_PRESET = "ml_default";
+const CLOUD_NAME = "uibmefcc";
+const UPLOAD_PRESET = "amanciov";
 
 // Sube un archivo a Cloudinary. `resourceType` controla el endpoint:
 //  - "image": solo imágenes
