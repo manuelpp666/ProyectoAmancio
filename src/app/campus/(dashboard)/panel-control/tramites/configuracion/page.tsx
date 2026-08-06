@@ -652,14 +652,14 @@ export default function GestionFinancieraPage() {
             <div className="space-y-4">
               {/* --- BARRA DE FILTROS AVANZADOS --- */}
               <div className="bg-white p-4 rounded-xl border shadow-sm flex flex-wrap gap-4 items-end">
-                {/* Búsqueda por DNI/Concepto */}
+                {/* Búsqueda por nombre del alumno, DNI o concepto */}
                 <div className="flex-1 min-w-[200px]">
                   <label className="block text-[10px] font-black text-gray-400 uppercase mb-1">Búsqueda rápida</label>
                   <div className="relative">
                     <span className="material-symbols-outlined absolute left-3 top-2 text-gray-400 text-sm">search</span>
                     <input
                       type="text"
-                      placeholder="DNI Alumno o concepto..."
+                      placeholder="Nombre, DNI o concepto..."
                       className="w-full pl-9 pr-4 py-2 bg-gray-50 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#093E7A]/20"
                       value={busqueda}
                       onChange={(e) => setBusqueda(e.target.value)}

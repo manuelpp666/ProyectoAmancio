@@ -641,14 +641,14 @@ export default function GestionAcademicaPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tipo de Ciclo</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tipo de Año Académico</label>
                 <select
                   className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
                   value={nuevoAnioData.tipo}
                   onChange={(e) => setNuevoAnioData({ ...nuevoAnioData, tipo: e.target.value })}
                 >
-                  <option value="REGULAR">Año Regular (Marzo-Dic)</option>
-                  <option value="VERANO">Ciclo Verano (Ene-Feb)</option>
+                  <option value="REGULAR">Año Regular</option>
+                  <option value="VERANO">Ciclo Verano</option>
                 </select>
               </div>
 
@@ -693,14 +693,14 @@ export default function GestionAcademicaPage() {
             </div>
             <form onSubmit={handleEditarAnio} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tipo de Ciclo</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tipo de Año Académico</label>
                 <select
                   className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
                   value={editarAnioData.tipo}
                   onChange={(e) => setEditarAnioData({ ...editarAnioData, tipo: e.target.value })}
                 >
-                  <option value="REGULAR">Año Regular (Marzo-Dic)</option>
-                  <option value="VERANO">Ciclo Verano (Ene-Feb)</option>
+                  <option value="REGULAR">Año Regular</option>
+                  <option value="VERANO">Ciclo Verano</option>
                 </select>
               </div>
 

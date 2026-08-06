@@ -1,4 +1,4 @@
-import { ArrowLeft, MoreVertical, Paperclip, Send, MessageSquare } from "lucide-react";
+import { ArrowLeft, MoreVertical, Send, MessageSquare } from "lucide-react";
 import { ChatProps } from "@/src/interfaces/mensajeria";
 
 
@@ -44,15 +44,17 @@ export default function VentanaChat({
       </div>
 
       <div className="p-3 bg-white border-t border-gray-200 shrink-0">
-        <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-full border border-gray-200">
-          <button className="text-gray-400 hover:text-[#701C32]"><Paperclip size={20} /></button>
-          <input 
-            type="text" 
+        {/* La mensajería es solo de texto: no se envían archivos. Aquí había un
+            botón de adjuntar que además nunca hizo nada (no tenía onClick), así
+            que ofrecía algo que el sistema no puede cumplir. */}
+        <div className="flex items-center gap-2 bg-gray-50 pl-4 pr-3 py-2 rounded-full border border-gray-200">
+          <input
+            type="text"
             value={textoMensaje}
             onChange={(e) => setTextoMensaje(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onEnviar()}
-            placeholder="Escribe un mensaje..." 
-            className="flex-1 bg-transparent border-none text-sm text-gray-700 outline-none" 
+            placeholder="Escribe un mensaje..."
+            className="flex-1 bg-transparent border-none text-sm text-gray-700 outline-none"
           />
           <button onClick={onEnviar} className="text-[#701C32] p-1.5 hover:bg-[#701C32]/10 rounded-full transition-colors">
             <Send size={18} />

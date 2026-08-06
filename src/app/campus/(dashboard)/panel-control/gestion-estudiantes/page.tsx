@@ -17,6 +17,69 @@ const PESTANAS_ESTUDIANTES = [
     { id: "verano", label: "Inscripciones de Verano", icon: "wb_sunny" },
 ] as const;
 
+/**
+ * Alumnos que ya forman parte del colegio: se pintan en verde.
+ * Espejo de ACTIVOS en app/modules/users/alumno/estados.py (backend).
+ * Antes esta lista incluía "ACTIVO", un estado que el sistema nunca escribe.
+ */
+const ESTADOS_ACTIVOS: string[] = ["ADMITIDO", "ESTUDIANTE"];
+
+/**
+ * Documentos que pide el formulario de admisión del año regular.
+ * Es la misma lista que usa la web pública (DOCS_ADMISION en (web)/admision):
+ * si allí se añade uno, hay que añadirlo aquí para que el colegio lo vea.
+ */
+const DOCS_ADMISION_REGULAR = [
+    { campo: "doc_dni_menor", label: "DNI del menor", corto: "DNI menor" },
+    { campo: "doc_dni_apoderado", label: "DNI del padre / apoderado", corto: "DNI apoderado" },
+    { campo: "doc_fum", label: "Ficha Única de Matrícula (FUM)", corto: "FUM" },
+    { campo: "doc_certificado_estudios", label: "Certificado de estudios anteriores", corto: "Certificado" },
+] as const;
+
+/** Los cuatro documentos del postulante, para abrirlos sin entrar al expediente. */
+function DocumentosAdmision({ alumno }: { alumno: AlumnoBase }) {
+    const adjuntos = DOCS_ADMISION_REGULAR.map((d) => ({
+        ...d,
+        url: (alumno as unknown as Record<string, string | null>)[d.campo] || null,
+    }));
+    const cuantos = adjuntos.filter((d) => d.url).length;
+
+    return (
+        <div className="space-y-1.5">
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black ${
+                cuantos === DOCS_ADMISION_REGULAR.length ? "bg-green-100 text-green-700"
+                    : cuantos === 0 ? "bg-red-100 text-red-600"
+                    : "bg-amber-100 text-amber-700"
+            }`}>
+                {cuantos} / {DOCS_ADMISION_REGULAR.length} adjuntos
+            </span>
+            <div className="flex flex-wrap gap-1">
+                {adjuntos.map((d) => d.url ? (
+                    <a
+                        key={d.campo}
+                        href={d.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={`Abrir: ${d.label}`}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#093E7A]/5 text-[#093E7A] text-[10px] font-bold hover:bg-[#093E7A]/10 transition-colors"
+                    >
+                        <span className="material-symbols-outlined text-[13px]">description</span>
+                        {d.corto}
+                    </a>
+                ) : (
+                    <span
+                        key={d.campo}
+                        title={`Falta: ${d.label}`}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-50 text-slate-300 text-[10px] font-bold line-through"
+                    >
+                        {d.corto}
+                    </span>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 function InfoItem({ label, value }: { label: string, value: string }) {
     return (
         <div>
@@ -69,10 +132,11 @@ export default function GestionEstudiantesPage() {
         try {
             let urlRuta = vista === "postulantes" ? "/alumnos/solicitudes-pendientes" : "/alumnos/";
 
-            // Si hay algo escrito en búsqueda, lo añadimos como query param
-            if (busqueda) {
-                // Verificamos si la ruta ya tiene algún parámetro (por si acaso)
-                urlRuta += urlRuta.includes("?") ? `&dni=${busqueda}` : `?dni=${busqueda}`;
+            // La búsqueda acepta nombre, apellidos o DNI. Va codificada porque
+            // un nombre lleva espacios y tildes, que no son válidos en una URL.
+            if (busqueda.trim()) {
+                const separador = urlRuta.includes("?") ? "&" : "?";
+                urlRuta += `${separador}busqueda=${encodeURIComponent(busqueda.trim())}`;
             }
 
             // Usamos tu función apiFetch pasándole el string limpio
@@ -294,7 +358,7 @@ export default function GestionEstudiantesPage() {
                                     </span>
                                     <input
                                         type="text"
-                                        placeholder="Buscar por DNI del alumno..."
+                                        placeholder="Buscar por nombre o DNI del alumno..."
                                         value={busqueda}
                                         onChange={(e) => setBusqueda(e.target.value)}
                                         className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#093E7A] outline-none transition-all"
@@ -464,25 +528,41 @@ export default function GestionEstudiantesPage() {
                                     <thead>
                                         <tr className="bg-[#fcfafa] border-b border-[#e5e7eb]">
                                             <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Nombre Completo</th>
-                                            <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">DNI</th>
+                                            <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">DNI / Usuario</th>
                                             <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Grado</th>
+                                            {/* Los documentos solo se piden en la admisión regular, así que la
+                                                columna aparece únicamente en esa pestaña. */}
+                                            {vista === "postulantes" && (
+                                                <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Documentos</th>
+                                            )}
                                             <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Estado</th>
                                             <th className="px-6 py-4 text-xs font-black uppercase text-[#617489] text-right">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#f3f4f6]">
                                         {loading ? (
-                                            <tr><td colSpan={5} className="text-center py-10 text-gray-400 text-sm italic">Cargando registros...</td></tr>
+                                            <tr><td colSpan={vista === "postulantes" ? 6 : 5} className="text-center py-10 text-gray-400 text-sm italic">Cargando registros...</td></tr>
                                         ) : (
                                             alumnos.map((alumno) => (
                                                 <tr key={alumno.id_alumno} className="hover:bg-[#fcfafa] transition-colors">
                                                     <td className="px-6 py-4 text-sm font-bold text-[#111418]">{alumno.nombres} {alumno.apellidos}</td>
-                                                    <td className="px-6 py-4 text-sm text-[#4b5563]">{alumno.dni}</td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="text-sm text-[#4b5563]">{alumno.dni}</div>
+                                                        {/* Usuario con el que el alumno entra al campus */}
+                                                        <div className="text-xs font-bold text-[#093E7A] tracking-wide">
+                                                            {alumno.usuario?.username ?? "Sin cuenta"}
+                                                        </div>
+                                                    </td>
                                                     <td className="px-6 py-4 text-sm text-[#4b5563]">
                                                         {alumno.grado_ingreso?.nombre || "No definido"}
                                                     </td>
+                                                    {vista === "postulantes" && (
+                                                        <td className="px-6 py-4">
+                                                            <DocumentosAdmision alumno={alumno} />
+                                                        </td>
+                                                    )}
                                                     <td className="px-6 py-4">
-                                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${['ADMITIDO', 'ESTUDIANTE', 'ACTIVO'].includes(alumno.estado_ingreso) ? 'bg-green-100 text-green-700' : alumno.estado_ingreso === 'RECHAZADO' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-[#093E7A]'}`}>
+                                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${ESTADOS_ACTIVOS.includes(alumno.estado_ingreso) ? 'bg-green-100 text-green-700' : alumno.estado_ingreso === 'RECHAZADO' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-[#093E7A]'}`}>
                                                             {alumno.estado_ingreso}
                                                         </span>
                                                     </td>
@@ -671,12 +751,7 @@ export default function GestionEstudiantesPage() {
                                             Documentos de Admisión
                                         </h4>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            {[
-                                                { campo: "doc_dni_menor", label: "DNI del menor" },
-                                                { campo: "doc_dni_apoderado", label: "DNI del apoderado" },
-                                                { campo: "doc_fum", label: "Ficha Única de Matrícula" },
-                                                { campo: "doc_certificado_estudios", label: "Certificado de estudios" },
-                                            ].map((d) => {
+                                            {DOCS_ADMISION_REGULAR.map((d) => {
                                                 const url = modalInfo.datos.alumno[d.campo];
                                                 return (
                                                     <div key={d.campo} className="flex items-center justify-between p-3 border border-slate-100 rounded-xl bg-white">

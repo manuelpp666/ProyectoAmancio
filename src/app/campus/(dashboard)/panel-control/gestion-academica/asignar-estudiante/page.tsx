@@ -324,9 +324,13 @@ export default function AsignacionEstudiantesPage() {
   };
 
   const alumnosSinAsignar = alumnos.filter(a => a.id_seccion === null);
-  const alumnosFiltrados = alumnosSinAsignar.filter(a =>
-    `${a.nombres} ${a.apellidos} ${a.dni}`.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  // Cada palabra debe aparecer en algún dato, sin importar el orden: buscar el
+  // apellido antes que el nombre encuentra igual al alumno.
+  const palabrasBuscadas = busqueda.toLowerCase().split(/[\s,]+/).filter(Boolean);
+  const alumnosFiltrados = alumnosSinAsignar.filter(a => {
+    const datos = `${a.nombres} ${a.apellidos} ${a.dni}`.toLowerCase();
+    return palabrasBuscadas.every(palabra => datos.includes(palabra));
+  });
 
   return (
     <RoleGuard modulo="academico" subModulo="estudiantes">

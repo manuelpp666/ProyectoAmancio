@@ -38,6 +38,13 @@ const TIPO_CONFIG: Record<string, { label: string; icon: any; desc: string }> = 
   }
 };
 
+// Pasa el texto a minúsculas y le quita las tildes, para que "perez" encuentre
+// a PÉREZ. El filtro es en el navegador, así que aquí no ayuda la colación
+// de la base de datos.
+const ACENTOS = new RegExp("[\\u0300-\\u036f]", "g"); // marcas de acento sueltas
+const sinTildes = (texto: string) =>
+  (texto ?? "").normalize("NFD").replace(ACENTOS, "").toLowerCase();
+
 // Pestañas de este apartado. Los `id` coinciden con el catálogo de permisos.
 const PESTANAS_PERSONAL: { id: TipoPersonal; label: string; icon: any }[] = [
   { id: "admin", label: "Administradores", icon: ShieldCheck },
@@ -51,7 +58,7 @@ export default function GestionPersonalPage() {
   const [activeTab, setActiveTab] = useState<TipoPersonal>("admin");
   const [personal, setPersonal] = useState<Personal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [busquedaDni, setBusquedaDni] = useState("");
+  const [busqueda, setBusqueda] = useState("");
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -93,14 +100,19 @@ export default function GestionPersonalPage() {
   }, [loadingPermisos, activeTab, tienePermiso]);
 
   useEffect(() => {
-    setBusquedaDni("");
+    setBusqueda("");
     if (!tienePermiso("gestion_personal", activeTab)) return;
     fetchPersonal(activeTab);
   }, [activeTab, loadingPermisos]);
 
-  const personalFiltrado = personal.filter(p =>
-    p.dni.toLowerCase().includes(busquedaDni.trim().toLowerCase())
-  );
+  // Se busca por nombre, apellidos o DNI. Cada palabra debe aparecer en algún
+  // dato, sin importar el orden: "perez ana" y "ana perez" dan lo mismo.
+  const palabrasBuscadas = sinTildes(busqueda).split(/[\s,]+/).filter(Boolean);
+  const personalFiltrado = personal.filter((p) => {
+    if (palabrasBuscadas.length === 0) return true;
+    const datos = sinTildes(`${p.nombres} ${p.apellidos} ${p.dni}`);
+    return palabrasBuscadas.every((palabra) => datos.includes(palabra));
+  });
 
   const fetchPersonal = async (tipo: TipoPersonal) => {
     setIsLoading(true);
@@ -220,16 +232,15 @@ export default function GestionPersonalPage() {
 
       <div className="flex-1 p-4 md:p-8 overflow-y-auto">
 
-        {/* BARRA: BÚSQUEDA POR DNI + REGISTRO DEDICADO */}
+        {/* BARRA: BÚSQUEDA POR NOMBRE O DNI + REGISTRO DEDICADO */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-5">
           <div className="relative w-full sm:w-80">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              inputMode="numeric"
-              placeholder={`Buscar ${TIPO_CONFIG[activeTab].label.toLowerCase()} por DNI...`}
-              value={busquedaDni}
-              onChange={(e) => setBusquedaDni(e.target.value)}
+              placeholder={`Buscar ${TIPO_CONFIG[activeTab].label.toLowerCase()} por nombre o DNI...`}
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A]"
             />
           </div>
@@ -255,8 +266,8 @@ export default function GestionPersonalPage() {
                 <tr><td colSpan={4} className="py-10 text-center text-gray-400">Cargando datos...</td></tr>
               ) : personalFiltrado.length === 0 ? (
                 <tr><td colSpan={4} className="py-10 text-center text-gray-400">
-                  {busquedaDni.trim()
-                    ? `No se encontró personal con el DNI "${busquedaDni}".`
+                  {busqueda.trim()
+                    ? `No se encontró personal que coincida con "${busqueda}".`
                     : "No hay personal registrado en esta área."}
                 </td></tr>
               ) : (
@@ -266,7 +277,15 @@ export default function GestionPersonalPage() {
                       <div className="font-bold text-gray-800">{p.apellidos}, {p.nombres}</div>
                       <div className="text-xs text-gray-500">{p.email || 'Sin correo'} | {p.telefono || 'Sin teléfono'}</div>
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-600">{p.dni}</td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-gray-600">{p.dni}</div>
+                      {/* Usuario con el que inicia sesión: el prefijo indica el rol
+                          (ADM-, DOC-, AUX-, PSI-), por eso una misma persona puede
+                          tener cuenta en dos roles con el mismo DNI. */}
+                      <div className="text-xs font-bold text-[#093E7A] tracking-wide">
+                        {p.usuario?.username ?? "—"}
+                      </div>
+                    </td>
                     <td className="px-6 py-4 text-center">
                       <span className={`px-3 py-1 text-xs font-bold rounded-full ${p.usuario.activo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                         {p.usuario.activo ? 'ACTIVO' : 'DADO DE BAJA'}
