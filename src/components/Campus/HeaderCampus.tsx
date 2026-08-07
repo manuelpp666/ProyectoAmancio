@@ -35,11 +35,43 @@ export function HeaderCampus({ onOpenMenu }: { onOpenMenu: () => void }) {
     // Al visitar la página de notificaciones se limpia el badge
     const onSeen = () => setNoVistas(0);
     window.addEventListener("notif-seen", onSeen);
-    // Refresco periódico para captar mensajes/eventos nuevos
-    const intervalo = setInterval(calcularNoVistas, 60000);
+
+    // Refresco periódico, pero solo mientras la pestaña se está viendo.
+    //
+    // El campus se queda abierto en una pestaña de fondo durante horas. Con un
+    // intervalo fijo, cada una de esas pestañas seguía preguntando al servidor
+    // cada minuto sin que nadie mirara el resultado; multiplicado por todos los
+    // alumnos conectados, era la petición más frecuente de toda la aplicación.
+    // Al volver a la pestaña se consulta enseguida, así que el contador sigue
+    // apareciendo al día.
+    let intervalo: ReturnType<typeof setInterval> | null = null;
+
+    const arrancar = () => {
+      if (intervalo === null) intervalo = setInterval(calcularNoVistas, 120000);
+    };
+    const parar = () => {
+      if (intervalo !== null) {
+        clearInterval(intervalo);
+        intervalo = null;
+      }
+    };
+
+    const alCambiarVisibilidad = () => {
+      if (document.hidden) {
+        parar();
+      } else {
+        calcularNoVistas();
+        arrancar();
+      }
+    };
+
+    if (!document.hidden) arrancar();
+    document.addEventListener("visibilitychange", alCambiarVisibilidad);
+
     return () => {
       window.removeEventListener("notif-seen", onSeen);
-      clearInterval(intervalo);
+      document.removeEventListener("visibilitychange", alCambiarVisibilidad);
+      parar();
     };
   }, [id_usuario]);
 
@@ -72,9 +104,13 @@ export function HeaderCampus({ onOpenMenu }: { onOpenMenu: () => void }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // El padding horizontal sigue al del <main> del layout (p-4 md:p-8) para que
+  // el contenido de la cabecera quede alineado con el de la página a cualquier
+  // ancho. El botón de menú aparece siempre que el sidebar esté plegado, es
+  // decir por debajo de xl.
   return (
-    <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-20 shrink-0">
-      <div className="flex items-center gap-3 lg:hidden">
+    <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 sticky top-0 z-20 shrink-0">
+      <div className="flex items-center gap-3 xl:hidden">
         <button onClick={onOpenMenu} className="text-[#701C32] p-1">
           <Menu size={28} />
         </button>

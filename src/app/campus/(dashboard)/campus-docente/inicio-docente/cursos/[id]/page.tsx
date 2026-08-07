@@ -201,13 +201,39 @@ export default function DetalleCursoDocente() {
 
   const guardarNotas = async (idTarea: number) => {
     const notasParaEnviar: any = {};
+    let enBlanco = 0;
+    let fueraDeRango = false;
+
     Object.keys(notasTemporales).forEach((key) => {
       const [alId, tarId] = key.split("_");
-      if (Number(tarId) === idTarea) notasParaEnviar[alId] = Number(notasTemporales[key]);
+      if (Number(tarId) !== idTarea) return;
+
+      // Una casilla vacía no es un cero. Antes `Number("")` la convertía en 0 y
+      // el alumno se llevaba la nota mínima sin que el docente lo advirtiera.
+      const escrito = (notasTemporales[key] ?? "").trim();
+      if (escrito === "") {
+        enBlanco++;
+        return;
+      }
+      const nota = Number(escrito);
+      if (Number.isNaN(nota) || nota < 0 || nota > 20) {
+        fueraDeRango = true;
+        return;
+      }
+      notasParaEnviar[alId] = nota;
     });
+
+    if (fueraDeRango) {
+      toast.error("Hay notas fuera del rango permitido (0 - 20). Revísalas antes de publicar.");
+      return;
+    }
     if (Object.keys(notasParaEnviar).length === 0) {
+      if (enBlanco > 0) toast.error("No escribiste ninguna nota.");
       setEditandoNotas(false);
       return;
+    }
+    if (enBlanco > 0) {
+      toast.warning(`Se publicaron las notas escritas. ${enBlanco} casilla(s) quedaron en blanco y no se guardaron.`);
     }
     const toastId = toast.loading("Publicando notas...");
     try {
@@ -292,7 +318,7 @@ export default function DetalleCursoDocente() {
       </div>
 
       {/* TABS */}
-      <div className="border-b border-gray-200 barra-pestanas gap-6">
+      <div className="border-b border-gray-200 barra-pestanas gap-x-5 md:gap-x-6">
         <button
           onClick={() => setActiveTab("contenido")}
           className={`pb-3 text-sm font-bold transition-colors ${activeTab === "contenido" ? "border-b-2 border-[#701C32] text-[#701C32]" : "text-gray-500 hover:text-gray-700"}`}

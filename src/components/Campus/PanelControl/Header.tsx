@@ -18,7 +18,7 @@ export default function HeaderPanel() {
 
     return (
         <div className="bg-white px-4 md:px-8">
-            <div className="barra-pestanas gap-6 md:gap-8 border-b">
+            <div className="barra-pestanas gap-x-5 md:gap-x-6 border-b">
 
                 {tienePermiso("contenido_web", "info_general") && (
                     <Link href="/campus/panel-control/pagina-web">

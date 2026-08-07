@@ -54,8 +54,12 @@ export default function Footer() {
   return (
     <footer className="bg-[#701C32] text-white pt-20 pb-10 px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-          <div className="col-span-1 md:col-span-1">
+        {/* Cuatro columnas solo a partir de xl. Con md (768px) cada columna se
+            quedaba en unos 150px: la dirección se partía carácter a carácter y
+            los iconos de redes se salían de su columna. Entre 640 y 1280 van de
+            dos en dos, que es donde caen las ventanas partidas. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-12 mb-16">
+          <div className="col-span-1">
             <div className="flex items-center space-x-3 mb-6">
               <Link href="/" className="shrink-0">
                 <img
@@ -75,7 +79,7 @@ export default function Footer() {
             {redes.length > 0 && (
               <div className="mt-6">
                 <p className="text-[#FFF1E3]/60 text-xs font-bold uppercase tracking-widest mb-3">Síguenos</p>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   {redes.map((red) => (
                     <a
                       key={red.nombre}

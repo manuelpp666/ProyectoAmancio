@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+// En Next 16 este archivo se llama proxy.ts (antes middleware.ts) y la función
+// exportada debe llamarse `proxy`.
+//
+// Ojo con lo que decide aquí: `userRole` es una cookie legible por el usuario,
+// así que esta comprobación evita que alguien entre por error a un panel que no
+// le toca, pero NO es la que protege los datos. De eso se encarga el backend,
+// que valida el rol en cada endpoint contra el token firmado.
+export function proxy(request: NextRequest) {
   const token = request.cookies.get('authToken')?.value;
   const role = request.cookies.get('userRole')?.value;
   const { pathname } = request.nextUrl;

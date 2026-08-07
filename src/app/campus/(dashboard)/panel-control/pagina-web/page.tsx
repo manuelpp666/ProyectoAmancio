@@ -226,7 +226,7 @@ export default function GestionWebPage() {
         </div>
 
         {/* TABS DE SECCIÓN */}
-        <div className="bg-white px-4 md:px-8 border-b shrink-0 barra-pestanas gap-6">
+        <div className="bg-white px-4 md:px-8 border-b shrink-0 barra-pestanas gap-x-5 md:gap-x-6">
           {seccionesVisibles.map(s => (
             <button
               key={s.id}

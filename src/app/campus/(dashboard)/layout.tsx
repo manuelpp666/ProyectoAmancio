@@ -65,10 +65,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     pathname.endsWith("/mensajeria") ||
     pathname.endsWith("/tramites/solicitud");
 
+  // El sidebar se despliega a partir de xl (1280px) y no de lg (1024px).
+  //
+  // Ocupa 256px fijos, así que con el corte en lg una ventana de 1024px dejaba
+  // 704px de contenido: menos que los 936px que había a 1000px de ancho. Es
+  // decir, ensanchar la ventana estrechaba la página, justo en los tamaños de
+  // una ventana partida en media pantalla. Con el corte en xl el sidebar se
+  // pliega en ese rango y el contenido se queda con el ancho completo.
+  //
+  // Si se cambia este valor hay que cambiarlo también en los cinco Aside
+  // (xl:sticky / max-xl:-translate-x-full / xl:hidden) y en el botón de menú de
+  // HeaderCampus: el conjunto solo funciona si todos usan el mismo corte.
   return (
     <div className="flex h-screen bg-[#F2F4F7] font-sans text-slate-800 overflow-hidden">
+      {/* Fondo oscuro del menú plegado. Vive solo aquí, para los cinco roles:
+          el Aside del panel de administración dibujaba otro igual encima y las
+          dos capas al 50% dejaban la pantalla mucho más oscura que en el resto
+          de perfiles. */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setIsMobileMenuOpen(false)} />
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 xl:hidden transition-opacity"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
       )}
 
       {renderSidebar()}

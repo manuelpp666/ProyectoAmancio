@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { X, Save, AlertCircle, Loader2, FileUp, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/src/lib/api";
+import { CampoNumero, leerNumero, aNumero } from "@/src/components/utils/numero";
 
 const NOMBRES_BIMESTRE = ["I Bimestre", "II Bimestre", "III Bimestre", "IV Bimestre"];
 
@@ -20,7 +21,9 @@ export default function ModalCrearTarea({ idCarga, bimestre, tareaExistente, pes
     fecha_entrega: "",
     tipo_evaluacion: "TAREA",
     bimestre: bimestre || 1,
-    peso: 0
+    // peso admite la cadena vacía para poder borrar el campo y teclear el
+    // porcentaje de cero, en vez de sobrescribir un 0 que reaparece solo.
+    peso: "" as CampoNumero
   });
 
   useEffect(() => {
@@ -32,7 +35,7 @@ export default function ModalCrearTarea({ idCarga, bimestre, tareaExistente, pes
         fecha_entrega: tareaExistente.fecha_entrega ? tareaExistente.fecha_entrega.slice(0, 16) : "",
         tipo_evaluacion: tareaExistente.tipo || tareaExistente.tipo_evaluacion || "TAREA",
         bimestre: tareaExistente.bimestre || bimestre,
-        peso: tareaExistente.peso || 0
+        peso: tareaExistente.peso ?? ""
       });
       setTienePeso((tareaExistente.peso || 0) > 0);
       setTieneFecha(!!tareaExistente.fecha_entrega);
@@ -43,7 +46,7 @@ export default function ModalCrearTarea({ idCarga, bimestre, tareaExistente, pes
 
   // Peso disponible: 100 - lo ya usado por las demás tareas del bimestre
   // (pesoUsadoBimestre ya excluye la tarea que se está editando)
-  const pesoActual = tienePeso ? (formData.peso || 0) : 0;
+  const pesoActual = tienePeso ? aNumero(formData.peso) : 0;
   const pesoDisponible = 100 - pesoUsadoBimestre;
   const pesoRestante = pesoDisponible - pesoActual;
   const pesoExcedido = pesoRestante < 0;
@@ -51,6 +54,10 @@ export default function ModalCrearTarea({ idCarga, bimestre, tareaExistente, pes
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (tienePeso && pesoActual <= 0) {
+      toast.error("Marcaste que la actividad tiene peso pero no indicaste cuánto");
+      return;
+    }
     if (tienePeso && pesoExcedido) {
       toast.error(`El peso excede lo disponible en el bimestre (quedan ${pesoDisponible}%)`);
       return;
@@ -70,7 +77,7 @@ export default function ModalCrearTarea({ idCarga, bimestre, tareaExistente, pes
       dataToSend.append("descripcion", formData.descripcion || "");
       dataToSend.append("tipo_evaluacion", formData.tipo_evaluacion);
       dataToSend.append("bimestre", formData.bimestre.toString());
-      dataToSend.append("peso", (tienePeso ? formData.peso : 0).toString());
+      dataToSend.append("peso", pesoActual.toString());
 
       // Solo enviamos la fecha si el docente activó el checkbox
       if (tieneFecha && formData.fecha_entrega) {
@@ -172,7 +179,7 @@ export default function ModalCrearTarea({ idCarga, bimestre, tareaExistente, pes
                   checked={tienePeso}
                   onChange={(e) => {
                     setTienePeso(e.target.checked);
-                    if (!e.target.checked) setFormData({ ...formData, peso: 0 });
+                    if (!e.target.checked) setFormData({ ...formData, peso: "" });
                   }}
                   className="w-4 h-4 accent-[#701C32]"
                 />
@@ -189,7 +196,7 @@ export default function ModalCrearTarea({ idCarga, bimestre, tareaExistente, pes
                       disabled={tieneEntregas}
                       value={formData.peso}
                       className={`w-24 border rounded-xl px-3 py-2 outline-none focus:border-[#701C32] ${pesoExcedido ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white'}`}
-                      onChange={(e) => setFormData({ ...formData, peso: parseInt(e.target.value) || 0 })}
+                      onChange={(e) => setFormData({ ...formData, peso: leerNumero(e.target.value) })}
                     />
                     <span className="text-sm font-bold text-gray-500">% del bimestre</span>
                   </div>

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { Contacto } from "@/src/interfaces/mensajeria";
 import { toast } from "sonner";
 import { apiFetch } from "@/src/lib/api";
+import { urlWebSocket } from "@/src/lib/websocket";
 
 export function useChat(miUsuarioId: number | null, userLoading: boolean) {
   const [contactos, setContactos] = useState<Contacto[]>([]);
@@ -31,9 +32,8 @@ export function useChat(miUsuarioId: number | null, userLoading: boolean) {
   // 2. WebSocket
   useEffect(() => {
     if (!miUsuarioId || socketRef.current) return;
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const socket = new WebSocket(`${protocol}//localhost:8000/ws/${miUsuarioId}`);
-    
+    const socket = new WebSocket(urlWebSocket(miUsuarioId));
+
     socket.onmessage = (event) => {
       const payload = JSON.parse(event.data);
       if (payload.tipo === "NUEVO_MENSAJE") manejarNuevoMensaje(payload.data, false);

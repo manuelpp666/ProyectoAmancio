@@ -43,15 +43,9 @@ const getAcademicaPath = () => {
   const isActive = (path: string) => pathname === path;
   return (
     <>
-      {/* Overlay para móviles */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm transition-opacity"
-          onClick={onClose}
-        />
-      )}
-
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#701C32] text-white flex flex-col h-screen transition-transform duration-300 ease-in-out lg:sticky lg:top-0 ${isOpen ? "translate-x-0" : "max-lg:-translate-x-full"}`}>
+      {/* El fondo oscuro del menú plegado lo pone el layout del campus, igual
+          que para los demás roles. Aquí había otro idéntico y se sumaban. */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#701C32] text-white flex flex-col h-screen transition-transform duration-300 ease-in-out xl:sticky xl:top-0 ${isOpen ? "translate-x-0" : "max-xl:-translate-x-full"}`}>
 
         {/* Header del Sidebar */}
         <div className="h-20 flex items-center justify-between px-6 border-b border-white/10 shrink-0">
@@ -59,7 +53,7 @@ const getAcademicaPath = () => {
             <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
             <span className="font-bold text-lg leading-tight">Panel de Administrador</span>
           </div>
-          <button onClick={onClose} className="lg:hidden text-white/80"><X size={24} /></button>
+          <button onClick={onClose} className="xl:hidden text-white/80"><X size={24} /></button>
         </div>
 
         {/* Navegación Condicional */}

@@ -330,7 +330,7 @@ export default function GestionEstudiantesPage() {
                         </div>
 
                         {/* PESTAÑAS: solo las permitidas para este administrador */}
-                        <div className="barra-pestanas gap-6 md:gap-8">
+                        <div className="barra-pestanas gap-x-5 md:gap-x-6">
                             {PESTANAS_ESTUDIANTES.filter((t) => tienePermiso("gestion_estudiantes", t.id)).map((tab) => (
                                 <button
                                     key={tab.id}

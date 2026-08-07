@@ -8,6 +8,7 @@ import { Tramite } from "@/src/interfaces/tramite";
 import { apiFetch } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
 import { usePermisos } from "@/src/hooks/usePermisos";
+import { CampoNumero, leerNumero, aNumero } from "@/src/components/utils/numero";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // --- NUEVA INTERFAZ PARA TIPOS DE PAGO ---
@@ -84,7 +85,9 @@ export default function GestionFinancieraPage() {
   // Estados para editar/eliminar pago
   const [isEditPagoOpen, setIsEditPagoOpen] = useState(false);
   const [currentPagoId, setCurrentPagoId] = useState<number | null>(null);
-  const [editPagoData, setEditPagoData] = useState({ concepto: "", monto: 0, mora: 0, fecha_vencimiento: "", estado: "PENDIENTE" });
+  // monto y mora admiten la cadena vacía: así se puede borrar el importe entero
+  // para reescribirlo, en vez de pelearse con un 0 que vuelve solo.
+  const [editPagoData, setEditPagoData] = useState({ concepto: "", monto: 0 as CampoNumero, mora: 0 as CampoNumero, fecha_vencimiento: "", estado: "PENDIENTE" });
   
   const abrirModalDictamen = (solicitud: Solicitud) => {
     setRespuestaAdmin("");
@@ -102,7 +105,7 @@ export default function GestionFinancieraPage() {
   const [filtroEstado, setFiltroEstado] = useState("TODOS");
   // Mes del periodo: "TODOS" o "1".."12"
   const [filtroMes, setFiltroMes] = useState("TODOS");
-  const [anioFiltro, setAnioFiltro] = useState(new Date().getFullYear());
+  const [anioFiltro, setAnioFiltro] = useState<CampoNumero>(new Date().getFullYear());
 
   // 2. Esta función es la que realmente llama a la API (se pasa al onConfirm del modal)
   const ejecutarConfirmacionManual = async () => {
@@ -130,18 +133,20 @@ export default function GestionFinancieraPage() {
   // Formulario Trámite
   const [formData, setFormData] = useState({
     nombre: "",
-    costo: 0,
+    // costo y dias_vencimiento admiten la cadena vacía mientras se escriben
+    costo: 0 as CampoNumero,
     requisitos: "",
     alcance: "TODOS" as "TODOS" | "GRADOS",
     grados_seleccionados: [] as number[],
     periodo_academico: "REGULAR" as "REGULAR" | "VERANO" | "AMBOS",
-    dias_vencimiento: 15
+    dias_vencimiento: 15 as CampoNumero
   });
   const [respuestaAdmin, setRespuestaAdmin] = useState("");
 
   // Formulario Tipo Pago
   const [formDataTipoPago, setFormDataTipoPago] = useState({
-    categoria: "OTRO", nombre: "", costo: 0, fecha_inicio: "", fecha_vencimiento: "", mora: 0, accion_vencimiento: "APLICAR_MORA", activo: true, periodo_academico: "REGULAR"
+    // costo y mora admiten la cadena vacía mientras se escriben
+    categoria: "OTRO", nombre: "", costo: 0 as CampoNumero, fecha_inicio: "", fecha_vencimiento: "", mora: 0 as CampoNumero, accion_vencimiento: "APLICAR_MORA", activo: true, periodo_academico: "REGULAR"
   });
 
   // --- NUEVOS ESTADOS PARA FECHAS MM-DD ---
@@ -211,7 +216,9 @@ export default function GestionFinancieraPage() {
       if (filtroTipoPago !== "TODOS") params.append("tipo", filtroTipoPago);
       if (filtroEstado !== "TODOS") params.append("estado", filtroEstado);
       if (filtroMes !== "TODOS") params.append("mes", filtroMes);
-      params.append("anio", anioFiltro.toString());
+      // Mientras el campo del año está en blanco no se filtra por año, igual que
+      // el resto de filtros. Antes se mandaba "NaN" y el servidor devolvía 422.
+      if (anioFiltro !== "") params.append("anio", anioFiltro.toString());
       // criterio_fecha ya no se envía: el backend elige la fecha adecuada
       // según el estado (pagados por fecha de pago, deudas por vencimiento).
 
@@ -283,8 +290,17 @@ export default function GestionFinancieraPage() {
 
   const handleSubmitTramite = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Los importes y plazos pueden estar en blanco mientras se escriben, pero no
+    // al enviar: un trámite sin días de plazo se vencería el mismo día.
+    const dias = aNumero(formData.dias_vencimiento);
+    if (dias < 1 || dias > 365) {
+      toast.error("Los días para pagar deben estar entre 1 y 365");
+      return;
+    }
     const payload = {
       ...formData,
+      costo: aNumero(formData.costo),
+      dias_vencimiento: dias,
       grados_permitidos: formData.alcance === "GRADOS" ? formData.grados_seleccionados.join(",") : null,
       activo: true
     };
@@ -357,7 +373,15 @@ export default function GestionFinancieraPage() {
     // Reemplazamos las fechas por la concatenación de los nuevos selectores MM-DD
     const fInicio = `${mesInicio}-${diaInicio}`;
     const fFin = `${mesFin}-${diaFin}`;
-    const payload = { ...formDataTipoPago, fecha_inicio: fInicio, fecha_vencimiento: fFin };
+    // Un costo o una mora en blanco valen cero, no NaN: sin esto el JSON salía
+    // con null y el servidor rechazaba el guardado.
+    const payload = {
+      ...formDataTipoPago,
+      costo: aNumero(formDataTipoPago.costo),
+      mora: aNumero(formDataTipoPago.mora),
+      fecha_inicio: fInicio,
+      fecha_vencimiento: fFin,
+    };
     
     const url = isEditingTipoPago ? `/finance/tipos-pago/${currentIdTipoPago}` : `/finance/tipos-pago`;
     try {
@@ -394,7 +418,12 @@ export default function GestionFinancieraPage() {
       const res = await apiFetch(`/finance/pagos/${currentPagoId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...editPagoData, monto_total: editPagoData.monto + editPagoData.mora })
+        body: JSON.stringify({
+          ...editPagoData,
+          monto: aNumero(editPagoData.monto),
+          mora: aNumero(editPagoData.mora),
+          monto_total: aNumero(editPagoData.monto) + aNumero(editPagoData.mora),
+        })
       });
       if (res.ok) { toast.success("Pago actualizado"); setIsEditPagoOpen(false); fetchPagos(); }
       else toast.error("Error al actualizar el pago");
@@ -433,7 +462,7 @@ export default function GestionFinancieraPage() {
             </div>
           </div>
 
-          <div className="barra-pestanas gap-6 md:gap-8">
+          <div className="barra-pestanas gap-x-5 md:gap-x-6">
             {PESTANAS_FINANZAS.filter(t => tienePermiso("tramites_finanzas", t.permiso)).map(t => (
               <button
                 key={t.id}
@@ -725,7 +754,7 @@ export default function GestionFinancieraPage() {
                     type="number"
                     className="w-full px-3 py-2 bg-gray-50 border rounded-lg text-sm"
                     value={anioFiltro}
-                    onChange={(e) => setAnioFiltro(parseInt(e.target.value))}
+                    onChange={(e) => setAnioFiltro(leerNumero(e.target.value))}
                   />
                 </div>
               </div>
@@ -851,7 +880,7 @@ export default function GestionFinancieraPage() {
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Costo (S/)</label>
                   <input required type="number" step="0.01" min="0" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
-                    value={formData.costo} onChange={e => setFormData({ ...formData, costo: parseFloat(e.target.value) })}
+                    value={formData.costo} onChange={e => setFormData({ ...formData, costo: leerNumero(e.target.value) })}
                   />
                 </div>
                 <div>
@@ -884,7 +913,7 @@ export default function GestionFinancieraPage() {
                     max={365}
                     className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
                     value={formData.dias_vencimiento}
-                    onChange={e => setFormData({ ...formData, dias_vencimiento: parseInt(e.target.value) || 1 })}
+                    onChange={e => setFormData({ ...formData, dias_vencimiento: leerNumero(e.target.value) })}
                   />
                   <p className="text-[10px] text-gray-400 mt-1 italic">Plazo de pago (solo aplica a trámites con costo).</p>
                 </div>
@@ -1052,7 +1081,7 @@ export default function GestionFinancieraPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Costo Base (S/)</label>
-                  <input required type="number" min="0" step="0.01" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" value={formDataTipoPago.costo} onChange={e => setFormDataTipoPago({...formDataTipoPago, costo: parseFloat(e.target.value)})} />
+                  <input required type="number" min="0" step="0.01" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none" value={formDataTipoPago.costo} onChange={e => setFormDataTipoPago({...formDataTipoPago, costo: leerNumero(e.target.value)})} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Acción al Vencer</label>
@@ -1076,7 +1105,7 @@ export default function GestionFinancieraPage() {
               {formDataTipoPago.accion_vencimiento === "APLICAR_MORA" && (formDataTipoPago.categoria === "PENSION" || formDataTipoPago.categoria === "MODULO") && (
                 <div>
                   <label className="block text-xs font-bold text-orange-500 uppercase mb-1">Monto de Mora (S/)</label>
-                  <input required type="number" min="0" step="0.01" className="w-full bg-orange-50 border border-orange-200 rounded-lg px-4 py-2 text-sm outline-none" value={formDataTipoPago.mora} onChange={e => setFormDataTipoPago({...formDataTipoPago, mora: parseFloat(e.target.value)})} />
+                  <input required type="number" min="0" step="0.01" className="w-full bg-orange-50 border border-orange-200 rounded-lg px-4 py-2 text-sm outline-none" value={formDataTipoPago.mora} onChange={e => setFormDataTipoPago({...formDataTipoPago, mora: leerNumero(e.target.value)})} />
                 </div>
               )}
               {formDataTipoPago.categoria !== "PENSION" && formDataTipoPago.categoria !== "MODULO" && (
@@ -1116,12 +1145,12 @@ export default function GestionFinancieraPage() {
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Monto (S/)</label>
                   <input required type="number" min="0" step="0.01" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
-                    value={editPagoData.monto} onChange={e => setEditPagoData({ ...editPagoData, monto: parseFloat(e.target.value) || 0 })} />
+                    value={editPagoData.monto} onChange={e => setEditPagoData({ ...editPagoData, monto: leerNumero(e.target.value) })} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Mora (S/)</label>
                   <input type="number" min="0" step="0.01" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
-                    value={editPagoData.mora} onChange={e => setEditPagoData({ ...editPagoData, mora: parseFloat(e.target.value) || 0 })} />
+                    value={editPagoData.mora} onChange={e => setEditPagoData({ ...editPagoData, mora: leerNumero(e.target.value) })} />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1141,7 +1170,7 @@ export default function GestionFinancieraPage() {
                 </div>
               </div>
               <div className="bg-gray-50 rounded-lg px-4 py-2 text-sm text-gray-600 border">
-                Total: <span className="font-black text-[#093E7A]">S/ {(editPagoData.monto + editPagoData.mora).toFixed(2)}</span>
+                Total: <span className="font-black text-[#093E7A]">S/ {(aNumero(editPagoData.monto) + aNumero(editPagoData.mora)).toFixed(2)}</span>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setIsEditPagoOpen(false)} className="flex-1 py-2.5 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200">Cancelar</button>

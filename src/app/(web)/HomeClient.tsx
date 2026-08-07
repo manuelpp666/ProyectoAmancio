@@ -93,7 +93,7 @@ export default function HomeClient({
   return (
     <>
       {/* HERO SECTION DINÁMICO */}
-      <section className="relative min-h-[560px] md:min-h-[660px] flex items-center justify-center overflow-hidden">
+      <section className="portada-inicio relative flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           {heroImagen && (
             esVideo(heroImagen) ? (

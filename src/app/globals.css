@@ -54,24 +54,53 @@ aside :focus-visible {
 /*
  * Barra de pestañas de los paneles.
  *
- * En pantallas anchas se ve como siempre; cuando no caben (móvil o etiquetas
- * largas como "Renovaciones de Matrícula") se desplaza en horizontal en vez de
- * apretujar las pestañas o desbordar la página. La barra de scroll se oculta
- * porque el gesto en móvil ya es evidente y en escritorio nunca aparece.
+ * Cuando caben, las pestañas van en una sola fila; cuando no (ventana partida,
+ * o apartados de cinco pestañas como Cursos y Materias) pasan a la fila
+ * siguiente. Cada pestaña se mantiene entera: nunca se parte una etiqueta como
+ * "Asignación de Estudiantes" a mitad de palabra.
+ *
+ * Antes esto se resolvía con scroll horizontal y la barra de scroll oculta. En
+ * móvil funcionaba, pero en escritorio no hay gesto de arrastre ni barra
+ * visible: las pestañas que no cabían quedaban sencillamente inalcanzables.
+ *
+ * Quien use esta clase debe separar las pestañas con `gap-x-*`, nunca con
+ * `gap-*`: `gap-*` separa también las filas, y al envolverse quedaban a 32px
+ * una de otra, como si fuesen dos menús distintos en vez de una tira continua.
  */
 .barra-pestanas {
   display: flex;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-.barra-pestanas::-webkit-scrollbar {
-  display: none;
+  flex-wrap: wrap;
 }
 .barra-pestanas > * {
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+/*
+ * Portada de la página de inicio.
+ *
+ * Ocupa todo lo que queda de pantalla por debajo de la cabecera (h-20 = 5rem),
+ * de modo que al entrar solo se vea la portada y la Propuesta Educativa quede
+ * fuera de cuadro hasta que se hace scroll. Se descuentan 5rem y no los 81px
+ * que mide la cabecera con su borde: ese píxel de más hace que la portada
+ * sobresalga en lugar de dejar asomar la sección siguiente.
+ *
+ * Se mide en `lvh` (la altura de la ventana con la barra del navegador
+ * retraída) y no en `vh` ni `svh`: en el móvil la barra se esconde al bajar y
+ * con las otras unidades asomaría el borde de la sección siguiente.
+ *
+ * El mínimo en píxeles es la altura que tenía antes, y sigue mandando en
+ * pantallas muy bajas (un móvil en horizontal): ahí conviene que la portada
+ * sobresalga a que el titular quede apretado.
+ */
+.portada-inicio {
+  min-height: max(560px, calc(100lvh - 5rem));
+}
+
+@media (min-width: 768px) {
+  .portada-inicio {
+    min-height: max(660px, calc(100lvh - 5rem));
+  }
 }
 
 /* Entrada de superficies (paneles que aparecen tras cargar datos) */

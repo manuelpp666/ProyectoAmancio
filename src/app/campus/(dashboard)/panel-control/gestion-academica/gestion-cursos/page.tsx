@@ -6,6 +6,7 @@ import { apiFetch } from "@/src/lib/api";
 import { toast } from "sonner";
 import { RoleGuard } from "@/src/components/auth/RoleGuard";
 import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
+import { CampoNumero, leerNumero, aNumero } from "@/src/components/utils/numero";
 
 const GRUPOS_VERANO = [
   { clave: "PRIM_1_2", etiqueta: "1ro y 2do de Primaria" },
@@ -86,7 +87,9 @@ export default function GestionCursosPage() {
   const [showAreaModal, setShowAreaModal] = useState(false);
 
   // Formulario Nuevo Curso
-  const [nuevoCurso, setNuevoCurso] = useState({ nombre: "", id_area: "", minutos_semanales: 0, es_verano: false, tipo_verano: "FIJO", grupo_verano: "PRIM_1_2" });
+  // minutos_semanales admite la cadena vacía: es lo que permite borrar el campo
+  // entero en vez de quedarse con un 0 pegado al principio del número.
+  const [nuevoCurso, setNuevoCurso] = useState({ nombre: "", id_area: "", minutos_semanales: "" as CampoNumero, es_verano: false, tipo_verano: "FIJO", grupo_verano: "PRIM_1_2" });
   const [gradosSeleccionados, setGradosSeleccionados] = useState<number[]>([]);
   const [nuevaAreaNombre, setNuevaAreaNombre] = useState("");
 
@@ -96,12 +99,12 @@ export default function GestionCursosPage() {
   const cerrarModalPrincipal = () => {
     setShowModal(false);
     setEditingId(null);
-    setNuevoCurso({ nombre: "", id_area: "", minutos_semanales: 0, es_verano: tipoAnio === "VERANO", tipo_verano: "FIJO", grupo_verano: "PRIM_1_2" });
+    setNuevoCurso({ nombre: "", id_area: "", minutos_semanales: "", es_verano: tipoAnio === "VERANO", tipo_verano: "FIJO", grupo_verano: "PRIM_1_2" });
     setGradosSeleccionados([]);
   };
   const abrirNuevoCurso = () => {
     setEditingId(null);
-    setNuevoCurso({ nombre: "", id_area: "", minutos_semanales: 0, es_verano: tipoAnio === "VERANO", tipo_verano: "FIJO", grupo_verano: "PRIM_1_2" });
+    setNuevoCurso({ nombre: "", id_area: "", minutos_semanales: "", es_verano: tipoAnio === "VERANO", tipo_verano: "FIJO", grupo_verano: "PRIM_1_2" });
     setGradosSeleccionados([]);
     setShowModal(true);
   };
@@ -111,7 +114,7 @@ export default function GestionCursosPage() {
     setNuevoCurso({
       nombre: cursoAgrupado.nombre,
       id_area: (cursoAgrupado.id_area ?? "").toString(),
-      minutos_semanales: cursoAgrupado.minutos_semanales || 0,
+      minutos_semanales: cursoAgrupado.minutos_semanales ?? "",
       es_verano: !!cursoAgrupado.es_verano,
       tipo_verano: cursoAgrupado.tipo_verano || "FIJO",
       grupo_verano: cursoAgrupado.grupo_verano || "PRIM_1_2"
@@ -199,7 +202,7 @@ export default function GestionCursosPage() {
     const esFijo = esVerano && nuevoCurso.tipo_verano === "FIJO";
 
     // Validaciones
-    if (!nuevoCurso.nombre.trim() || !nuevoCurso.id_area || nuevoCurso.minutos_semanales <= 0) {
+    if (!nuevoCurso.nombre.trim() || !nuevoCurso.id_area || aNumero(nuevoCurso.minutos_semanales) <= 0) {
       toast.error("Completa el nombre, el área y los minutos semanales.");
       return;
     }
@@ -223,7 +226,7 @@ export default function GestionCursosPage() {
         body: JSON.stringify({
           nombre: nuevoCurso.nombre,
           id_area: parseInt(nuevoCurso.id_area),
-          minutos_semanales: nuevoCurso.minutos_semanales,
+          minutos_semanales: aNumero(nuevoCurso.minutos_semanales),
           es_verano: esVerano,
           tipo_verano: esVerano ? nuevoCurso.tipo_verano : null,
           grupo_verano: esFijo ? nuevoCurso.grupo_verano : null,
@@ -511,7 +514,7 @@ export default function GestionCursosPage() {
                       placeholder="Ej. 180"
                       className="w-full border border-gray-200 rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A]"
                       value={nuevoCurso.minutos_semanales}
-                      onChange={(e) => setNuevoCurso({ ...nuevoCurso, minutos_semanales: parseInt(e.target.value) || 0 })}
+                      onChange={(e) => setNuevoCurso({ ...nuevoCurso, minutos_semanales: leerNumero(e.target.value) })}
                     />
                   </div>
                   <div className="space-y-1.5 col-span-2">

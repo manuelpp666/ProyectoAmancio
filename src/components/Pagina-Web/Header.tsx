@@ -40,14 +40,19 @@ export default function Header() {
                   className="object-contain"
                 />
               </div>
-              <span className="font-black text-xl tracking-tight text-[#701C32] uppercase">
+              <span className="font-black text-lg lg:text-xl tracking-tight text-[#701C32] uppercase whitespace-nowrap">
                 Amancio Varona
               </span>
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-8 items-center">
+          {/* Navegación de escritorio.
+              Aparece a partir de lg y no de md: el nombre del colegio, los
+              cuatro enlaces y el botón del campus suman unos 900px, así que
+              entre 768 y 1024 se pisaban unos a otros y "Sobre Nosotros" y
+              "Campus Virtual" partían en dos líneas. Por debajo de lg se usa
+              el menú de hamburguesa, que ahí cabe de sobra. */}
+          <div className="hidden lg:flex lg:space-x-6 xl:space-x-8 items-center">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
@@ -71,7 +76,7 @@ export default function Header() {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center">
+          <div className="lg:hidden flex items-center">
             <button
               onClick={toggleMenu}
               className="text-[#701C32] focus:outline-none"
@@ -87,7 +92,7 @@ export default function Header() {
 
       {/* Mobile Menu Overlay */}
       <div
-        className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
+        className={`lg:hidden overflow-hidden transition-all duration-300 ease-in-out ${
           isOpen ? "max-h-[500px] border-b border-slate-100" : "max-h-0"
         } bg-white`}
       >

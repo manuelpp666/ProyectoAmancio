@@ -9,6 +9,7 @@ import { AnioSelector } from "@/src/components/utils/AnioSelector";
 import { apiFetch } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
 import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
+import { CampoNumero, leerNumero, aNumero } from "@/src/components/utils/numero";
 
 export default function GestionAcademicaPage() {
 
@@ -55,7 +56,9 @@ export default function GestionAcademicaPage() {
   const [isSeccionModalOpen, setIsSeccionModalOpen] = useState(false);
   const [selectedGradoId, setSelectedGradoId] = useState<number | null>(null);
   const [seccionEnEdicion, setSeccionEnEdicion] = useState<Seccion | null>(null);
-  const [nuevaSeccion, setNuevaSeccion] = useState({ nombre: "", vacantes: 30 });
+  // vacantes admite la cadena vacía para poder borrar el campo mientras se
+  // escribe; al guardar se valida que quede un número.
+  const [nuevaSeccion, setNuevaSeccion] = useState({ nombre: "", vacantes: 30 as CampoNumero });
 
 
   // --- CIERRE / EVALUACIÓN ---
@@ -77,6 +80,13 @@ export default function GestionAcademicaPage() {
   }, []);
 
   const handleGuardarNota = async () => {
+    // El campo se puede dejar en blanco mientras se escribe, pero no guardarse
+    // así: una nota mínima vacía dejaría al colegio sin criterio de aprobación.
+    const nota = Number(notaMinima);
+    if (notaMinima.trim() === "" || Number.isNaN(nota) || nota < 1 || nota > 20) {
+      toast.error("La nota mínima debe ser un número entre 1 y 20");
+      return;
+    }
     setGuardandoNota(true);
     try {
       const res = await apiFetch(`/configuracion/nota_minima_aprobatoria?seccion=academico`, {
@@ -297,13 +307,14 @@ export default function GestionAcademicaPage() {
   const handleGuardarSeccion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedGradoId || !anioSeleccionado) return toast.error("Falta seleccionar año o grado");
+    if (aNumero(nuevaSeccion.vacantes) <= 0) return toast.error("Indica cuántas vacantes tiene la sección");
     const esEdicion = !!seccionEnEdicion;
     const url = esEdicion ? `/academic/secciones/${seccionEnEdicion.id_seccion}` : `/academic/secciones/`;
     try {
       const response = await apiFetch(url, {
         method: esEdicion ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...nuevaSeccion, id_grado: selectedGradoId, id_anio_escolar: anioSeleccionado }),
+        body: JSON.stringify({ ...nuevaSeccion, vacantes: aNumero(nuevaSeccion.vacantes), id_grado: selectedGradoId, id_anio_escolar: anioSeleccionado }),
       });
       if (response.ok) {
         toast.success("Sección guardada correctamente");
@@ -538,13 +549,17 @@ export default function GestionAcademicaPage() {
                 { label: "Ocupación", valor: `${r.ocupadas}/${r.vacantes} (${pct}%)`, icon: "person_check" },
               ];
               return (
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                // Cinco tarjetas en fila solo cuando hay sitio: con md (768px)
+                // cada una se quedaba en unos 170px y la ocupación se cortaba
+                // en "577/88…". El valor ahora pasa a la línea siguiente antes
+                // que recortarse: es el dato, no un rótulo.
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
                   {items.map((it) => (
                     <div key={it.label} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3 shadow-sm">
-                      <span className="material-symbols-outlined text-[#093E7A] bg-blue-50 rounded-lg p-2">{it.icon}</span>
+                      <span className="material-symbols-outlined text-[#093E7A] bg-blue-50 rounded-lg p-2 shrink-0">{it.icon}</span>
                       <div className="min-w-0">
                         <p className="text-[11px] uppercase font-bold text-gray-400 tracking-wide">{it.label}</p>
-                        <p className="text-base font-black text-gray-800 truncate">{it.valor}</p>
+                        <p className="text-base font-black text-gray-800 leading-tight">{it.valor}</p>
                       </div>
                     </div>
                   ))}
@@ -791,7 +806,7 @@ export default function GestionAcademicaPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Vacantes</label>
-                  <input required type="number" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-[#093E7A] outline-none" value={nuevaSeccion.vacantes} onChange={(e) => setNuevaSeccion({ ...nuevaSeccion, vacantes: parseInt(e.target.value) })} />
+                  <input required type="number" min={1} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-[#093E7A] outline-none" value={nuevaSeccion.vacantes} onChange={(e) => setNuevaSeccion({ ...nuevaSeccion, vacantes: leerNumero(e.target.value) })} />
                 </div>
               </div>
               <div className="pt-4 flex gap-3">

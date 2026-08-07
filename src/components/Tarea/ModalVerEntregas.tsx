@@ -3,13 +3,17 @@ import { useEffect, useState } from "react";
 import { X, Download, FileText, Clock, User, CheckCircle, MessageSquare, Save } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/src/lib/api";
+import { CampoNumero, leerNumero } from "@/src/components/utils/numero";
 
 export default function ModalVerEntregas({ tarea, onClose }: { tarea: any; onClose: () => void }) {
   const [entregas, setEntregas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Estados para calificar
-  const [notas, setNotas] = useState<{ [key: number]: number }>({});
+  // La nota puede quedar en blanco mientras el docente la escribe. Distinguir el
+  // vacío del cero importa: un 00 es una calificación válida y antes se
+  // confundía con "sin calificar".
+  const [notas, setNotas] = useState<{ [key: number]: CampoNumero }>({});
   const [retros, setRetros] = useState<{ [key: number]: string }>({});
   const [editandoRetro, setEditandoRetro] = useState<number | null>(null);
 
@@ -24,7 +28,8 @@ export default function ModalVerEntregas({ tarea, onClose }: { tarea: any; onClo
         const notasIniciales: any = {};
         const retrosIniciales: any = {};
         data.forEach((e: any) => {
-          if (e.calificacion) notasIniciales[e.id_entrega] = e.calificacion;
+          // Con `if (e.calificacion)` una nota de 0 ya puesta se perdía al abrir.
+          if (e.calificacion !== null && e.calificacion !== undefined) notasIniciales[e.id_entrega] = Number(e.calificacion);
           if (e.retroalimentacion_docente) retrosIniciales[e.id_entrega] = e.retroalimentacion_docente;
         });
         setNotas(notasIniciales);
@@ -42,7 +47,13 @@ export default function ModalVerEntregas({ tarea, onClose }: { tarea: any; onClo
     const nota = notas[idEntrega];
     const retro = retros[idEntrega] || "";
 
-    if (nota === undefined || nota < 0 || nota > 20) {
+    // El campo vacío ya no se traduce a 0: antes, borrar la nota y pulsar
+    // guardar dejaba un cero al alumno sin que nadie lo notara.
+    if (nota === undefined || nota === "") {
+      toast.error("Escribe la nota antes de guardar");
+      return;
+    }
+    if (nota < 0 || nota > 20) {
       toast.error("Nota inválida (0-20)");
       return;
     }
@@ -132,8 +143,10 @@ export default function ModalVerEntregas({ tarea, onClose }: { tarea: any; onClo
                       <div className="flex items-center gap-2 bg-blue-600 p-1 rounded-xl shadow-lg shadow-blue-200">
                         <input 
                           type="number"
-                          value={notas[e.id_entrega] || ""}
-                          onChange={(val) => setNotas({...notas, [e.id_entrega]: Number(val.target.value)})}
+                          min="0"
+                          max="20"
+                          value={notas[e.id_entrega] ?? ""}
+                          onChange={(val) => setNotas({...notas, [e.id_entrega]: leerNumero(val.target.value)})}
                           className="w-12 text-center bg-white border-none rounded-lg py-1 text-sm font-bold focus:ring-0"
                           placeholder="00"
                         />

@@ -217,7 +217,7 @@ export default function GestionPersonalPage() {
           </div>
 
           {/* TABS: solo las que el administrador tenga permitidas */}
-          <div className="barra-pestanas gap-6 md:gap-8">
+          <div className="barra-pestanas gap-x-5 md:gap-x-6">
             {PESTANAS_PERSONAL.filter((t) => tienePermiso("gestion_personal", t.id)).map((t) => (
               <button
                 key={t.id}
