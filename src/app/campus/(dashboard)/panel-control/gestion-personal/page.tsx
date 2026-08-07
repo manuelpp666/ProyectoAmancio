@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { Personal } from "@/src/interfaces/personal";
 import { TipoPersonal } from "@/src/interfaces/personal";
-import { apiFetch } from "@/src/lib/api";
+import { apiFetch, mensajeDeError } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
 import { usePermisos } from "@/src/hooks/usePermisos";
 import {
@@ -149,7 +149,10 @@ export default function GestionPersonalPage() {
         setIsModalOpen(false);
         fetchPersonal(activeTab);
       } else {
-        toast.error("Error al guardar personal");
+        // El backend dice exactamente qué falló ("Ya existe un usuario ADMIN
+        // con el DNI...", "El teléfono debe tener 9 dígitos"). Ocultarlo tras
+        // un "Error al guardar" deja al usuario probando a ciegas.
+        toast.error(await mensajeDeError(res, "Error al guardar personal"));
       }
     } catch (e) {
       toast.error("Error de conexión");
