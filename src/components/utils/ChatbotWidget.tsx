@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown'; // <--- 1. Importación agregada
-import axios from 'axios';
 import { MessageCircle, X, Send, Bot, Loader2 } from 'lucide-react';
 
 interface Message {
@@ -38,9 +37,51 @@ export default function ChatWidget() {
       const formData = new FormData();
       formData.append('question', userQuery);
 
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/chatbot/ask`, formData);
-      const respuesta = res.data?.answer?.trim() || 'No encontré una respuesta para eso. ¿Puedes reformular tu pregunta?';
-      setMessages(prev => [...prev, { role: 'bot', text: respuesta }]);
+      // El backend responde con un stream de texto (StreamingResponse), no
+      // con un JSON { answer: "..." }. Por eso usamos fetch + ReadableStream
+      // en vez de axios (axios no lee streams incrementales en el navegador
+      // y con esta respuesta terminaba devolviendo un string plano, así que
+      // res.data?.answer siempre daba undefined y caía en el mensaje de error).
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chatbot/ask`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok || !res.body) {
+        throw new Error('Respuesta no válida del servidor');
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let accumulated = '';
+      let receivedAny = false;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        if (!value) continue;
+
+        const chunkText = decoder.decode(value, { stream: true });
+        if (!chunkText) continue;
+
+        accumulated += chunkText;
+        receivedAny = true;
+
+        // En cuanto llega el primer fragmento, quitamos el loader y vamos
+        // actualizando el último mensaje del bot con lo acumulado.
+        setLoading(false);
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last?.role === 'bot') {
+            return [...prev.slice(0, -1), { role: 'bot', text: accumulated }];
+          }
+          return [...prev, { role: 'bot', text: accumulated }];
+        });
+      }
+
+      if (!receivedAny) {
+        setMessages(prev => [...prev, { role: 'bot', text: 'No encontré una respuesta para eso. ¿Puedes reformular tu pregunta?' }]);
+      }
     } catch (error) {
       setMessages(prev => [...prev, { role: 'bot', text: 'Lo siento, tuve un problema al procesar tu consulta. Reintenta en un momento.' }]);
     } finally {
