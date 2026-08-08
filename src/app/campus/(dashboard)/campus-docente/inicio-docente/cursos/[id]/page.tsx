@@ -199,51 +199,120 @@ export default function DetalleCursoDocente() {
     setNotasTemporales({ ...notasTemporales, [`${idAlumno}_${idTarea}`]: valor });
   };
 
-  const guardarNotas = async (idTarea: number) => {
-    const notasParaEnviar: any = {};
+  /**
+   * Agrupa lo escrito en el cuadro por actividad, dejando fuera lo que no se
+   * puede guardar.
+   *
+   * Una casilla vacía no es un cero: si se enviara como 0, el alumno se
+   * llevaría la nota mínima sin que el docente lo advirtiera. Por eso se
+   * cuentan aparte y no se envían.
+   */
+  const agruparNotasEditadas = () => {
+    const porTarea: Record<number, Record<string, number>> = {};
     let enBlanco = 0;
-    let fueraDeRango = false;
+    const fueraDeRango: string[] = [];
 
-    Object.keys(notasTemporales).forEach((key) => {
-      const [alId, tarId] = key.split("_");
-      if (Number(tarId) !== idTarea) return;
+    Object.keys(notasTemporales).forEach((clave) => {
+      const [idAlumno, idTarea] = clave.split("_");
+      const escrito = (notasTemporales[clave] ?? "").trim();
 
-      // Una casilla vacía no es un cero. Antes `Number("")` la convertía en 0 y
-      // el alumno se llevaba la nota mínima sin que el docente lo advirtiera.
-      const escrito = (notasTemporales[key] ?? "").trim();
       if (escrito === "") {
         enBlanco++;
         return;
       }
       const nota = Number(escrito);
       if (Number.isNaN(nota) || nota < 0 || nota > 20) {
-        fueraDeRango = true;
+        fueraDeRango.push(escrito);
         return;
       }
-      notasParaEnviar[alId] = nota;
+      const tarea = Number(idTarea);
+      if (!porTarea[tarea]) porTarea[tarea] = {};
+      porTarea[tarea][idAlumno] = nota;
     });
 
-    if (fueraDeRango) {
+    const totalNotas = Object.values(porTarea).reduce((acc, n) => acc + Object.keys(n).length, 0);
+    return { porTarea, enBlanco, fueraDeRango, totalNotas };
+  };
+
+  // Resumen de lo pendiente, para el contador y el estado del botón
+  const resumenEdicion = agruparNotasEditadas();
+  const hayNotasEscritas =
+    resumenEdicion.totalNotas > 0 || resumenEdicion.fueraDeRango.length > 0;
+
+  /**
+   * Cuántos alumnos llegarían al cierre con un cero en alguna actividad que
+   * cuenta para la nota.
+   *
+   * Es el aviso que de verdad importa antes de cerrar: un alumno sin calificar
+   * no queda pendiente, se le computa cero. El servidor devuelve 0 tanto para
+   * "sin calificar" como para "calificado con cero", así que el mensaje nombra
+   * las dos posibilidades en vez de afirmar una.
+   */
+  const alumnosEnRiesgo = (() => {
+    const evaluaciones = datos?.evaluaciones ?? [];
+    const alumnos = datos?.alumnos_notas ?? [];
+    const conPeso = evaluaciones.filter((e: any) => e.peso > 0).map((e: any) => String(e.id_tarea));
+    if (conPeso.length === 0) return 0;
+    return alumnos.filter((a: any) =>
+      conPeso.some((id: string) => Number(a.notas?.[id] ?? 0) === 0)
+    ).length;
+  })();
+
+  const totalAlumnos = datos?.alumnos_notas?.length ?? 0;
+
+  const mensajeCierre = alumnosEnRiesgo > 0
+    ? `Se calculará el promedio de cada alumno usando los pesos que definiste.\n\n`
+      + `Atención: ${alumnosEnRiesgo} de ${totalAlumnos} alumno(s) tienen 0 en alguna actividad que cuenta para la nota. `
+      + `Si es porque todavía no los calificaste, ese cero entrará igual en su promedio.`
+    : `Se calculará el promedio de cada alumno usando los pesos que definiste. `
+      + `Los ${totalAlumnos} alumnos tienen nota en todas las actividades que cuentan.`;
+
+  /**
+   * Publica de una sola vez todas las notas escritas, sin importar a qué
+   * actividad pertenezcan.
+   *
+   * Antes había un botón verde por actividad y el docente tenía que acordarse
+   * de pulsarlos todos: si llenaba tres columnas y pulsaba una, las otras dos
+   * se perdían sin aviso. El guardado masivo del servidor trabaja por
+   * actividad, así que aquí se agrupa y se lanza una llamada por cada una.
+   */
+  const publicarNotas = async () => {
+    const { porTarea, enBlanco, fueraDeRango, totalNotas } = agruparNotasEditadas();
+
+    if (fueraDeRango.length > 0) {
       toast.error("Hay notas fuera del rango permitido (0 - 20). Revísalas antes de publicar.");
       return;
     }
-    if (Object.keys(notasParaEnviar).length === 0) {
-      if (enBlanco > 0) toast.error("No escribiste ninguna nota.");
-      setEditandoNotas(false);
+    if (totalNotas === 0) {
+      toast.error(enBlanco > 0 ? "No escribiste ninguna nota." : "No hay cambios que publicar.");
       return;
     }
-    if (enBlanco > 0) {
-      toast.warning(`Se publicaron las notas escritas. ${enBlanco} casilla(s) quedaron en blanco y no se guardaron.`);
-    }
-    const toastId = toast.loading("Publicando notas...");
+
+    const idsTarea = Object.keys(porTarea).map(Number);
+    const toastId = toast.loading(
+      idsTarea.length === 1 ? "Publicando notas..." : `Publicando notas de ${idsTarea.length} actividades...`
+    );
+
     try {
-      const res = await apiFetch(`/virtual/guardar-notas-masivo/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id_tarea: idTarea, notas: notasParaEnviar })
-      });
-      if (!res.ok) throw new Error("Error al guardar");
-      toast.success("Notas publicadas", { id: toastId });
+      const respuestas = await Promise.all(
+        idsTarea.map((idTarea) =>
+          apiFetch(`/virtual/guardar-notas-masivo/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id_tarea: idTarea, notas: porTarea[idTarea] }),
+          })
+        )
+      );
+      if (respuestas.some((r) => !r.ok)) throw new Error("Error al guardar");
+
+      toast.success(
+        `${totalNotas} nota${totalNotas === 1 ? "" : "s"} publicada${totalNotas === 1 ? "" : "s"}`,
+        { id: toastId }
+      );
+      if (enBlanco > 0) {
+        toast.warning(`${enBlanco} casilla(s) quedaron en blanco y no se guardaron.`);
+      }
+      setNotasTemporales({});
       setEditandoNotas(false);
       fetchSabana();
     } catch (error) {
@@ -576,18 +645,38 @@ export default function DetalleCursoDocente() {
                 </button>
               ) : (
                 <>
-                  <button onClick={() => setEditandoNotas(false)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold">
+                  <button
+                    onClick={() => { setNotasTemporales({}); setEditandoNotas(false); }}
+                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-300 transition"
+                  >
                     Cancelar
                   </button>
-                  {datos?.evaluaciones.map((ev: any) => (
-                    <button
-                      key={ev.id_tarea}
-                      onClick={() => guardarNotas(ev.id_tarea)}
-                      className="bg-green-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-green-700 transition"
-                    >
-                      Publicar {ev.titulo}
-                    </button>
-                  ))}
+                  {/* Un único botón para todo lo escrito, sin importar de qué
+                      actividad sea. El contador deja ver cuántas notas se van a
+                      publicar antes de pulsarlo. */}
+                  <button
+                    onClick={publicarNotas}
+                    // Se habilita en cuanto hay algo escrito, aunque esté fuera
+                    // de rango: así al pulsarlo se explica el problema en vez de
+                    // dejar un botón muerto sin decir por qué.
+                    disabled={!hayNotasEscritas}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm ${
+                      !hayNotasEscritas
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-green-600 text-white hover:bg-green-700"
+                    }`}
+                    title={!hayNotasEscritas
+                      ? "Escribe al menos una nota para poder publicar"
+                      : "Publica todas las notas que escribiste"}
+                  >
+                    <Check size={16} />
+                    Publicar notas
+                    {resumenEdicion.totalNotas > 0 && (
+                      <span className="bg-white/25 rounded-full px-2 py-0.5 text-xs leading-none">
+                        {resumenEdicion.totalNotas}
+                      </span>
+                    )}
+                  </button>
                 </>
               )}
             </div>
@@ -699,7 +788,7 @@ export default function DetalleCursoDocente() {
         onClose={() => setIsCerrarBimestreOpen(false)}
         onConfirm={cerrarBimestre}
         title={`¿Cerrar Bimestre ${bimestre}?`}
-        message="Al cerrar el bimestre se calcularán los promedios finales. Asegúrate de que todas las notas hayan sido publicadas correctamente."
+        message={mensajeCierre}
         confirmText="Sí, cerrar bimestre"
         type="warning"
       />

@@ -71,6 +71,8 @@ export default function MiAsistenciaPage() {
   const [resumen, setResumen] = useState<ResumenAsistencia | null>(null);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<EstadoAsistencia | "TODOS">("TODOS");
+  // Mes del año académico que se está viendo ("TODOS" = el año completo)
+  const [mes, setMes] = useState<string>("TODOS");
 
   const fetchAsistencia = useCallback(async (uid: number, anio: string) => {
     setLoading(true);
@@ -96,13 +98,50 @@ export default function MiAsistenciaPage() {
   useEffect(() => {
     if (!userLoading && id_usuario && anioSeleccionado) {
       setFiltro("TODOS");
+      setMes("TODOS");
       fetchAsistencia(id_usuario, anioSeleccionado);
     }
   }, [id_usuario, userLoading, anioSeleccionado, fetchAsistencia]);
 
+  // Meses que se ofrecen en el selector: solo aquellos con registros, para no
+  // listar los doce cuando el año académico va de marzo a diciembre.
+  const mesesDisponibles = useMemo(() => {
+    const vistos = new Set<number>();
+    for (const r of registros) vistos.add(parsearFecha(r.fecha).getMonth());
+    return [...vistos].sort((a, b) => a - b);
+  }, [registros]);
+
+  const registrosDelMes = useMemo(
+    () => (mes === "TODOS"
+      ? registros
+      : registros.filter((r) => parsearFecha(r.fecha).getMonth() === Number(mes))),
+    [registros, mes]
+  );
+
+  /**
+   * Resumen de lo que se está viendo.
+   *
+   * Se recalcula en lugar de usar el del servidor porque ese viene siempre del
+   * año completo: al elegir un mes, dejaría los contadores y el porcentaje
+   * contando días que no aparecen en la lista. La fórmula es la misma que usa
+   * el backend, incluido que las faltas justificadas no penalizan.
+   */
+  const resumenVisible = useMemo<ResumenAsistencia>(() => {
+    const conteo: Record<EstadoAsistencia, number> = { P: 0, T: 0, F: 0, J: 0 };
+    for (const r of registrosDelMes) {
+      if (r.estado in conteo) conteo[r.estado] += 1;
+    }
+    const total = conteo.P + conteo.T + conteo.F + conteo.J;
+    const computables = total - conteo.J;
+    const porcentaje = computables > 0
+      ? Math.round(((conteo.P + conteo.T) / computables) * 1000) / 10
+      : null;
+    return { ...conteo, total, porcentaje };
+  }, [registrosDelMes]);
+
   const registrosFiltrados = useMemo(
-    () => (filtro === "TODOS" ? registros : registros.filter((r) => r.estado === filtro)),
-    [registros, filtro]
+    () => (filtro === "TODOS" ? registrosDelMes : registrosDelMes.filter((r) => r.estado === filtro)),
+    [registrosDelMes, filtro]
   );
 
   // Agrupamos por mes para que el historial se lea como un calendario y no
@@ -126,7 +165,8 @@ export default function MiAsistenciaPage() {
     return <div className="p-10 text-center"><Loader2 className="animate-spin mx-auto text-[#701C32]" /></div>;
   }
 
-  const porcentaje = resumen?.porcentaje;
+  // El porcentaje sigue al mes elegido, igual que los contadores
+  const porcentaje = resumenVisible.porcentaje;
 
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-8">
@@ -136,13 +176,30 @@ export default function MiAsistenciaPage() {
           <p className="text-gray-500 text-sm">Consulta tu historial de asistencia del año escolar</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <AnioSelector
             value={anioSeleccionado}
             onChange={setAnioSeleccionado}
             anios={anios}
             loading={loadingAnios}
           />
+
+          {mesesDisponibles.length > 1 && (
+            <div className="flex flex-col">
+              <label htmlFor="filtro-mes" className="sr-only">Mes</label>
+              <select
+                id="filtro-mes"
+                value={mes}
+                onChange={(e) => setMes(e.target.value)}
+                className="bg-white border border-gray-200 text-gray-700 text-sm rounded-lg px-3 py-2 font-bold outline-none focus:border-[#701C32] focus:ring-2 focus:ring-[#701C32]/15 transition-colors cursor-pointer"
+              >
+                <option value="TODOS">Todo el año</option>
+                {mesesDisponibles.map((m) => (
+                  <option key={m} value={String(m)}>{MESES[m]}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </header>
 
@@ -168,8 +225,10 @@ export default function MiAsistenciaPage() {
           <div className="bg-[#701C32] rounded-3xl p-7 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-5 relative overflow-hidden">
             <div className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/5 pointer-events-none"></div>
             <div className="relative z-10">
-              <p className="text-[10px] font-black uppercase tracking-widest text-white/70 mb-2">Asistencia del año</p>
-              <h2 className="text-2xl font-black">{resumen.total} días registrados</h2>
+              <p className="text-[10px] font-black uppercase tracking-widest text-white/70 mb-2">
+                {mes === "TODOS" ? "Asistencia del año" : `Asistencia de ${MESES[Number(mes)]}`}
+              </p>
+              <h2 className="text-2xl font-black">{resumenVisible.total} días registrados</h2>
               <p className="text-white/60 text-xs mt-1">
                 Las faltas justificadas no afectan tu porcentaje
               </p>
@@ -201,7 +260,7 @@ export default function MiAsistenciaPage() {
                     <div className={`p-2.5 rounded-xl ${info.bg}`} style={{ color: info.color }}>
                       <Icono size={20} />
                     </div>
-                    <span className="text-3xl font-black text-gray-800">{resumen[clave]}</span>
+                    <span className="text-3xl font-black text-gray-800">{resumenVisible[clave]}</span>
                   </div>
                   <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
                     {info.label}
