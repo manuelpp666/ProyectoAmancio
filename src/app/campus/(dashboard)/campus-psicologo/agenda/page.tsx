@@ -8,14 +8,20 @@ import {
     Filter,
     Loader2,
     CalendarDays,
-    Trash2, Edit3, Eye
+    Trash2, Edit3, Eye, ClipboardCheck
 } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 import { ModalRegistrarCita } from "@/src/components/Citas/ModalRegistrarCitas";
 import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
 import { ModalModificarCita } from "@/src/components/Citas/ModalModificarCita";
+import { ModalRegistrarAtencion } from "@/src/components/Citas/ModalRegistrarAtencion";
 import { ModalDetalleSeguimiento } from "@/src/components/Citas/ModalDetalleSeguimiento";
 import { toast } from "sonner";
+
+// Una cita solo se puede reprogramar, cerrar o cancelar mientras esté
+// pendiente. El backend rechaza lo demás, así que no se ofrecen esos botones
+// en las citas ya completadas.
+const ESTADOS_PENDIENTES = ["PROGRAMADA", "REPROGRAMADA"];
 
 export default function AgendaCitasPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,6 +33,7 @@ export default function AgendaCitasPage() {
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [selectedDeleteId, setSelectedDeleteId] = useState<number | null>(null);
 const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [isAtencionModalOpen, setIsAtencionModalOpen] = useState(false);
 
     useEffect(() => {
         setFiltroFecha(new Date().toISOString().split('T')[0]);
@@ -144,8 +151,10 @@ const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
                                 </div>
                             </div>
 
-                            <div className="mt-4 pt-4 border-t border-gray-50 flex justify-between items-center">
-                                <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase ${
+                            {/* Los botones van agrupados a la derecha: con justify-between
+                                y cuatro hijos sueltos quedaban repartidos por todo el ancho. */}
+                            <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between gap-2">
+                                <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase shrink-0 ${
                                     cita.estado === 'PROGRAMADA' ? 'bg-blue-50 text-blue-600'
                                     : cita.estado === 'REPROGRAMADA' ? 'bg-amber-50 text-amber-600'
                                     : cita.estado === 'CANCELADA' ? 'bg-red-50 text-red-600'
@@ -153,30 +162,45 @@ const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
                                     }`}>
                                     {cita.estado}
                                 </span>
-                                <button
-                onClick={() => { 
-                    setSelectedCita(cita); 
-                    setIsDetailModalOpen(true); 
-                }}
-                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                title="Ver detalles"
-            >
-                <Eye size={18} />
-            </button>
-                                <button
-                                    onClick={() => { setSelectedCita(cita); setIsEditModalOpen(true); }}
-                                    className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                                    title="Modificar"
-                                >
-                                    <Edit3 size={18} />
-                                </button>
-                                <button
-                                    onClick={() => handleEliminarCita(cita.id_cita)}
-                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                    title="Eliminar"
-                                >
-                                    <Trash2 size={18} />
-                                </button>
+
+                                <div className="flex items-center gap-0.5 shrink-0">
+                                    <button
+                                        onClick={() => {
+                                            setSelectedCita(cita);
+                                            setIsDetailModalOpen(true);
+                                        }}
+                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                        title="Ver expediente del alumno"
+                                    >
+                                        <Eye size={18} />
+                                    </button>
+
+                                    {ESTADOS_PENDIENTES.includes(cita.estado) && (
+                                        <>
+                                            <button
+                                                onClick={() => { setSelectedCita(cita); setIsAtencionModalOpen(true); }}
+                                                className="p-2 text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
+                                                title="Registrar atención y cerrar la cita"
+                                            >
+                                                <ClipboardCheck size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => { setSelectedCita(cita); setIsEditModalOpen(true); }}
+                                                className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                                title="Reprogramar"
+                                            >
+                                                <Edit3 size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleEliminarCita(cita.id_cita)}
+                                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="Cancelar cita"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -204,6 +228,19 @@ const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
                     setIsEditModalOpen(false);
                     setSelectedCita(null);
                     fetchCitas(); // Refresca la lista
+                }}
+            />
+            <ModalRegistrarAtencion
+                isOpen={isAtencionModalOpen}
+                cita={selectedCita}
+                onClose={() => {
+                    setIsAtencionModalOpen(false);
+                    setSelectedCita(null);
+                }}
+                onSuccess={() => {
+                    setIsAtencionModalOpen(false);
+                    setSelectedCita(null);
+                    fetchCitas();
                 }}
             />
             <ModalDetalleSeguimiento
