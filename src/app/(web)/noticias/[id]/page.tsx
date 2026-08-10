@@ -89,7 +89,11 @@ export default function DetalleNoticiaPage() {
                 </div>
 
                 <div className="max-w-4xl mx-auto px-4">
-                    {/* Visual principal (Imagen o Video) */}
+                    {/* Visual principal (Imagen o Video).
+                        La imagen usa object-contain, no object-cover: cover rellena
+                        la caja recortando lo que sobra, y junto al max-h cortaba por
+                        arriba y por abajo las fotos verticales. Con contain se ve
+                        entera sea cual sea su forma. */}
                     <div className="mb-10 md:mb-12 rounded-3xl overflow-hidden shadow-2xl">
                         {noticia.categoria === "video" && videoId ? (
                             <div className="aspect-video w-full">
@@ -105,7 +109,7 @@ export default function DetalleNoticiaPage() {
                             <img
                                 src={noticia.imagen_portada_url || "/placeholder-news.svg"}
                                 alt={noticia.titulo}
-                                className="w-full h-auto object-cover max-h-[500px]"
+                                className="w-full h-auto max-h-[80vh] object-contain"
                             />
                         )}
                     </div>
