@@ -42,3 +42,8 @@ next-env.d.ts
 
 #txt
 envoriginal.txt
+
+# paquetes de despliegue
+# El zip del build pesa decenas de MB y no debe entrar en el repositorio.
+# El script que lo genera vive en ../Despliegue, fuera de aqui.
+*.zip

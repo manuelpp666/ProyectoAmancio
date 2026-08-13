@@ -138,3 +138,41 @@ export interface HoraLectiva {
   hora_fin: string;
   tipo: 'lectiva' | 'receso';
 }
+
+/**
+ * Una fila de la rejilla del horario, tal como la calcula el backend.
+ *
+ * La duración del bloque y los recesos se configuran desde el panel y viven
+ * en la base de datos; antes estaban escritos a mano en el código, en el
+ * constructor y en la tabla del docente por separado, y era fácil que
+ * dejaran de coincidir. Ahora el cálculo se hace en un solo sitio.
+ */
+export interface BloqueHorario {
+  hora_inicio: string;
+  hora_fin: string;
+  tipo: 'clase' | 'receso';
+  duracion: number;
+  /** Solo en los recesos: "Recreo", "Almuerzo"… */
+  nombre?: string | null;
+}
+
+export interface RecesoConfig {
+  id_receso: number;
+  nombre: string;
+  hora_inicio: string;
+  duracion: number;
+}
+
+export type AmbitoHorario = 'PRIMARIA' | 'SECUNDARIA' | 'PRE_ACADEMIA';
+export type ModalidadHorario = 'REGULAR' | 'VERANO';
+
+export interface ConfiguracionHorario {
+  id_configuracion: number;
+  ambito: AmbitoHorario;
+  modalidad: ModalidadHorario;
+  duracion_bloque: number;
+  hora_inicio: string;
+  hora_fin: string;
+  recesos: RecesoConfig[];
+  bloques: BloqueHorario[];
+}

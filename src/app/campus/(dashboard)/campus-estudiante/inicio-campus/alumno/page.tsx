@@ -21,7 +21,7 @@ export default function HorarioAlumnoPage() {
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Usamos el hook para obtener el horario automáticamente
-  const { data: horario, loading: horarioLoading, error } = useHorario(Number(id_usuario), anioSeleccionado);
+  const { data: horario, bloques: bloquesHorario, loading: horarioLoading, error } = useHorario(Number(id_usuario), anioSeleccionado);
 
   const tieneHorario = Array.isArray(horario) && horario.length > 0;
 
@@ -141,7 +141,7 @@ export default function HorarioAlumnoPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <div ref={contentRef} className="bg-white">
-              <TablaHorario horario={horario} />
+              <TablaHorario horario={horario} bloques={bloquesHorario} />
             </div>
           </div>
         </div>

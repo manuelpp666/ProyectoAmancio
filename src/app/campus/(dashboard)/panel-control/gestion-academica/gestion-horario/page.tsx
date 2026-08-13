@@ -1,21 +1,20 @@
 "use client";
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 import { useReactToPrint } from "react-to-print";
 import { toast } from "sonner";
 import {
   Seccion,
-  AnioEscolar,
   MateriaDisponible,
   HorarioAsignado,
-  HoraLectiva
+  BloqueHorario,
 } from "@/src/interfaces/academic";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas-pro";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
-import { apiFetch } from "@/src/lib/api";
+import { apiFetch, mensajeDeError } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
+import { ModalConfiguracionHorario } from "@/src/components/Horario/ModalConfiguracionHorario";
+import { generarPDFHorario } from "@/src/lib/pdfHorario";
 
 // --- INTERFACES EXTENDIDAS PARA LA NUEVA LÓGICA ---
 interface MateriaDisponibleExt extends MateriaDisponible {
@@ -26,13 +25,6 @@ interface MateriaDisponibleExt extends MateriaDisponible {
 interface HorarioAsignadoExt extends Omit<HorarioAsignado, 'id_hora'> {
   hora_inicio: string;
   hora_fin: string;
-}
-
-interface BloqueTiempo {
-  hora_inicio: string;
-  hora_fin: string;
-  tipo: "clase" | "receso";
-  duracion: number;
 }
 
 // Paleta para diferenciar visualmente los cursos en la grilla (mejora #8)
@@ -62,153 +54,83 @@ export default function ConstructorHorariosPage() {
   const [secciones, setSecciones] = useState<Seccion[]>([]);
   const [seccionActiva, setSeccionActiva] = useState<number | null>(null);
   const [materiasDisponibles, setMateriasDisponibles] = useState<MateriaDisponibleExt[]>([]);
-  const [horasLectivas, setHorasLectivas] = useState<HoraLectiva[]>([]);
   const [horarioAsignado, setHorarioAsignado] = useState<HorarioAsignadoExt[]>([]);
+  // La rejilla ya no se calcula aquí: la construye el backend a partir de la
+  // configuración (duración del bloque, jornada y recesos), así que el panel,
+  // el horario del docente, el del alumno y el PDF pintan siempre lo mismo.
+  const [bloques, setBloques] = useState<BloqueHorario[]>([]);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [configAbierta, setConfigAbierta] = useState(false);
 
   const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
   // --- REFERENCIA PARA IMPRESIÓN ---
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const exportarPDFDirecto = async () => {
-    const element = contentRef.current;
-    if (!element) return;
+  const seccionActivaObj = secciones.find(s => s.id_seccion === seccionActiva);
 
-    const toastId = toast.loading("Generando PDF completo...");
-
+  const exportarPDF = () => {
+    if (!seccionActivaObj) {
+      toast.error("Elige primero una sección");
+      return;
+    }
     try {
-      const originalWidth = element.scrollWidth;
-      const originalHeight = element.scrollHeight;
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
-        width: originalWidth,          
-        height: originalHeight,        
-        windowWidth: originalWidth,
-        windowHeight: originalHeight,
-        x: 0,
-        y: 0,
+      const { nombreArchivo, filas } = generarPDFHorario({
+        bloques,
+        asignaciones: horarioAsignado.map(h => ({
+          dia_semana: h.dia_semana,
+          hora_inicio: h.hora_inicio,
+          curso_nombre: h.curso_nombre,
+          docente_nombre: h.docente_nombre,
+        })),
+        grado: seccionActivaObj.grado?.nombre ?? "",
+        seccion: seccionActivaObj.nombre,
+        anio: anioPlanificacion || "",
       });
 
-      const imgData = canvas.toDataURL("image/jpeg", 0.92);
-
-      const pdf = new jsPDF({
-        orientation: "landscape",
-        unit: "mm",
-        format: "a4",
-      });
-
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-
-      const margin = 10; 
-      const maxImgWidth = pageWidth - margin * 2;
-      const maxImgHeight = pageHeight - margin * 2;
-
-      const imgWidth = maxImgWidth;
-      let imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      let positionY = margin;
-
-      pdf.addImage(imgData, "JPEG", margin, positionY, imgWidth, imgHeight);
-
-      while (imgHeight > maxImgHeight) {
-        positionY = - (pageHeight - margin * 2); 
-        pdf.addPage();
-        pdf.addImage(imgData, "JPEG", margin, positionY, imgWidth, imgHeight);
-        imgHeight -= (pageHeight - margin * 2);
-        positionY -= (pageHeight - margin * 2);
+      if (filas === 0) {
+        toast.warning("Esta sección aún no tiene bloques asignados");
+        return;
       }
-
-      pdf.save(`Horario_${anioPlanificacion || "completo"}.pdf`);
-
-      toast.success("PDF generado completo ✓", { id: toastId });
+      toast.success(`Descargado ${nombreArchivo}`);
     } catch (error) {
-      console.error("Error:", error);
-      toast.error("Error al generar PDF completo", { id: toastId });
+      console.error(error);
+      toast.error("No se pudo generar el PDF");
     }
   };
-  
+
   // --- CONFIGURACIÓN DE IMPRESIÓN ---
   const handlePrint = useReactToPrint({
     contentRef,
-    documentTitle: `Horario_${anioPlanificacion}_Seccion`,
+    documentTitle: `Horario_${seccionActivaObj?.grado?.nombre ?? ""}_${seccionActivaObj?.nombre ?? ""}_${anioPlanificacion}`,
   });
-  
-  // --- 1. GENERADOR DE BLOQUES: 50 min de 7:30 a 19:30 con recesos fijos
-  //        (mañana 10:50-11:10, tarde 17:30-17:50) ---
-  const bloquesDinamicos = useMemo<BloqueTiempo[]>(() => {
-    const toDate = (h: number, m: number) => new Date(2000, 0, 1, h, m);
-    const fmt = (d: Date) => d.toTimeString().substring(0, 5);
-    const recesos = [
-      { inicio: toDate(10, 50), fin: toDate(11, 10) },
-      { inicio: toDate(17, 30), fin: toDate(17, 50) },
-    ];
-    const end = toDate(19, 30);
-    const DURACION = 50;
-    const bloques: BloqueTiempo[] = [];
-    let current = toDate(7, 30);
 
-    while (current < end) {
-      // ¿Empieza un receso exactamente en este punto?
-      const receso = recesos.find(r => r.inicio.getTime() === current.getTime());
-      if (receso) {
-        bloques.push({
-          hora_inicio: fmt(receso.inicio),
-          hora_fin: fmt(receso.fin),
-          tipo: "receso",
-          duracion: (receso.fin.getTime() - receso.inicio.getTime()) / 60000,
-        });
-        current = receso.fin;
-        continue;
-      }
-      // Bloque de clase de 50 min, recortado si cruza un receso o el fin de jornada
-      let next = new Date(current.getTime() + DURACION * 60000);
-      const cruza = recesos.find(r => r.inicio.getTime() > current.getTime() && r.inicio.getTime() < next.getTime());
-      if (cruza) next = cruza.inicio;
-      if (next.getTime() > end.getTime()) next = end;
-      if (next.getTime() <= current.getTime()) break;
-      bloques.push({
-        hora_inicio: fmt(current),
-        hora_fin: fmt(next),
-        tipo: "clase",
-        duracion: (next.getTime() - current.getTime()) / 60000,
-      });
-      current = next;
-    }
-    return bloques;
-  }, []);
-
-  // --- 2. CARGA INICIAL (Secciones y Horas) ---
+  // --- 1. CARGA INICIAL (Secciones) ---
   useEffect(() => {
     if (!anioPlanificacion) return;
 
     const cargarConfiguracion = async () => {
       try {
         setLoading(true);
-        const [resSec, resHoras] = await Promise.all([
-          apiFetch(`/academic/secciones-horario/${anioPlanificacion}`),
-          apiFetch(`/horarios/horas`) 
-        ]);
+        const res = await apiFetch(`/academic/secciones-horario/${anioPlanificacion}`);
+        if (!res.ok) {
+          toast.error(await mensajeDeError(res, "No se pudieron cargar las secciones"));
+          setSecciones([]);
+          setSeccionActiva(null);
+          return;
+        }
+        const dataSec = await res.json();
+        const lista = Array.isArray(dataSec) ? dataSec : [];
+        setSecciones(lista);
 
-        const dataSec = await resSec.json();
-        const dataHoras = await resHoras.json();
-
-        setSecciones(Array.isArray(dataSec) ? dataSec : []);
-        setHorasLectivas(Array.isArray(dataHoras) ? dataHoras : []);
-
-        if (dataSec.length > 0) {
-          // CORRECCIÓN TYPESCRIPT: as number
-          setSeccionActiva(dataSec[0].id_seccion as number);
+        if (lista.length > 0) {
+          setSeccionActiva(lista[0].id_seccion as number);
         } else {
           setSeccionActiva(null);
           setMateriasDisponibles([]);
           setHorarioAsignado([]);
+          setBloques([]);
         }
       } catch (error) {
         toast.error("Error al cargar configuración del año seleccionado");
@@ -219,20 +141,45 @@ export default function ConstructorHorariosPage() {
     cargarConfiguracion();
   }, [anioPlanificacion]);
 
-  // --- 3. CARGA POR SECCIÓN (Materias y Horario guardado) ---
-  useEffect(() => {
+  // --- 2. CARGA POR SECCIÓN (Rejilla, materias y horario guardado) ---
+  //
+  // Las tres peticiones se piden a la vez pero se resuelven por separado: si
+  // una falla, las otras dos siguen mostrándose y el aviso dice cuál fue. Antes
+  // un solo fallo tumbaba la pantalla entera con un "Error de conexión" que no
+  // decía nada.
+  const cargarDatosSeccion = useCallback(async () => {
     if (!seccionActiva) return;
 
-    const cargarDatosSeccion = async () => {
-      const [resMat, resHorario] = await Promise.all([
-        apiFetch(`/horarios/materias-disponibles/${seccionActiva}`),
-        apiFetch(`/horarios/seccion/${seccionActiva}`)
-      ]);
-      setMateriasDisponibles(await resMat.json());
-      setHorarioAsignado(await resHorario.json());
+    const pedirLista = async (ruta: string, queEs: string): Promise<any[]> => {
+      try {
+        const res = await apiFetch(ruta);
+        if (!res.ok) {
+          toast.error(await mensajeDeError(res, `No se pudieron cargar ${queEs} (error ${res.status})`));
+          return [];
+        }
+        const datos = await res.json();
+        if (Array.isArray(datos)) return datos;
+        toast.error(`La respuesta de ${queEs} no tiene el formato esperado`);
+        return [];
+      } catch {
+        // fetch solo lanza cuando no se llegó al servidor
+        toast.error(`No se pudo contactar al servidor al pedir ${queEs}`);
+        return [];
+      }
     };
-    cargarDatosSeccion();
+
+    const [b, m, h] = await Promise.all([
+      pedirLista(`/horarios/bloques/seccion/${seccionActiva}`, "los bloques del horario"),
+      pedirLista(`/horarios/materias-disponibles/${seccionActiva}`, "los cursos de la sección"),
+      pedirLista(`/horarios/seccion/${seccionActiva}`, "el horario guardado"),
+    ]);
+
+    setBloques(b);
+    setMateriasDisponibles(m);
+    setHorarioAsignado(h);
   }, [seccionActiva]);
+
+  useEffect(() => { cargarDatosSeccion(); }, [cargarDatosSeccion]);
 
   // --- 4. LÓGICA DE ASIGNACIÓN (Drag & Drop dinámico y validación de bolsa) ---
   const handleDrop = async (idCargaAcademica: string | number, h_inicio: string, h_fin: string, dia: string, duracionBloque: number) => {
@@ -258,20 +205,13 @@ export default function ConstructorHorariosPage() {
         })
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        toast.error(data.detail); 
+        toast.error(await mensajeDeError(res, "No se pudo asignar el bloque"));
         return;
       }
 
       toast.success("Horario asignado");
-      const [resMat, resHorario] = await Promise.all([
-        apiFetch(`/horarios/materias-disponibles/${seccionActiva}`),
-        apiFetch(`/horarios/seccion/${seccionActiva}`)
-      ]);
-      setMateriasDisponibles(await resMat.json());
-      setHorarioAsignado(await resHorario.json());
+      await cargarDatosSeccion();
     } catch (err) {
       toast.error("Error de conexión");
     }
@@ -281,13 +221,7 @@ export default function ConstructorHorariosPage() {
     try {
         await apiFetch(`/horarios/${id_horario}`, { method: 'DELETE' });
         toast.success("Bloque eliminado");
-        
-        const [resMat, resHorario] = await Promise.all([
-          apiFetch(`/horarios/materias-disponibles/${seccionActiva}`),
-          apiFetch(`/horarios/seccion/${seccionActiva}`)
-        ]);
-        setMateriasDisponibles(await resMat.json());
-        setHorarioAsignado(await resHorario.json());
+        await cargarDatosSeccion();
     } catch (e) {
         toast.error("Error al eliminar");
     }
@@ -300,8 +234,8 @@ export default function ConstructorHorariosPage() {
     </div>
   );
 
-  const seccionActivaObj = secciones.find(s => s.id_seccion === seccionActiva);
   const materiasCompletas = materiasDisponibles.filter(m => m.minutos_asignados >= m.minutos_semanales).length;
+  const bloquesClase = bloques.filter(b => b.tipo === "clase").length;
 
   return (
     
@@ -309,8 +243,13 @@ export default function ConstructorHorariosPage() {
     <>
       <style dangerouslySetInnerHTML={{
         __html: `
-  .schedule-grid { display: grid; grid-template-columns: 120px repeat(5, 1fr); }
-  .time-slot { min-height: 90px; border-bottom: 1px solid #E2E8F0; border-right: 1px solid #E2E8F0; }
+  /* Rejilla más compacta: la columna de la hora pasa de 120px a 78px y la
+     altura de fila de 90px a 56px, que era lo que hacía que los bordes
+     alrededor de la tabla se comieran la pantalla. */
+  .schedule-grid { display: grid; grid-template-columns: 78px repeat(5, 1fr); }
+  .time-slot { min-height: 56px; border-bottom: 1px solid #EDF1F6; border-right: 1px solid #EDF1F6; }
+  .time-slot:last-child { border-right: none; }
+  .slot-receso { min-height: 26px !important; }
   :root {
   color-interpolation-filters: sRGB !important;
 }
@@ -330,8 +269,9 @@ export default function ConstructorHorariosPage() {
     .no-print { display: none !important; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     
-    .schedule-grid { grid-template-columns: 80px repeat(5, 1fr) !important; width: 100%; }
-    .time-slot { min-height: 70px !important; }
+    .schedule-grid { grid-template-columns: 62px repeat(5, 1fr) !important; width: 100%; }
+    .time-slot { min-height: 46px !important; }
+    .slot-receso { min-height: 22px !important; }
     .bg-gray-100 { background-color: white !important; }
     .shadow-lg { shadow: none !important; box-shadow: none !important; }
     .bg-white { background-color: #ffffff !important; }
@@ -360,13 +300,20 @@ export default function ConstructorHorariosPage() {
             </div>
             <div className="flex gap-3">
               <button
+                onClick={() => setConfigAbierta(true)}
+                title="Duración del bloque, jornada y recesos"
+                className="flex items-center gap-2 px-5 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold text-sm hover:bg-gray-50 transition-all">
+                <span className="material-symbols-outlined text-sm">tune</span> Configurar
+              </button>
+
+              <button
                 onClick={() => handlePrint()}
                 className="flex items-center gap-2 px-5 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold text-sm hover:bg-gray-50 transition-all">
                 <span className="material-symbols-outlined text-sm">print</span> Imprimir
               </button>
 
               <button
-                onClick={exportarPDFDirecto}
+                onClick={exportarPDF}
                 className="flex items-center gap-2 px-5 py-2 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#062d59] transition-all">
                 <span className="material-symbols-outlined text-sm">download</span> Descargar PDF
               </button>
@@ -443,88 +390,119 @@ export default function ConstructorHorariosPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto bg-gray-100 p-4 md:p-8">
-              <div ref={contentRef} id="print-content" className="bg-white rounded-xl shadow-lg border border-gray-200 min-w-[900px] overflow-hidden">
+            <div className="flex-1 overflow-auto bg-gray-100 p-3">
+              <div ref={contentRef} id="print-content" className="bg-white rounded-lg shadow-sm border border-gray-200 min-w-[820px] overflow-hidden">
 
-                <div className="hidden print:block text-center mb-8">
-                  <h1 className="text-3xl font-black text-[#093E7A]">HORARIO ESCOLAR {anioPlanificacion}</h1>
-                  <p className="text-xl font-bold text-gray-500 uppercase tracking-widest">
+                <div className="hidden print:block text-center mb-4">
+                  <h1 className="text-2xl font-black text-[#093E7A]">HORARIO ESCOLAR {anioPlanificacion}</h1>
+                  <p className="text-base font-bold text-gray-500 uppercase tracking-widest">
                     Sección: {seccionActivaObj?.grado?.nombre} - {seccionActivaObj?.nombre}
                   </p>
-                  <div className="mt-4 border-b-2 border-[#093E7A] w-1/4 mx-auto"></div>
-                </div>
-                
-                <div className="schedule-grid bg-gray-50 border-b text-center font-bold text-[10px] text-gray-400 uppercase tracking-widest">
-                  <div className="p-4 border-r">Bloque</div>
-                  {diasSemana.map(d => <div key={d} className="p-4 border-r text-gray-700">{d}</div>)}
                 </div>
 
-                <div className="relative">
-                  {bloquesDinamicos.map((bloque, idx) => (
-                    <div key={idx} className="schedule-grid">
-                      
-                      <div className={`time-slot flex flex-col items-center justify-center text-[10px] font-bold ${bloque.tipo === 'receso' ? 'bg-slate-100' : 'bg-gray-50/30'}`}>
-                        <span className="text-gray-600">{bloque.hora_inicio}</span>
-                        <span className="text-gray-400 font-normal">{bloque.hora_fin}</span>
-                      </div>
-
-                      {diasSemana.map((dia) => {
-                        const asignacion = horarioAsignado.find(h => h.dia_semana === dia && h.hora_inicio.substring(0,5) === bloque.hora_inicio);
-                        const celdaKey = `${dia}-${bloque.hora_inicio}`;
-                        const esDragOver = dragOverKey === celdaKey && bloque.tipo !== 'receso' && !asignacion;
-                        const color = asignacion ? colorCurso(asignacion.curso_nombre) : null;
-
-                        return (
-                          <div
-                            key={celdaKey}
-                            className={`time-slot group p-2 transition-colors ${bloque.tipo === 'receso' ? 'bg-slate-50' : esDragOver ? 'bg-blue-100 ring-2 ring-inset ring-[#093E7A]' : 'hover:bg-blue-50/30'}`}
-                            onDragOver={(e) => {
-                              e.preventDefault();
-                              if (bloque.tipo !== 'receso' && !asignacion) setDragOverKey(celdaKey);
-                            }}
-                            onDragLeave={() => setDragOverKey(prev => (prev === celdaKey ? null : prev))}
-                            onDrop={(e) => {
-                              setDragOverKey(null);
-                              const idCarga = e.dataTransfer.getData("id_carga");
-                              if (idCarga && bloque.tipo !== 'receso') {
-                                handleDrop(idCarga, bloque.hora_inicio, bloque.hora_fin, dia, bloque.duracion);
-                              }
-                            }}
-                          >
-                            {bloque.tipo === 'receso' ? (
-                              <div className="h-full flex items-center justify-center">
-                                <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest rotate-[-10deg]">Receso</span>
-                              </div>
-                            ) : asignacion && color ? (
-                              <div className={`group h-full w-full ${color.bg} border ${color.border} rounded-lg p-2 flex flex-col justify-between relative animate-in fade-in zoom-in duration-300`}>
-                                <div>
-                                  <p className={`text-[10px] font-black ${color.text} uppercase leading-tight`}>{asignacion.curso_nombre}</p>
-                                  <p className={`text-[9px] ${color.text} opacity-70 mt-1`}>{asignacion.docente_nombre}</p>
-                                </div>
-                                <button
-                                  onClick={() => eliminarAsignacion(asignacion.id_horario)}
-                                  title="Quitar del horario"
-                                  className="absolute top-1 right-1 text-gray-400 hover:text-red-500 hover:bg-white/70 rounded size-5 flex items-center justify-center transition-colors no-print"
-                                >
-                                  <span className="material-symbols-outlined text-[14px]">close</span>
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="h-full w-full flex items-center justify-center opacity-0 group-hover:opacity-100">
-                                <span className="material-symbols-outlined text-gray-200 text-base">add</span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                <div className="schedule-grid bg-gray-50 border-b border-gray-200 text-center font-bold text-[10px] text-gray-400 uppercase tracking-widest">
+                  <div className="py-2 border-r border-gray-200">Hora</div>
+                  {diasSemana.map(d => (
+                    <div key={d} className="py-2 border-r border-gray-200 last:border-r-0 text-gray-700">{d}</div>
                   ))}
                 </div>
+
+                {bloques.length === 0 ? (
+                  <div className="py-16 text-center text-gray-400">
+                    <span className="material-symbols-outlined text-4xl block mb-2">schedule</span>
+                    <p className="text-sm font-medium">No hay rejilla configurada para esta sección.</p>
+                    <button
+                      onClick={() => setConfigAbierta(true)}
+                      className="mt-3 text-xs font-bold text-[#093E7A] underline no-print"
+                    >
+                      Configurar la jornada
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    {bloques.map((bloque, idx) => {
+                      const esReceso = bloque.tipo === 'receso';
+                      return (
+                        <div key={`${bloque.hora_inicio}-${idx}`} className="schedule-grid">
+
+                          <div className={`time-slot ${esReceso ? 'slot-receso' : ''} flex flex-col items-center justify-center text-[10px] font-bold ${esReceso ? 'bg-amber-50/60' : 'bg-gray-50/30'}`}>
+                            <span className={esReceso ? 'text-amber-700' : 'text-gray-600'}>{bloque.hora_inicio}</span>
+                            {!esReceso && <span className="text-gray-400 font-normal">{bloque.hora_fin}</span>}
+                          </div>
+
+                          {esReceso ? (
+                            // El receso ocupa la franja entera: no se divide por días
+                            // porque no hay nada que colocar dentro.
+                            <div className="time-slot slot-receso col-span-5 bg-amber-50/60 flex items-center justify-center gap-2">
+                              <span className="material-symbols-outlined text-amber-400 text-[13px]">free_breakfast</span>
+                              <span className="text-[9px] font-black text-amber-600/80 uppercase tracking-[0.2em]">
+                                {bloque.nombre || 'Receso'} · {bloque.duracion} min
+                              </span>
+                            </div>
+                          ) : diasSemana.map((dia) => {
+                            const asignacion = horarioAsignado.find(h => h.dia_semana === dia && h.hora_inicio.substring(0, 5) === bloque.hora_inicio);
+                            const celdaKey = `${dia}-${bloque.hora_inicio}`;
+                            const esDragOver = dragOverKey === celdaKey && !asignacion;
+                            const color = asignacion ? colorCurso(asignacion.curso_nombre) : null;
+
+                            return (
+                              <div
+                                key={celdaKey}
+                                className={`time-slot group p-1 transition-colors ${esDragOver ? 'bg-blue-100 ring-2 ring-inset ring-[#093E7A]' : 'hover:bg-blue-50/30'}`}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  if (!asignacion) setDragOverKey(celdaKey);
+                                }}
+                                onDragLeave={() => setDragOverKey(prev => (prev === celdaKey ? null : prev))}
+                                onDrop={(e) => {
+                                  setDragOverKey(null);
+                                  const idCarga = e.dataTransfer.getData("id_carga");
+                                  if (idCarga) {
+                                    handleDrop(idCarga, bloque.hora_inicio, bloque.hora_fin, dia, bloque.duracion);
+                                  }
+                                }}
+                              >
+                                {asignacion && color ? (
+                                  <div className={`group h-full w-full ${color.bg} border ${color.border} rounded-md px-1.5 py-1 flex flex-col justify-center relative animate-in fade-in zoom-in duration-300`}>
+                                    <p className={`text-[10px] font-black ${color.text} uppercase leading-tight pr-4`}>{asignacion.curso_nombre}</p>
+                                    <p className={`text-[9px] ${color.text} opacity-70 truncate`}>{asignacion.docente_nombre}</p>
+                                    <button
+                                      onClick={() => eliminarAsignacion(asignacion.id_horario)}
+                                      title="Quitar del horario"
+                                      className="absolute top-0.5 right-0.5 text-gray-400 hover:text-red-500 hover:bg-white/70 rounded size-4 flex items-center justify-center transition-colors no-print"
+                                    >
+                                      <span className="material-symbols-outlined text-[13px]">close</span>
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="h-full w-full flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                    <span className="material-symbols-outlined text-gray-200 text-base">add</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
+
+              <p className="text-[11px] text-gray-400 mt-2 no-print">
+                {bloquesClase} bloques de clase al día · {bloques.filter(b => b.tipo === 'receso').length} receso(s).
+                Se cambia en <button onClick={() => setConfigAbierta(true)} className="font-bold text-[#093E7A] underline">Configurar</button>.
+              </p>
             </div>
           </div>
         </div>
       </div>
+
+      <ModalConfiguracionHorario
+        isOpen={configAbierta}
+        onClose={() => setConfigAbierta(false)}
+        onGuardado={cargarDatosSeccion}
+      />
     </>
     </RoleGuard>
   );

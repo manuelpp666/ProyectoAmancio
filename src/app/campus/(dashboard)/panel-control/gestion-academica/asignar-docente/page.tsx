@@ -7,7 +7,7 @@ import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
 import { Seccion, Curso } from "@/src/interfaces/academic";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
-import { apiFetch } from "@/src/lib/api";
+import { apiFetch, mensajeDeError } from "@/src/lib/api";
 import { RoleGuard } from "@/src/components/auth/RoleGuard";
 
 export default function AsignacionDocentesPage() {
@@ -18,9 +18,9 @@ export default function AsignacionDocentesPage() {
   const [activeTab, setActiveTab] = useState<"carga" | "tutores">("carga");
 
   // --- ESTADOS DE DATOS ---
-  const [vinculos, setVinculos] = useState([]);
-  const [tutores, setTutores] = useState([]); 
-  const [docentes, setDocentes] = useState([]);
+  const [vinculos, setVinculos] = useState<any[]>([]);
+  const [tutores, setTutores] = useState<any[]>([]);
+  const [docentes, setDocentes] = useState<any[]>([]);
   const [secciones, setSecciones] = useState<Seccion[]>([]);
   const [cursosDisponibles, setCursosDisponibles] = useState<Curso[]>([]);
 
@@ -56,39 +56,70 @@ export default function AsignacionDocentesPage() {
   // --- LÓGICA DE FILTRADO ---
   const vinculosFiltrados = vinculos.filter((v: any) => {
     const nombreDocente = v.docente ? `${v.docente.nombres} ${v.docente.apellidos}`.toLowerCase() : "";
-    const nombreCurso = v.curso_nombre.toLowerCase();
+    const nombreCurso = (v.curso_nombre ?? "").toLowerCase();
     const busqueda = searchTerm.toLowerCase();
     return nombreDocente.includes(busqueda) || nombreCurso.includes(busqueda);
   });
 
   const tutoresFiltradosList = tutores.filter((t: any) => {
     const nombreDocente = t.docente ? `${t.docente.nombres} ${t.docente.apellidos}`.toLowerCase() : "";
-    const gradoSeccion = `${t.grado_nombre} ${t.seccion_nombre}`.toLowerCase();
+    const gradoSeccion = `${t.grado_nombre ?? ""} ${t.seccion_nombre ?? ""}`.toLowerCase();
     const busqueda = searchTerm.toLowerCase();
     return nombreDocente.includes(busqueda) || gradoSeccion.includes(busqueda);
   });
 
   const docentesFiltrados = docentes.filter((d: any) =>
-    `${d.nombres} ${d.apellidos}`.toLowerCase().includes(searchDocente.toLowerCase())
+    `${d.nombres ?? ""} ${d.apellidos ?? ""}`.toLowerCase().includes(searchDocente.toLowerCase())
   );
 
-  
+  /**
+   * Lee una respuesta que debe ser una lista.
+   *
+   * apiFetch no lanza excepción cuando la API responde con un error: devuelve
+   * la respuesta tal cual. Si se guardaba ese cuerpo ({"detail": "..."}) en el
+   * estado, el filter() de arriba reventaba durante el render y se caía la
+   * página entera con "This page couldn't load", sin decir qué había fallado.
+   * Aquí se comprueba antes y se deja la lista vacía, para que el fallo se vea
+   * como un aviso y la pantalla siga en pie.
+   */
+  const leerLista = async (res: Response, queEs: string): Promise<any[] | null> => {
+    if (!res.ok) {
+      toast.error(await mensajeDeError(res, `No se pudieron cargar ${queEs} (error ${res.status})`));
+      return null;
+    }
+    try {
+      const datos = await res.json();
+      if (Array.isArray(datos)) return datos;
+    } catch {
+      // Respuesta sin JSON válido (un HTML de error de la pasarela, por ejemplo)
+    }
+    toast.error(`La respuesta de ${queEs} no tiene el formato esperado`);
+    return null;
+  };
+
   const fetchData = useCallback(async () => {
     if (!anioPlanificacion) return;
 
     try {
       setLoading(true);
       const [resVinculos, resDocentes, resSecciones, resTutores] = await Promise.all([
-        apiFetch(`/gestion/vínculos-academicos/${anioPlanificacion}`),
+        apiFetch(`/gestion/vinculos-academicos/${anioPlanificacion}`),
         apiFetch(`/gestion/docentes-disponibles/`),
         apiFetch(`/academic/secciones/${anioPlanificacion}`),
-        apiFetch(`/gestion/tutores/${anioPlanificacion}`) 
+        apiFetch(`/gestion/tutores/${anioPlanificacion}`)
       ]);
 
-      setVinculos(await resVinculos.json());
-      setDocentes(await resDocentes.json());
-      setSecciones(await resSecciones.json());
-      setTutores(await resTutores.json());
+      const [datosVinculos, datosDocentes, datosSecciones, datosTutores] = await Promise.all([
+        leerLista(resVinculos, "los vínculos académicos"),
+        leerLista(resDocentes, "los docentes"),
+        leerLista(resSecciones, "las secciones"),
+        leerLista(resTutores, "los tutores"),
+      ]);
+
+      setVinculos(datosVinculos ?? []);
+      setDocentes(datosDocentes ?? []);
+      setSecciones(datosSecciones ?? []);
+      setTutores(datosTutores ?? []);
     } catch (error) {
       toast.error("Error al actualizar la vista");
     } finally {
