@@ -57,6 +57,10 @@ export interface AlumnoLibreta {
 export interface DatosLibreta {
   alumno: AlumnoLibreta;
   bimestre_cabecera: number | null;
+  /** Qué columnas de bimestre hay que dibujar. Es acumulativo: pedir el III
+   *  devuelve [1,2,3]. Opcional para no romper si el backend es anterior a
+   *  este cambio, en cuyo caso se dibujan los cuatro como antes. */
+  bimestres_visibles?: number[];
   areas: AreaLibreta[];
   resumen: ResumenLibreta;
 }
@@ -73,7 +77,7 @@ const ROJO_NOTA: [number, number, number] = [178, 30, 30];
 const NEGRO: [number, number, number] = [30, 30, 30];
 const GRIS_TEXTO: [number, number, number] = [100, 100, 100];
 
-const BIMESTRES = [1, 2, 3, 4];
+const TODOS_LOS_BIMESTRES = [1, 2, 3, 4];
 const ROMANOS: Record<number, string> = { 1: "I", 2: "II", 3: "III", 4: "IV" };
 
 /** Alto mínimo y máximo de una fila del cuerpo de la tabla, en mm. Entre
@@ -126,6 +130,12 @@ export async function generarPDFLibreta(
   datos: DatosLibreta
 ): Promise<{ nombreArchivo: string }> {
   const { alumno, areas, resumen } = datos;
+
+  // Columnas de bimestre que se dibujan. El backend las manda ya acumuladas
+  // (pedir el III devuelve [1,2,3]); si no vinieran, se dibujan las cuatro.
+  const bims = datos.bimestres_visibles?.length
+    ? [...datos.bimestres_visibles].sort((a, b) => a - b)
+    : TODOS_LOS_BIMESTRES;
 
   const nombreCompleto = `${alumno.apellidos || ""} ${alumno.nombres || ""}`.trim();
   const gradoSeccion = `${alumno.grado || ""} ${alumno.seccion || ""}`.trim();
@@ -253,65 +263,76 @@ export async function generarPDFLibreta(
   // -------------------------------------------------------------
   const colArea = 24;
   const colProm = 22;
-  const colNota = 10;
-  const colCurso = anchoUtil - colArea - colProm - colNota * 4;
+  // Con las cuatro columnas, 10 mm es lo que cabe. Con una o dos se ensanchan:
+  // si no, la palabra "NOTAS" de la cabecera queda más ancha que su propia
+  // celda y se sale por los lados.
+  const colNota = bims.length >= 3 ? 10 : 14;
+  // Lo que no ocupan las columnas de bimestre se lo queda ASIGNATURAS: así la
+  // libreta de un solo bimestre no deja tres columnas vacías a la derecha.
+  const colCurso = anchoUtil - colArea - colProm - colNota * bims.length;
 
   const xArea = margen;
   const xCurso = xArea + colArea;
-  const xNota = (b: number) => xCurso + colCurso + colNota * (b - 1);
-  const xProm = xCurso + colCurso + colNota * 4;
+  /** Posición de la i-ésima columna de bimestre (por índice, NO por número:
+   *  con `bims` = [1,2] la columna del bimestre 2 es la segunda, no la cuarta). */
+  const xNota = (i: number) => xCurso + colCurso + colNota * i;
+  const xProm = xCurso + colCurso + colNota * bims.length;
 
   const altoCabTabla1 = 6;
   const altoCabTabla2 = 5;
+  const altoCabTabla = altoCabTabla1 + altoCabTabla2;
 
   const dibujarCabeceraTabla = (yc: number): number => {
     pdf.setDrawColor(...GRIS_LINEA);
     pdf.setLineWidth(0.2);
 
-    // Fila superior: ÁREA / ASIGNATURAS ACADÉMICAS / NOTAS / PROM. AREA
+    // ÁREA y ASIGNATURAS ACADÉMICAS ocupan las DOS filas de la cabecera, igual
+    // que PROM. AREA: debajo de ellas no hay ningún 1BI/2BI que separar. Si se
+    // dibujara la línea intermedia quedaría una tira vacía bajo cada título,
+    // que es justo lo que se veía mal.
     pdf.setFillColor(245, 240, 241);
-    pdf.rect(xArea, yc, colArea + colCurso, altoCabTabla1, "F");
-    pdf.rect(xNota(1), yc, colNota * 4, altoCabTabla1, "F");
+    pdf.rect(xArea, yc, colArea + colCurso, altoCabTabla, "F");
+    pdf.rect(xNota(0), yc, colNota * bims.length, altoCabTabla1, "F");
     pdf.setFillColor(...GRIS_CLARO);
-    pdf.rect(xProm, yc, colProm, altoCabTabla1 + altoCabTabla2, "F");
+    pdf.rect(xProm, yc, colProm, altoCabTabla, "F");
 
     pdf.setTextColor(...GRANATE);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(7.5);
-    pdf.text("ÁREA", xArea + colArea / 2, yc + altoCabTabla1 / 2 + 1.2, { align: "center" });
-    pdf.text("ASIGNATURAS ACADÉMICAS", xCurso + colCurso / 2, yc + altoCabTabla1 / 2 + 1.2, {
+    pdf.text("ÁREA", xArea + colArea / 2, yc + altoCabTabla / 2 + 1.2, { align: "center" });
+    pdf.text("ASIGNATURAS ACADÉMICAS", xCurso + colCurso / 2, yc + altoCabTabla / 2 + 1.2, {
       align: "center",
     });
-    pdf.text("NOTAS", xNota(1) + colNota * 2, yc + altoCabTabla1 / 2 + 1.2, { align: "center" });
+    pdf.text("NOTAS", xNota(0) + (colNota * bims.length) / 2, yc + altoCabTabla1 / 2 + 1.2, {
+      align: "center",
+    });
     pdf.setFontSize(7);
-    pdf.text("PROM.", xProm + colProm / 2, yc + (altoCabTabla1 + altoCabTabla2) / 2 - 0.3, {
-      align: "center",
-    });
-    pdf.text("AREA", xProm + colProm / 2, yc + (altoCabTabla1 + altoCabTabla2) / 2 + 3, {
-      align: "center",
-    });
+    pdf.text("PROM.", xProm + colProm / 2, yc + altoCabTabla / 2 - 0.3, { align: "center" });
+    pdf.text("AREA", xProm + colProm / 2, yc + altoCabTabla / 2 + 3, { align: "center" });
 
-    // Fila inferior de la cabecera: 1BI 2BI 3BI 4BI
+    // Fila inferior de la cabecera: 1BI 2BI ... solo los que se dibujan
     const y2 = yc + altoCabTabla1;
     pdf.setFillColor(250, 246, 247);
-    pdf.rect(xNota(1), y2, colNota * 4, altoCabTabla2, "F");
+    pdf.rect(xNota(0), y2, colNota * bims.length, altoCabTabla2, "F");
     pdf.setFontSize(6.5);
-    BIMESTRES.forEach((b) => {
-      pdf.text(`${b}BI`, xNota(b) + colNota / 2, y2 + altoCabTabla2 / 2 + 1, { align: "center" });
-      pdf.setDrawColor(...GRIS_LINEA);
-      pdf.line(xNota(b), yc, xNota(b), y2 + altoCabTabla2);
+    pdf.setDrawColor(...GRIS_LINEA);
+    bims.forEach((b, i) => {
+      pdf.text(`${b}BI`, xNota(i) + colNota / 2, y2 + altoCabTabla2 / 2 + 1, { align: "center" });
+      if (i > 0) pdf.line(xNota(i), y2, xNota(i), y2 + altoCabTabla2);
     });
+    // La línea que separa NOTAS de los 1BI/2BI, solo bajo esas columnas.
+    pdf.line(xNota(0), y2, xProm, y2);
 
     pdf.setDrawColor(...GRANATE);
     pdf.setLineWidth(0.5);
-    pdf.rect(xArea, yc, anchoUtil, altoCabTabla1 + altoCabTabla2);
+    pdf.rect(xArea, yc, anchoUtil, altoCabTabla);
     pdf.setLineWidth(0.2);
     pdf.setDrawColor(...GRIS_LINEA);
-    pdf.line(xCurso, yc, xCurso, y2 + altoCabTabla2);
-    pdf.line(xProm, yc, xProm, y2 + altoCabTabla2);
-    pdf.line(xArea, y2, xNota(1), y2);
+    pdf.line(xCurso, yc, xCurso, yc + altoCabTabla);
+    pdf.line(xNota(0), yc, xNota(0), yc + altoCabTabla);
+    pdf.line(xProm, yc, xProm, yc + altoCabTabla);
 
-    return yc + altoCabTabla1 + altoCabTabla2;
+    return yc + altoCabTabla;
   };
 
   // Cuántas filas de cuerpo hay en total (un curso = una fila, más una fila
@@ -371,8 +392,19 @@ export async function generarPDFLibreta(
 
     const yBloqueInicio = y;
 
+    /** Separador entre dos filas del bloque. Va de ASIGNATURAS a PROM. AREA y
+     *  NO cruza ni la columna ÁREA ni la de PROM. AREA: esas dos son una sola
+     *  celda combinada para todo el bloque, y una línea por dentro las partiría
+     *  en trozos. */
+    const separadorFila = (yl: number) => {
+      pdf.setDrawColor(...GRIS_LINEA);
+      pdf.setLineWidth(0.15);
+      pdf.line(xCurso, yl, xProm, yl);
+    };
+
     // --- filas de cursos ---
-    area.cursos.forEach((curso) => {
+    area.cursos.forEach((curso, iFila) => {
+      if (iFila > 0) separadorFila(y);
       const cy = y + altoFila / 2 + 1.1;
       pdf.setFont("helvetica", "normal");
       pdf.setFontSize(6.8);
@@ -380,41 +412,42 @@ export async function generarPDFLibreta(
       const nombreCurso = pdf.splitTextToSize(curso.nombre.toUpperCase(), colCurso - 3) as string[];
       pdf.text(nombreCurso[0] || "", xCurso + 1.5, cy);
 
-      BIMESTRES.forEach((b) => {
+      bims.forEach((b, i) => {
         const v = curso.notas[String(b)];
         if (v !== null && v !== undefined) {
-          dibujarValorCentrado(String(v), xNota(b), cy, colNota, colorNota(v));
+          dibujarValorCentrado(String(v), xNota(i), cy, colNota, colorNota(v));
         }
-        pdf.setDrawColor(...GRIS_LINEA);
-        pdf.setLineWidth(0.15);
-        pdf.line(xNota(b), y, xNota(b), y + altoFila);
       });
-
-      pdf.setDrawColor(...GRIS_LINEA);
-      pdf.line(xCurso, y, xCurso + colCurso, y);
-      pdf.line(xArea, y + altoFila, xProm, y + altoFila);
       y += altoFila;
     });
 
     // --- fila PROMEDIO ÁREA, cierra el bloque ---
     {
+      separadorFila(y);
       const cy = y + altoFila / 2 + 1.1;
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(6.8);
       pdf.setTextColor(...NEGRO);
       pdf.text("PROMEDIO ÁREA", xCurso + 1.5, cy);
 
-      BIMESTRES.forEach((b) => {
+      bims.forEach((b, i) => {
         const v = area.promedio_por_bimestre[String(b)];
         if (v !== null && v !== undefined) {
-          dibujarValorCentrado(String(v), xNota(b), cy, colNota, colorNota(v), true);
+          dibujarValorCentrado(String(v), xNota(i), cy, colNota, colorNota(v), true);
         }
-        pdf.setDrawColor(...GRIS_LINEA);
-        pdf.line(xNota(b), y, xNota(b), y + altoFila);
       });
-      pdf.line(xCurso, y, xCurso + colCurso, y);
       y += altoFila;
     }
+
+    // --- separadores verticales de las columnas de bimestre ---
+    // Se trazan de una vez para todo el bloque, no fila a fila: así salen
+    // rectos y continuos en vez de a trocitos.
+    pdf.setDrawColor(...GRIS_LINEA);
+    pdf.setLineWidth(0.15);
+    bims.forEach((_, i) => {
+      if (i > 0) pdf.line(xNota(i), yBloqueInicio, xNota(i), y);
+    });
+    pdf.line(xNota(0), yBloqueInicio, xNota(0), y);
 
     // --- celda ÁREA (combinada verticalmente, nombre en negrita) ---
     pdf.setDrawColor(...GRIS_LINEA);
@@ -490,8 +523,10 @@ export async function generarPDFLibreta(
   y += 8;
 
   // Tabla de tres filas: BIMESTRE (1 2 3 4 FINAL) / PONDERADO / CONDUCTA
+  // Una columna por bimestre dibujado, más la de FINAL.
+  const columnasPie = bims.length + 1;
   const colEtiqueta = 70;
-  const colValor = (anchoUtil - colEtiqueta) / 5;
+  const colValor = (anchoUtil - colEtiqueta) / columnasPie;
   const altoFilaPie = 6.5;
   const xEtiqueta = xArea;
   const xValor = (i: number) => xEtiqueta + colEtiqueta + colValor * i;
@@ -502,7 +537,7 @@ export async function generarPDFLibreta(
   pdf.setDrawColor(...GRIS_LINEA);
   pdf.setLineWidth(0.2);
   pdf.line(xEtiqueta + colEtiqueta, y, xEtiqueta + colEtiqueta, y + altoFilaPie * 3);
-  for (let i = 1; i < 5; i++) {
+  for (let i = 1; i < columnasPie; i++) {
     pdf.line(xValor(i), y, xValor(i), y + altoFilaPie * 3);
   }
   pdf.line(xEtiqueta, y + altoFilaPie, xEtiqueta + anchoUtil, y + altoFilaPie);
@@ -513,7 +548,7 @@ export async function generarPDFLibreta(
   pdf.setFontSize(7);
   pdf.setTextColor(...NEGRO);
   pdf.text("BIMESTRE", xEtiqueta + 2, y + altoFilaPie / 2 + 1.2);
-  ["I", "II", "III", "IV", "FINAL"].forEach((t, i) => {
+  [...bims.map((b) => ROMANOS[b] || String(b)), "FINAL"].forEach((t, i) => {
     pdf.text(t, xValor(i) + colValor / 2, y + altoFilaPie / 2 + 1.2, { align: "center" });
   });
 
@@ -522,7 +557,7 @@ export async function generarPDFLibreta(
   pdf.setFontSize(6);
   pdf.text("PONDERADO FINAL ANUAL", xEtiqueta + 2, yPond + altoFilaPie / 2);
   pdf.text("(DEFINE EL PUESTO)", xEtiqueta + 2, yPond + altoFilaPie / 2 + 2.6);
-  BIMESTRES.forEach((b, i) => {
+  bims.forEach((b, i) => {
     const p = resumen.por_bimestre[String(b)]?.ponderado;
     if (p !== null && p !== undefined) {
       dibujarValorCentrado(p.toFixed(2), xValor(i), yPond + altoFilaPie / 2 + 1.2, colValor, NEGRO, true, 7);
@@ -531,7 +566,7 @@ export async function generarPDFLibreta(
   if (resumen.ponderado_final_anual !== null && resumen.ponderado_final_anual !== undefined) {
     dibujarValorCentrado(
       resumen.ponderado_final_anual.toFixed(2),
-      xValor(4),
+      xValor(bims.length),
       yPond + altoFilaPie / 2 + 1.2,
       colValor,
       GRANATE,
@@ -545,7 +580,7 @@ export async function generarPDFLibreta(
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(7);
   pdf.text("CONDUCTA", xEtiqueta + 2, yCond + altoFilaPie / 2 + 1.2);
-  BIMESTRES.forEach((b, i) => {
+  bims.forEach((b, i) => {
     const c = resumen.conducta_por_bimestre[String(b)];
     if (c !== null && c !== undefined) {
       dibujarValorCentrado(String(c), xValor(i), yCond + altoFilaPie / 2 + 1.2, colValor, colorNota(c), true, 7);

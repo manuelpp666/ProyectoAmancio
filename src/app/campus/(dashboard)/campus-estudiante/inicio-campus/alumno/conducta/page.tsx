@@ -77,10 +77,12 @@ export default function ConductaAlumnoPage() {
   };
   const ultimoReporte = data?.historial?.[0];
 
-  // Umbrales definidos por el backend (única fuente de verdad del sistema de puntos)
-  const puntajeMaximo = data?.puntaje_maximo ?? 100;
-  const umbralObservacion = data?.umbral_observacion ?? 75;
-  const umbralCritico = data?.umbral_critico ?? 40;
+  // Umbrales definidos por el backend (única fuente de verdad del sistema de
+  // puntos). Los valores de reserva son los de la libreta actual: se parte de
+  // 20 en cada bimestre. Antes decían 100/75/40, la escala vieja.
+  const puntajeMaximo = data?.puntaje_maximo ?? 20;
+  const umbralObservacion = data?.umbral_observacion ?? 15;
+  const umbralCritico = data?.umbral_critico ?? 8;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pb-12 px-4 surface-in">
@@ -124,7 +126,10 @@ export default function ConductaAlumnoPage() {
           <div className="flex justify-between items-end">
             <div>
               <h2 className="text-xl font-bold text-gray-800">Progreso Conductual</h2>
-              <p className="text-sm text-gray-500">Inicias con {puntajeMaximo} puntos cada año escolar</p>
+              <p className="text-sm text-gray-500">
+                Inicias cada bimestre con {puntajeMaximo} puntos: es tu nota de conducta en la libreta
+                {data?.bimestre ? ` · ${data.bimestre}º bimestre` : ""}
+              </p>
             </div>
             <span className="font-black text-2xl text-gray-300">{puntajeMaximo}</span>
           </div>

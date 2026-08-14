@@ -34,6 +34,16 @@ export default function ReportesAuxiliarPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [ultimoRegistro, setUltimoRegistro] = useState<ResultadoReporte | null>(null);
 
+  /* La escala de puntos la define el backend (behavior/constants.py) y viaja en
+     la respuesta al registrar un reporte. Los valores de aquí solo se usan
+     mientras no se ha registrado ninguno todavía; son los mismos de la libreta:
+     se parte de 20 en cada bimestre. */
+  const escala = {
+    maximo: ultimoRegistro?.puntaje_maximo ?? 20,
+    observacion: ultimoRegistro?.umbral_observacion ?? 15,
+    critico: ultimoRegistro?.umbral_critico ?? 8,
+  };
+
   const fetchReportes = useCallback(async () => {
     try {
       const res = await apiFetch(`/conducta/reportes/?limit=${REPORTES_EN_BANDEJA}`);
@@ -163,7 +173,7 @@ export default function ReportesAuxiliarPage() {
                   <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Puntaje actual</p>
                   <p className={`text-2xl font-black tabular-nums ${SEMAFORO[ultimoRegistro.estado_color].clase}`}>
                     {ultimoRegistro.puntaje_actual}
-                    <span className="text-sm font-bold text-gray-400"> / 100</span>
+                    <span className="text-sm font-bold text-gray-400"> / {escala.maximo}</span>
                   </p>
                 </div>
                 <span className={`flex items-center gap-1.5 text-xs font-bold ${SEMAFORO[ultimoRegistro.estado_color].clase}`}>
@@ -192,21 +202,23 @@ export default function ReportesAuxiliarPage() {
               <ClipboardList size={13} aria-hidden="true" /> Sistema de puntos
             </h3>
             <p className="text-sm text-gray-700 leading-relaxed">
-              Cada alumno inicia el año escolar con <span className="font-bold">100 puntos</span>. Cada
-              reporte descuenta los puntos que fija el reglamento para la falta.
+              Cada alumno empieza <span className="font-bold">cada bimestre</span> con{" "}
+              <span className="font-bold">{escala.maximo} puntos</span>, que es la nota de conducta
+              que sale en su libreta. Cada reporte descuenta los puntos que fija el reglamento
+              para la falta.
             </p>
             <ul className="mt-4 space-y-2.5">
               <li className="flex items-center gap-2.5 text-sm text-gray-700">
                 <ShieldCheck size={16} className="text-emerald-600 shrink-0" aria-hidden="true" />
-                <span><span className="font-bold">100 a 75:</span> buena conducta</span>
+                <span><span className="font-bold">{escala.maximo} a {escala.observacion}:</span> buena conducta</span>
               </li>
               <li className="flex items-center gap-2.5 text-sm text-gray-700">
                 <AlertTriangle size={16} className="text-amber-600 shrink-0" aria-hidden="true" />
-                <span><span className="font-bold">74 a 40:</span> en observación</span>
+                <span><span className="font-bold">{escala.observacion - 1} a {escala.critico}:</span> en observación</span>
               </li>
               <li className="flex items-center gap-2.5 text-sm text-gray-700">
                 <AlertCircle size={16} className="text-red-600 shrink-0" aria-hidden="true" />
-                <span><span className="font-bold">39 a 0:</span> conducta crítica</span>
+                <span><span className="font-bold">{escala.critico - 1} a 0:</span> conducta crítica</span>
               </li>
             </ul>
             <p className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-600 leading-relaxed">

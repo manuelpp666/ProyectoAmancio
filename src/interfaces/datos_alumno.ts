@@ -29,6 +29,14 @@ export interface EstadoConducta {
   estado_color: "Verde" | "Amarillo" | "Rojo";
   requiere_cambio_ie: boolean;
   total_reportes: number;
+  /** Bimestre en curso: el puntaje se reinicia al empezar cada uno. */
+  bimestre?: number | null;
+  /** Reportes que caen dentro del bimestre en curso (los únicos que descuentan). */
+  reportes_del_bimestre?: number;
+  /** True si la nota la puso el colegio en el sistema anterior. En ese caso no
+   *  sale de los reportes: manda la nota migrada, para que coincida con la
+   *  libreta que la familia ya tiene impresa. */
+  nota_de_registro_anterior?: boolean;
   historial: HistorialConducta[];
 }
 

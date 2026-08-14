@@ -11,6 +11,11 @@
  *   - las dos primeras columnas quedan fijas al desplazar en horizontal
  *   - las columnas las decide el servidor sobre TODO el conjunto filtrado,
  *     de modo que no bailan al cambiar de página
+ *
+ * Las columnas vienen agrupadas y ordenadas por área en el mismo orden que la
+ * libreta impresa, y el promedio es el ponderado de áreas, no la media de las
+ * notas sueltas: lo que se lee aquí tiene que ser exactamente lo que sale en
+ * el PDF, porque el colegio compara las dos cosas.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -19,7 +24,11 @@ import { toast } from "sonner";
 import { apiFetch, mensajeDeError } from "@/src/lib/api";
 import { generarPDFLibreta, type DatosLibreta } from "@/src/lib/pdfLibreta";
 
-interface Columna { id_curso: number; curso: string; area: string | null; }
+interface Columna {
+  id_curso: number; curso: string;
+  id_area?: number | null;
+  area: string | null;
+}
 interface FilaAlumno {
   id_matricula: number; dni: string; alumno: string;
   nivel: string; grado: string; seccion: string;
@@ -29,6 +38,10 @@ interface FilaAlumno {
    *  cambio no lo manda y la tabla sigue funcionando. */
   exonerados?: string[];
   cursos_con_nota: number;
+  /** Suma de los promedios de área: el "puntaje acumulado" de la libreta. */
+  puntaje_acumulado?: number | null;
+  /** Áreas que entran en el promedio (las que tienen al menos una nota). */
+  num_areas?: number;
   promedio: number | null;
 }
 interface Respuesta {
@@ -170,6 +183,21 @@ export function NotasFinales() {
 
   const totalPaginas = datos ? Math.max(1, Math.ceil(datos.total / datos.por_pagina)) : 1;
 
+  // Cabecera de áreas. El servidor ya manda las columnas en el orden de la
+  // libreta, así que basta con agrupar las consecutivas que comparten área;
+  // no hay que reordenar nada aquí (si se hiciera, la tabla y el PDF podrían
+  // acabar discrepando).
+  const gruposArea = useMemo(() => {
+    const grupos: { area: string; cursos: Columna[] }[] = [];
+    (datos?.columnas ?? []).forEach((c) => {
+      const nombre = c.area ?? "Sin área";
+      const ultimo = grupos[grupos.length - 1];
+      if (ultimo && ultimo.area === nombre) ultimo.cursos.push(c);
+      else grupos.push({ area: nombre, cursos: [c] });
+    });
+    return grupos;
+  }, [datos]);
+
   return (
     <div className="p-4 md:p-6 space-y-4">
 
@@ -284,22 +312,40 @@ export function NotasFinales() {
           <div className="overflow-x-auto">
             <table className="w-full text-[11px] border-collapse">
               <thead className="bg-gray-50">
+                {/* Fila de áreas: agrupa las columnas igual que la libreta. */}
                 <tr>
-                  <th className="sticky left-0 z-20 bg-gray-50 text-left px-3 py-2 font-bold
+                  <th rowSpan={2}
+                      className="sticky left-0 z-20 bg-gray-50 text-left px-3 py-2 font-bold
                                  border-r border-gray-200 min-w-[13rem]">Estudiante</th>
-                  <th className="sticky left-[13rem] z-20 bg-gray-50 text-left px-2 py-2
+                  <th rowSpan={2}
+                      className="sticky left-[13rem] z-20 bg-gray-50 text-left px-2 py-2
                                  font-bold border-r border-gray-200 whitespace-nowrap">Sección</th>
-                  {datos.columnas.map((c) => (
-                    <th key={c.id_curso} title={c.area ?? ""}
-                        className="px-2 py-2 font-bold text-gray-600 whitespace-nowrap
-                                   text-center min-w-[4.5rem]">
-                      {c.curso}
+                  {gruposArea.map((g, i) => (
+                    <th key={`${g.area}-${i}`} colSpan={g.cursos.length} title={g.area}
+                        className="px-2 py-1.5 text-center font-black uppercase tracking-tight
+                                   text-[9px] text-[#701C32] bg-[#701C32]/[0.06]
+                                   border-l border-gray-200 whitespace-nowrap">
+                      {g.area}
                     </th>
                   ))}
-                  <th className="px-3 py-2 font-black text-gray-700 text-center
+                  <th rowSpan={2}
+                      className="px-3 py-2 font-black text-gray-700 text-center
                                  border-l border-gray-200 whitespace-nowrap">Prom.</th>
-                  <th className="px-3 py-2 font-black text-gray-700 text-center
+                  <th rowSpan={2}
+                      className="px-3 py-2 font-black text-gray-700 text-center
                                  border-l border-gray-200 whitespace-nowrap">Libreta</th>
+                </tr>
+                <tr>
+                  {gruposArea.map((g, gi) =>
+                    g.cursos.map((c, ci) => (
+                      <th key={c.id_curso} title={`${c.curso} · ${g.area}`}
+                          className={`px-2 py-2 font-bold text-gray-600 whitespace-nowrap
+                                      text-center min-w-[4.5rem]
+                                      ${ci === 0 && gi > 0 ? "border-l border-gray-200" : ""}`}>
+                        {c.curso}
+                      </th>
+                    ))
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -316,7 +362,7 @@ export function NotasFinales() {
                       {a.grado} · {a.seccion}
                       <span className="block text-[9px] text-gray-400">{a.nivel}</span>
                     </td>
-                    {datos.columnas.map((c) => {
+                    {gruposArea.map((g, gi) => g.cursos.map((c, ci) => {
                       const clave = String(c.id_curso);
                       const v = a.notas[clave];
                       /* Una casilla vacía puede ser un exonerado o una nota que
@@ -324,7 +370,9 @@ export function NotasFinales() {
                          distinto: EXO es definitivo, el guion está pendiente. */
                       const exonerado = a.exonerados?.includes(clave);
                       return (
-                        <td key={c.id_curso} className="px-2 py-1.5 text-center">
+                        <td key={c.id_curso}
+                            className={`px-2 py-1.5 text-center
+                                        ${ci === 0 && gi > 0 ? "border-l border-gray-200" : ""}`}>
                           {exonerado
                             ? <span className="text-[9px] font-bold text-indigo-500
                                                bg-indigo-50 px-1 py-0.5 rounded"
@@ -337,15 +385,20 @@ export function NotasFinales() {
                               : <span className={color(v)}>{v}</span>}
                         </td>
                       );
-                    })}
+                    }))}
                     <td className="px-3 py-1.5 text-center border-l border-gray-200">
                       {a.promedio === null
                         ? <span className="text-gray-300">—</span>
-                        : <span className={`font-black ${color(a.promedio)}`}>
+                        : <span className={`font-black ${color(a.promedio)}`}
+                                title={a.puntaje_acumulado != null
+                                  ? `${a.puntaje_acumulado} puntos entre ${a.num_areas} áreas`
+                                  : undefined}>
                             {a.promedio.toFixed(2)}
                           </span>}
                       <span className="block text-[9px] text-gray-400 font-normal">
-                        {a.cursos_con_nota} curso{a.cursos_con_nota !== 1 ? "s" : ""}
+                        {a.num_areas != null
+                          ? `${a.puntaje_acumulado} pts · ${a.num_areas} área${a.num_areas !== 1 ? "s" : ""}`
+                          : `${a.cursos_con_nota} curso${a.cursos_con_nota !== 1 ? "s" : ""}`}
                       </span>
                     </td>
                     <td className="px-3 py-1.5 text-center border-l border-gray-200">
@@ -368,11 +421,25 @@ export function NotasFinales() {
           </div>
         )}
 
-        <div className="px-4 py-2 bg-gray-50 border-t text-[10px] text-gray-500">
-          <b className="text-indigo-500">EXO</b> = exonerado del curso: el docente lo
-          marcó desde su sábana de notas y ese curso no cuenta en el promedio.
-          El guion (—) es distinto: significa que la nota todavía no está cargada,
-          no un cero.
+        <div className="px-4 py-2 bg-gray-50 border-t text-[10px] text-gray-500 space-y-1">
+          <p>
+            <b className="text-indigo-500">EXO</b> = exonerado del curso: el docente lo
+            marcó desde su sábana de notas y ese curso no cuenta en el promedio.
+            El guion (—) es distinto: significa que la nota todavía no está cargada,
+            no un cero.
+          </p>
+          <p>
+            <b>Prom.</b> es el ponderado de la libreta, no la media de las notas: se
+            promedia dentro de cada área, se redondea a entero y esos enteros se
+            promedian entre sí. Por eso coincide con el PDF y no con el promedio
+            simple de la fila.
+          </p>
+          {bimestre && (
+            <p>
+              La libreta que se descargue será <b>acumulativa hasta el {bimestre}º
+              bimestre</b>: incluye también los anteriores, como la de papel.
+            </p>
+          )}
         </div>
       </div>
     </div>

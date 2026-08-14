@@ -27,6 +27,13 @@ export interface ResultadoReporte {
   puntaje_actual: number;
   estado_color: "Verde" | "Amarillo" | "Rojo";
   requiere_cambio_ie: boolean;
+  /** Bimestre en el que cae el reporte: el puntaje se reinicia en cada uno. */
+  bimestre?: number | null;
+  /** La escala la manda el backend (única fuente de verdad). Opcional para no
+   *  romper si la respuesta viene de una versión anterior del servidor. */
+  puntaje_maximo?: number;
+  umbral_observacion?: number;
+  umbral_critico?: number;
 }
 
 export interface ReporteReciente {
