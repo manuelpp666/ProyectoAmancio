@@ -8,6 +8,7 @@ import { apiFetch } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
 import { ModalEditarEstudiante } from "@/src/components/Campus/PanelControl/ModalEditarEstudiante";
 import { usePermisos } from "@/src/hooks/usePermisos";
+import { NotasFinales } from "@/src/components/Campus/PanelControl/NotasFinales";
 
 // Pestañas del apartado. Los `id` coinciden con el catálogo de permisos.
 const PESTANAS_ESTUDIANTES = [
@@ -15,6 +16,7 @@ const PESTANAS_ESTUDIANTES = [
     { id: "postulantes", label: "Solicitudes de Admisión", icon: "pending_actions" },
     { id: "renovaciones", label: "Renovaciones de Matrícula", icon: "autorenew" },
     { id: "verano", label: "Inscripciones de Verano", icon: "wb_sunny" },
+    { id: "notas", label: "Notas Finales", icon: "grading" },
 ] as const;
 
 /**
@@ -94,8 +96,8 @@ export default function GestionEstudiantesPage() {
     const [busqueda, setBusqueda] = useState("");
     const [alumnos, setAlumnos] = useState<AlumnoBase[]>([]);
     const [loading, setLoading] = useState(true);
-    // Vista actual: "estudiantes" | "postulantes" | "renovaciones" | "verano"
-    const [vista, setVista] = useState<"estudiantes" | "postulantes" | "renovaciones" | "verano">("estudiantes");
+    // Vista actual: "estudiantes" | "postulantes" | "renovaciones" | "verano" | "notas"
+    const [vista, setVista] = useState<"estudiantes" | "postulantes" | "renovaciones" | "verano" | "notas">("estudiantes");
     const { tienePermiso, loading: loadingPermisos } = usePermisos();
 
     // Si la pestaña abierta no está permitida, se abre la primera que sí lo esté
@@ -214,6 +216,9 @@ export default function GestionEstudiantesPage() {
             cargarVerano();
             return;
         }
+        // "notas" se sirve sola: pide sus datos con sus propios filtros, así
+        // que aquí no hay que traer el padrón entero para nada.
+        if (vista === "notas") return;
         const delayDebounceFn = setTimeout(() => {
             cargarDatos();
         }, 300); // 300ms de debounce para no saturar la API mientras escribes
@@ -324,6 +329,7 @@ export default function GestionEstudiantesPage() {
                                     {vista === "postulantes" ? "Solicitudes de Admisión"
                                         : vista === "renovaciones" ? "Renovaciones de Matrícula"
                                             : vista === "verano" ? "Inscripciones de Verano"
+                                            : vista === "notas" ? "Notas Finales"
                                             : "Gestión de Estudiantes"}
                                 </h2>
                             </div>
@@ -349,8 +355,10 @@ export default function GestionEstudiantesPage() {
 
                     {/* CUERPO */}
                     <div className="flex-1 p-4 md:p-8 overflow-y-auto">
-                        {/* Barra de búsqueda + registro dedicado */}
-                        {vista !== "renovaciones" && vista !== "verano" && (
+                        {/* Barra de búsqueda + registro dedicado.
+                            "notas" queda fuera: esa pestaña trae sus propios
+                            filtros, y el buscador de arriba no la afecta. */}
+                        {vista !== "renovaciones" && vista !== "verano" && vista !== "notas" && (
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
                                 <div className="relative w-full sm:max-w-md">
                                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -455,6 +463,10 @@ export default function GestionEstudiantesPage() {
                                         </table>
                                     </div>
                                 </div>
+                            </div>
+                        ) : vista === "notas" ? (
+                            <div className="-m-4 md:-m-8">
+                                <NotasFinales />
                             </div>
                         ) : vista === "verano" ? (
                             <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden shadow-sm">

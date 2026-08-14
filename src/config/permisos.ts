@@ -27,6 +27,7 @@ export const CATALOGO_PERMISOS: NodoPermiso[] = [
       { id: "postulantes", label: "Solicitudes de Admisión" },
       { id: "renovaciones", label: "Renovaciones de Matrícula" },
       { id: "verano", label: "Inscripciones de Verano" },
+      { id: "notas", label: "Notas Finales" },
     ],
   },
 
@@ -49,6 +50,7 @@ export const CATALOGO_PERMISOS: NodoPermiso[] = [
       { id: "solicitudes", label: "Atención de Solicitudes" },
       { id: "tipos_pagos", label: "Tipos de Pagos" },
       { id: "recaudacion", label: "Caja y Recaudación" },
+      { id: "conciliacion", label: "Conciliación BCP" },
     ],
   },
 

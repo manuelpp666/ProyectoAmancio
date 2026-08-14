@@ -9,6 +9,7 @@ import { apiFetch } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
 import { usePermisos } from "@/src/hooks/usePermisos";
 import { CampoNumero, leerNumero, aNumero } from "@/src/components/utils/numero";
+import { ConciliacionBCP } from "@/src/components/Finanzas/ConciliacionBCP";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // --- NUEVA INTERFAZ PARA TIPOS DE PAGO ---
@@ -37,13 +38,14 @@ const PESTANAS_FINANZAS = [
   { id: 'solicitudes', permiso: 'solicitudes', label: 'Atención de Solicitudes', icon: 'mark_as_unread' },
   { id: 'tipos-pagos', permiso: 'tipos_pagos', label: 'Tipos de Pagos', icon: 'receipt_long' },
   { id: 'recaudacion', permiso: 'recaudacion', label: 'Caja y Recaudación', icon: 'account_balance_wallet' },
+  { id: 'conciliacion', permiso: 'conciliacion', label: 'Conciliación BCP', icon: 'account_balance' },
 ] as const;
 
 export default function GestionFinancieraPage() {
   // --- ESTADOS ---
   // Se agregó "tipos-pagos" a los tipos de tabActiva
   const { tienePermiso, loading: loadingPermisos } = usePermisos();
-  const [tabActiva, setTabActiva] = useState<"config" | "solicitudes" | "tipos-pagos" | "recaudacion">("config");
+  const [tabActiva, setTabActiva] = useState<"config" | "solicitudes" | "tipos-pagos" | "recaudacion" | "conciliacion">("config");
 
   // Si la pestaña abierta está cerrada para este administrador, se abre la
   // primera que sí tenga permitida.
@@ -478,6 +480,11 @@ export default function GestionFinancieraPage() {
         </div>
 
         <div className="flex-1 p-4 md:p-8 overflow-y-auto">
+          {/* La conciliación con el BCP vive en su propio componente: es un
+              circuito completo (subir cobros, mora, generar el archivo) y
+              metido aquí dentro haría esta pantalla inmanejable. */}
+          {tabActiva === "conciliacion" && <ConciliacionBCP />}
+
           {tabActiva === "config" && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">

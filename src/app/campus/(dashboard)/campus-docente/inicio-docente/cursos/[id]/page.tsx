@@ -61,6 +61,9 @@ export default function DetalleCursoDocente() {
   const [editandoNotas, setEditandoNotas] = useState(false);
   const [notasTemporales, setNotasTemporales] = useState<any>({});
   const [isCerrarBimestreOpen, setIsCerrarBimestreOpen] = useState(false);
+  /* Alumnos exonerados de este curso (por id_alumno) y cuál se está guardando */
+  const [exonerados, setExonerados] = useState<number[]>([]);
+  const [guardandoExo, setGuardandoExo] = useState<number | null>(null);
 
   const fetchInfo = useCallback(async () => {
     setLoadingInfo(true);
@@ -89,6 +92,45 @@ export default function DetalleCursoDocente() {
     }
   }, [idCarga, bimestre]);
 
+  /* Quién está exonerado de este curso. Va en una petición aparte de la sábana
+     porque la exoneración es del año entero, no del bimestre: cambiar de
+     bimestre no tiene por qué volver a pedirla. */
+  const fetchExonerados = useCallback(async () => {
+    try {
+      const res = await apiFetch(`/academic/exoneraciones/carga/${idCarga}`);
+      if (!res.ok) return;              // backend antiguo: la sábana sigue igual
+      const data = await res.json();
+      setExonerados((data.exonerados || []).map((e: any) => e.id_alumno));
+    } catch {
+      /* Sin conexión no se bloquea la carga de notas, que es lo importante. */
+    }
+  }, [idCarga]);
+
+  const alternarExoneracion = async (idAlumno: number, nombre: string) => {
+    const estaba = exonerados.includes(idAlumno);
+    setGuardandoExo(idAlumno);
+    try {
+      const res = await apiFetch(
+        `/academic/exoneraciones/carga/${idCarga}/alumno/${idAlumno}`,
+        { method: estaba ? "DELETE" : "POST" }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data?.detail || "No se pudo cambiar la exoneración");
+        return;
+      }
+      setExonerados((prev) =>
+        estaba ? prev.filter((id) => id !== idAlumno) : [...prev, idAlumno]);
+      toast.success(estaba
+        ? `${nombre} vuelve a llevar el curso`
+        : `${nombre} queda exonerado del curso`);
+    } catch {
+      toast.error("No se pudo conectar con el servidor");
+    } finally {
+      setGuardandoExo(null);
+    }
+  };
+
   useEffect(() => {
     if (idCarga) fetchInfo();
   }, [idCarga, fetchInfo]);
@@ -96,6 +138,10 @@ export default function DetalleCursoDocente() {
   useEffect(() => {
     if (idCarga && activeTab === "notas") fetchSabana();
   }, [idCarga, bimestre, activeTab, fetchSabana]);
+
+  useEffect(() => {
+    if (idCarga && activeTab === "notas") fetchExonerados();
+  }, [idCarga, activeTab, fetchExonerados]);
 
   // Agrupar tareas por bimestre
   const tareasPorBimestre: Record<number, any[]> = (info?.tareas || []).reduce((acc: any, t: any) => {
@@ -701,8 +747,10 @@ export default function DetalleCursoDocente() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {alumnosFiltrados?.map((alumno: any, index: number) => (
-                    <tr key={alumno.id_alumno} className="hover:bg-gray-50 transition-colors">
+                  {alumnosFiltrados?.map((alumno: any, index: number) => {
+                    const exonerado = exonerados.includes(alumno.id_alumno);
+                    return (
+                    <tr key={alumno.id_alumno} className={`transition-colors ${exonerado ? "bg-indigo-50/40" : "hover:bg-gray-50"}`}>
                       <td className="px-6 py-4">{index + 1}</td>
                       <td className="px-6 py-4 font-bold text-gray-800">
                         <span className="flex items-center gap-2">
@@ -710,11 +758,38 @@ export default function DetalleCursoDocente() {
                           {alumno.condicion === "CONDICIONADA" && (
                             <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[9px] font-black uppercase" title="Matrícula condicionada — requiere apoyo académico adicional">Apoyo</span>
                           )}
+                          {exonerado && (
+                            <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 text-[9px] font-black uppercase" title="Exonerado del curso: sale EXO en la libreta y no cuenta en el promedio">Exonerado</span>
+                          )}
+                          {/* El botón queda siempre visible para poder deshacer:
+                              una exoneración marcada por error, si no, se
+                              quedaría puesta hasta fin de año. */}
+                          <button
+                            type="button"
+                            onClick={() => alternarExoneracion(alumno.id_alumno, alumno.nombres_completos)}
+                            disabled={guardandoExo === alumno.id_alumno}
+                            title={exonerado
+                              ? "Quitar la exoneración: el alumno vuelve a llevar el curso"
+                              : "Marcar como exonerado del curso"}
+                            className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border transition-colors disabled:opacity-40
+                              ${exonerado
+                                ? "border-gray-300 text-gray-500 hover:bg-gray-100"
+                                : "border-indigo-200 text-indigo-600 hover:bg-indigo-50"}`}
+                          >
+                            {guardandoExo === alumno.id_alumno
+                              ? "..."
+                              : exonerado ? "Quitar" : "Exonerar"}
+                          </button>
                         </span>
                       </td>
                       {datos?.evaluaciones.map((evalu: any) => (
                         <td key={evalu.id_tarea} className="px-4 py-4 text-center">
-                          {editandoNotas ? (
+                          {/* A un exonerado no se le pone nota: ni se edita ni
+                              se muestra un 0, que es justo la confusión que
+                              esto viene a quitar. */}
+                          {exonerado ? (
+                            <span className="text-[10px] font-bold text-indigo-400">EXO</span>
+                          ) : editandoNotas ? (
                             <input
                               type="number"
                               min="0"
@@ -731,10 +806,13 @@ export default function DetalleCursoDocente() {
                         </td>
                       ))}
                       <td className="px-6 py-4 text-center font-bold text-[#701C32] bg-gray-50/30">
-                        {alumno.promedio.toFixed(1)}
+                        {exonerado
+                          ? <span className="text-indigo-400 text-xs">EXO</span>
+                          : alumno.promedio.toFixed(1)}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                   {(!alumnosFiltrados || alumnosFiltrados.length === 0) && (
                     <tr>
                       <td colSpan={(datos?.evaluaciones?.length || 0) + 3} className="text-center py-10 text-gray-400 text-sm">

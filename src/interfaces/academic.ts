@@ -32,8 +32,26 @@ export interface AnioEscolar {
   fecha_fin?: string;
   activo: boolean;
   tipo: 'REGULAR' | 'VERANO';
-  inicio_inscripcion?: string; 
-  fin_inscripcion?: string; 
+  inicio_inscripcion?: string;
+  fin_inscripcion?: string;
+}
+
+/** Un bimestre suelto: su número (1 a 4) y su rango de fechas. */
+export interface Bimestre {
+  numero: number;
+  fecha_inicio: string;
+  fecha_fin: string;
+}
+
+/**
+ * Respuesta de GET /academic/bimestres/{anio_id}.
+ * `guardado` en false significa que son un reparto automático propuesto
+ * (el colegio todavía no confirmó las fechas reales de ese año).
+ */
+export interface BimestresResponse {
+  id_anio_escolar: string;
+  guardado: boolean;
+  bimestres: Bimestre[];
 }
 
 export interface CursoDocente {

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Nivel, Seccion, AnioEscolar, Grado } from "@/src/interfaces/academic";
+import { Nivel, Seccion, AnioEscolar, Grado, Bimestre } from "@/src/interfaces/academic";
 import GradoCard from "@/src/components/Academic/GradoCard";
 import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 import { toast } from "sonner";
@@ -51,6 +51,16 @@ export default function GestionAcademicaPage() {
     inicio_inscripcion: "",
     fin_inscripcion: ""
   });
+
+  // --- BIMESTRES (calendario de conducta) ---
+  // ROMANOS_BIMESTRE: rótulo de cada fila; el índice del array es numero-1.
+  const ROMANOS_BIMESTRE = ["I", "II", "III", "IV"];
+  const bimestresVacios = (): Bimestre[] => [1, 2, 3, 4].map((n) => ({ numero: n, fecha_inicio: "", fecha_fin: "" }));
+  const [bimestres, setBimestres] = useState<Bimestre[]>(bimestresVacios());
+  // Si el backend los devolvió como "propuesta" (todavía no confirmados por el colegio).
+  const [bimestresAproximados, setBimestresAproximados] = useState(false);
+  const [cargandoBimestres, setCargandoBimestres] = useState(false);
+  const [guardandoBimestres, setGuardandoBimestres] = useState(false);
 
   // --- MODAL SECCIÓN ---
   const [isSeccionModalOpen, setIsSeccionModalOpen] = useState(false);
@@ -155,6 +165,27 @@ export default function GestionAcademicaPage() {
     } catch (error) { console.error(error); }
   };
 
+  const fetchBimestresDelAnio = async (idAnio: string) => {
+    try {
+      setCargandoBimestres(true);
+      const res = await apiFetch(`/academic/bimestres/${idAnio}`);
+      if (res.ok) {
+        const data = await res.json();
+        setBimestres(data.bimestres);
+        setBimestresAproximados(!data.guardado);
+      } else {
+        // Año sin periodo de clases válido u otro error: se deja el
+        // formulario vacío para que no muestre fechas incorrectas.
+        setBimestres(bimestresVacios());
+        setBimestresAproximados(false);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setCargandoBimestres(false);
+    }
+  };
+
   useEffect(() => {
     fetchDatosMaestros();
   }, []);
@@ -162,6 +193,7 @@ export default function GestionAcademicaPage() {
   useEffect(() => {
     if (anioSeleccionado) {
       fetchSeccionesDelAnio(anioSeleccionado);
+      fetchBimestresDelAnio(anioSeleccionado);
       if (anioObj) {
         setInscripcionData({
           inicio_inscripcion: anioObj.inicio_inscripcion || "",
@@ -175,6 +207,8 @@ export default function GestionAcademicaPage() {
       }
     } else {
       setSecciones([]);
+      setBimestres(bimestresVacios());
+      setBimestresAproximados(false);
     }
   }, [anioSeleccionado, anioObj]);
 
@@ -301,6 +335,67 @@ export default function GestionAcademicaPage() {
         toast.error(err.detail || "Error al guardar fechas");
       }
     } catch (error) { toast.error("Error de conexión"); }
+  };
+
+  // --- BIMESTRES ---
+  const handleCambiarBimestre = (numero: number, campo: "fecha_inicio" | "fecha_fin", valor: string) => {
+    setBimestres((prev) => prev.map((b) => (b.numero === numero ? { ...b, [campo]: valor } : b)));
+  };
+
+  /**
+   * Valida en el cliente antes de mandar, para avisar rápido con un mensaje
+   * claro. No reemplaza la validación del backend (que es la que de verdad
+   * protege los datos): solo evita un viaje al servidor con algo obviamente
+   * mal. El criterio de "no solaparse" replica al del backend: un bimestre
+   * puede empezar el mismo día en que termina el anterior (se tocan), solo
+   * está mal si empieza antes.
+   */
+  const validarBimestres = (): string | null => {
+    const ordenados = [...bimestres].sort((a, b) => a.numero - b.numero);
+    for (const b of ordenados) {
+      if (!b.fecha_inicio || !b.fecha_fin) {
+        return `Completa las dos fechas del bimestre ${ROMANOS_BIMESTRE[b.numero - 1]}.`;
+      }
+      if (b.fecha_inicio >= b.fecha_fin) {
+        return `En el bimestre ${ROMANOS_BIMESTRE[b.numero - 1]}, la fecha de inicio debe ser anterior a la de fin.`;
+      }
+    }
+    for (let i = 1; i < ordenados.length; i++) {
+      const anterior = ordenados[i - 1];
+      const actual = ordenados[i];
+      if (actual.fecha_inicio < anterior.fecha_fin) {
+        return `El bimestre ${ROMANOS_BIMESTRE[actual.numero - 1]} empieza antes de que termine el bimestre ${ROMANOS_BIMESTRE[anterior.numero - 1]}. Ajusta las fechas para que no se crucen.`;
+      }
+    }
+    return null;
+  };
+
+  const handleGuardarBimestres = async () => {
+    if (!anioSeleccionado) return;
+    const error = validarBimestres();
+    if (error) { toast.error(error); return; }
+
+    setGuardandoBimestres(true);
+    try {
+      const res = await apiFetch(`/academic/bimestres/${anioSeleccionado}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bimestres }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBimestres(data.bimestres);
+        setBimestresAproximados(!data.guardado);
+        toast.success("Fechas de los bimestres guardadas correctamente");
+      } else {
+        const err = await res.json();
+        toast.error(err.detail || "No se pudieron guardar los bimestres");
+      }
+    } catch (error) {
+      toast.error("Error de conexión");
+    } finally {
+      setGuardandoBimestres(false);
+    }
   };
 
   // --- SECCIONES Y COPIAR ---
@@ -534,6 +629,67 @@ export default function GestionAcademicaPage() {
                     El cierre del año (evaluación de desaprobados + aviso a los padres) se ejecuta <strong>automáticamente</strong> al terminar el periodo académico según la fecha configurada.
                   </p>
                 </div>
+              </div>
+            </section>
+
+            {/* Calendario de Bimestres */}
+            <section className="space-y-4">
+              <div>
+                <h3 className="text-xl font-black text-gray-900">Calendario de Bimestres</h3>
+                <p className="text-sm text-gray-500">
+                  Fechas de cada bimestre. La libreta de conducta se reinicia en cada uno, así que de aquí depende a qué bimestre se asigna cada reporte.
+                </p>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                {bimestresAproximados && (
+                  <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 font-medium flex items-center gap-2">
+                    <span className="material-symbols-outlined text-sm">warning</span>
+                    Fechas aproximadas, todavía sin confirmar. El colegio no las ha guardado: revísalas y ajústalas antes de guardar.
+                  </div>
+                )}
+
+                {cargandoBimestres ? (
+                  <div className="flex items-center justify-center py-8 text-gray-400 text-sm font-bold">Cargando bimestres...</div>
+                ) : (
+                  <>
+                    <div className="space-y-3">
+                      {bimestres.map((b) => (
+                        <div key={b.numero} className="grid grid-cols-1 sm:grid-cols-[140px_1fr_1fr] gap-3 sm:items-center border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
+                          <span className="text-sm font-black text-gray-700">{ROMANOS_BIMESTRE[b.numero - 1]} BIMESTRE</span>
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Inicio</label>
+                            <input
+                              type="date"
+                              value={b.fecha_inicio}
+                              onChange={(e) => handleCambiarBimestre(b.numero, "fecha_inicio", e.target.value)}
+                              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A]"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Fin</label>
+                            <input
+                              type="date"
+                              value={b.fecha_fin}
+                              onChange={(e) => handleCambiarBimestre(b.numero, "fecha_fin", e.target.value)}
+                              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A]"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="pt-4 flex justify-end">
+                      <button
+                        onClick={handleGuardarBimestres}
+                        disabled={guardandoBimestres || !anioSeleccionado}
+                        className="py-2.5 px-6 bg-[#093E7A] text-white rounded-lg font-bold text-sm hover:bg-[#072d5a] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-sm">save</span>
+                        {guardandoBimestres ? "Guardando..." : "Guardar Bimestres"}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </section>
 

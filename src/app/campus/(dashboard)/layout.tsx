@@ -10,6 +10,7 @@ import { AsidePanel as SidebarPanel } from "@/src/components/Campus/PanelControl
 import { HeaderCampus as Header } from "@/src/components/Campus/HeaderCampus";
 import { AsidePsicologo as SidebarPsicologo } from "@/src/components/Campus/CampusPsicologo/AsidePsicologo";
 import { AsideAuxiliar as SidebarAuxiliar } from "@/src/components/Campus/CampusAuxiliar/AsideAuxiliar";
+import { GuardiaPrimerIngreso } from "@/src/components/Campus/GuardiaPrimerIngreso";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { role, loading } = useUser();
@@ -78,6 +79,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // HeaderCampus: el conjunto solo funciona si todos usan el mismo corte.
   return (
     <div className="flex h-screen bg-[#F2F4F7] font-sans text-slate-800 overflow-hidden">
+      {/* Comprueba al entrar si a la cuenta le falta la contraseña propia o el
+          correo de contacto, y en ese caso la manda a completarlo. Vale para
+          los cinco roles y no pinta nada. */}
+      <GuardiaPrimerIngreso />
+
       {/* Fondo oscuro del menú plegado. Vive solo aquí, para los cinco roles:
           el Aside del panel de administración dibujaba otro igual encima y las
           dos capas al 50% dejaban la pantalla mucho más oscura que en el resto
