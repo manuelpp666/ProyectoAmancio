@@ -126,9 +126,30 @@ async function cargarEscudo(): Promise<string | null> {
   }
 }
 
-export async function generarPDFLibreta(
-  datos: DatosLibreta
-): Promise<{ nombreArchivo: string }> {
+/** Nombre del archivo de la libreta de un alumno suelto. */
+function nombreDeArchivo(datos: DatosLibreta): string {
+  const { alumno } = datos;
+  const nombreCompleto = `${alumno.apellidos || ""} ${alumno.nombres || ""}`.trim();
+  const gradoSeccion = `${alumno.grado || ""} ${alumno.seccion || ""}`.trim();
+  const bimestreTexto = datos.bimestre_cabecera
+    ? `${ROMANOS[datos.bimestre_cabecera] || datos.bimestre_cabecera}_Bimestre`
+    : "Anual";
+  return `Libreta_${paraArchivo(nombreCompleto)}_${paraArchivo(gradoSeccion)}_${bimestreTexto}.pdf`;
+}
+
+/**
+ * Dibuja UNA libreta empezando en la página actual del documento.
+ *
+ * Está separada de `generarPDFLibreta` para que la descarga en bloque pueda
+ * meter muchas en un mismo PDF sin duplicar ni una línea de dibujo: si el
+ * papel de una libreta suelta y el de la tanda se dibujaran por caminos
+ * distintos, tarde o temprano dejarían de ser iguales.
+ */
+function dibujarLibreta(
+  pdf: jsPDF,
+  datos: DatosLibreta,
+  escudo: string | null
+): void {
   const { alumno, areas, resumen } = datos;
 
   // Columnas de bimestre que se dibujan. El backend las manda ya acumuladas
@@ -139,15 +160,7 @@ export async function generarPDFLibreta(
 
   const nombreCompleto = `${alumno.apellidos || ""} ${alumno.nombres || ""}`.trim();
   const gradoSeccion = `${alumno.grado || ""} ${alumno.seccion || ""}`.trim();
-  const bimestreTexto = datos.bimestre_cabecera
-    ? `${ROMANOS[datos.bimestre_cabecera] || datos.bimestre_cabecera}_Bimestre`
-    : "Anual";
-  const nombreArchivo =
-    `Libreta_${paraArchivo(nombreCompleto)}_${paraArchivo(gradoSeccion)}_${bimestreTexto}.pdf`;
 
-  const escudo = await cargarEscudo();
-
-  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const anchoPag = pdf.internal.pageSize.getWidth();
   const altoPag = pdf.internal.pageSize.getHeight();
   const margen = 10;
@@ -595,7 +608,82 @@ export async function generarPDFLibreta(
   pdf.setTextColor(...GRIS_TEXTO);
   const hoy = new Date().toLocaleDateString("es-PE", { day: "2-digit", month: "long", year: "numeric" });
   pdf.text(`Generado el ${hoy}`, anchoPag - margen, altoPag - 6, { align: "right" });
+}
 
+/** La libreta de un alumno, en su propio archivo. */
+export async function generarPDFLibreta(
+  datos: DatosLibreta
+): Promise<{ nombreArchivo: string }> {
+  const escudo = await cargarEscudo();
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  dibujarLibreta(pdf, datos, escudo);
+  const nombreArchivo = nombreDeArchivo(datos);
   pdf.save(nombreArchivo);
   return { nombreArchivo };
+}
+
+export interface ResultadoLote {
+  nombreArchivo: string;
+  generadas: number;
+  fallidas: { alumno: string; motivo: string }[];
+}
+
+/**
+ * Muchas libretas en un único PDF, una detrás de otra.
+ *
+ * El escudo se carga UNA vez para todo el documento: pedirlo por alumno serían
+ * cientos de descargas de la misma imagen.
+ *
+ * Si una libreta suelta falla al dibujarse no se pierde la tanda entera: se
+ * anota, se descarta su página a medias y se sigue con las demás. Con 30
+ * alumnos, que un dato raro de uno tumbe los otros 29 sería lo peor que podría
+ * pasar aquí.
+ *
+ * `onProgreso` recibe cuántas van dibujadas, para poder enseñarlo en pantalla.
+ */
+export async function generarPDFLibretas(
+  lista: DatosLibreta[],
+  nombreBase: string,
+  onProgreso?: (hechas: number, total: number) => void
+): Promise<ResultadoLote> {
+  if (!lista.length) throw new Error("No hay ninguna libreta que generar");
+
+  const escudo = await cargarEscudo();
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  let generadas = 0;
+  const fallidas: { alumno: string; motivo: string }[] = [];
+
+  // Cada libreta estrena página, incluida la primera; la hoja en blanco con la
+  // que nace el documento se borra al final. Así el descarte de una libreta que
+  // falle es siempre el mismo gesto —tirar las páginas que añadió— y nunca
+  // queda media libreta rota dentro del archivo.
+  for (const datos of lista) {
+    const quien = `${datos.alumno?.apellidos ?? ""} ${datos.alumno?.nombres ?? ""}`.trim()
+      || datos.alumno?.dni || "sin nombre";
+    const paginasAntes = pdf.getNumberOfPages();
+    pdf.addPage();
+    try {
+      dibujarLibreta(pdf, datos, escudo);
+      generadas += 1;
+    } catch (e: any) {
+      fallidas.push({ alumno: quien, motivo: e?.message || "error al dibujar" });
+      while (pdf.getNumberOfPages() > paginasAntes) {
+        pdf.deletePage(pdf.getNumberOfPages());
+      }
+    }
+    onProgreso?.(generadas + fallidas.length, lista.length);
+    // Devuelve el hilo al navegador entre libretas: sin esto la pestaña se
+    // queda congelada y el usuario cree que se colgó.
+    await new Promise((listo) => setTimeout(listo, 0));
+  }
+
+  if (!generadas) {
+    throw new Error("No se pudo generar ninguna libreta de la selección");
+  }
+  pdf.deletePage(1);   // la hoja en blanco inicial
+
+  const nombreArchivo = `Libretas_${paraArchivo(nombreBase)}.pdf`;
+  pdf.save(nombreArchivo);
+  return { nombreArchivo, generadas, fallidas };
 }

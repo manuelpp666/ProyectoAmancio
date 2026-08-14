@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { NoticiaResponse } from "@/src/interfaces/noticia";
-import { getYouTubeID } from "@/src/components/utils/youtube";
+import { getYouTubeID, imagenesDeNoticia } from "@/src/components/utils/youtube";
 import { sanitizarHtml } from "@/src/components/utils/html";
 import { formatearFechaLarga } from "@/src/components/utils/fecha";
 import { Calendar, Tag, ArrowLeft, Loader2 } from "lucide-react";
@@ -47,6 +47,7 @@ export default function DetalleNoticiaPage() {
     );
 
     const videoId = noticia.categoria === "video" ? getYouTubeID(noticia.imagen_portada_url || "") : null;
+    const galeria = imagenesDeNoticia(noticia);
 
     return (
         <div className="bg-white">
@@ -89,13 +90,12 @@ export default function DetalleNoticiaPage() {
                 </div>
 
                 <div className="max-w-4xl mx-auto px-4">
-                    {/* Visual principal (Imagen o Video).
-                        La imagen usa object-contain, no object-cover: cover rellena
-                        la caja recortando lo que sobra, y junto al max-h cortaba por
-                        arriba y por abajo las fotos verticales. Con contain se ve
-                        entera sea cual sea su forma. */}
-                    <div className="mb-10 md:mb-12 rounded-3xl overflow-hidden shadow-2xl">
-                        {noticia.categoria === "video" && videoId ? (
+                    {/* Visual principal: el video, o la galería de la noticia.
+                        Las imágenes usan object-cover y llenan su recuadro entero,
+                        sin franjas a los lados. A cambio, una foto muy vertical se
+                        recorta por arriba y por abajo: conviene subirlas apaisadas. */}
+                    {noticia.categoria === "video" && videoId ? (
+                        <div className="mb-10 md:mb-12 rounded-3xl overflow-hidden shadow-2xl">
                             <div className="aspect-video w-full">
                                 <iframe
                                     className="w-full h-full"
@@ -105,14 +105,41 @@ export default function DetalleNoticiaPage() {
                                     allowFullScreen
                                 ></iframe>
                             </div>
-                        ) : (
-                            <img
-                                src={noticia.imagen_portada_url || "/placeholder-news.svg"}
-                                alt={noticia.titulo}
-                                className="w-full h-auto max-h-[80vh] object-contain"
-                            />
-                        )}
-                    </div>
+                        </div>
+                    ) : (
+                        <div className="mb-10 md:mb-12 space-y-4">
+                            {/* La primera manda: va a lo ancho y más alta. */}
+                            <div className="rounded-3xl overflow-hidden shadow-2xl bg-slate-100 aspect-[16/9]">
+                                <img
+                                    src={galeria[0] || "/placeholder-news.svg"}
+                                    alt={noticia.titulo}
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                            {/* El resto, en el mismo orden en que se subieron. Con
+                                una sola de resto ocupa el ancho completo; con dos o
+                                tres se reparten en columnas iguales. */}
+                            {galeria.length > 1 && (
+                                <div className={`grid gap-4 ${
+                                    galeria.length === 2 ? "grid-cols-1"
+                                        : galeria.length === 3 ? "grid-cols-2"
+                                            : "grid-cols-3"}`}>
+                                    {galeria.slice(1).map((url, i) => (
+                                        <div key={url + i}
+                                             className="rounded-2xl overflow-hidden shadow-lg bg-slate-100 aspect-[4/3]">
+                                            <img
+                                                src={url}
+                                                alt={`${noticia.titulo} — imagen ${i + 2}`}
+                                                loading="lazy"
+                                                decoding="async"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* CONTENIDO DEL EDITOR (TIPTAP) — sanitizado */}
                     <div className="prose prose-base md:prose-lg prose-slate max-w-none

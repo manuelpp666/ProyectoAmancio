@@ -27,6 +27,16 @@ interface Resumen {
   mora: number;
   vencimientos_sin_mora: { fecha: string; impagas: number; sin_mora: number; importe: number }[];
   cobros_por_revisar: number;
+  /** La puesta en marcha es de una sola vez: si ya se hizo, viene con cuándo
+   *  y con qué archivo. Null mientras esté pendiente. */
+  importacion_inicial: {
+    archivo: string | null; fecha: string | null; cuotas: number | null;
+    cuadraron: number | null; deuda_historica: number;
+    /** True si quedó anotada al hacerla. False si se dedujo del rastro que
+     *  dejó en los datos (las que se hicieron antes de que se anotaran). */
+    registrada: boolean;
+    sincronizadas?: number;
+  } | null;
   ultimo_lote: {
     id_lote: number; archivo: string; fecha_reporte: string | null;
     fecha_carga: string | null; aplicados: number; sin_coincidencia: number;
@@ -63,6 +73,7 @@ const COLOR_RESULTADO: Record<string, string> = {
   MONTO_DISTINTO: "bg-orange-50 text-orange-700 border-orange-200",
   AMBIGUO: "bg-purple-50 text-purple-700 border-purple-200",
   REPETIDO: "bg-gray-100 text-gray-600 border-gray-200",
+  YA_PAGADO: "bg-sky-50 text-sky-700 border-sky-200",
 };
 
 const ETIQUETA_RESULTADO: Record<string, string> = {
@@ -72,7 +83,13 @@ const ETIQUETA_RESULTADO: Record<string, string> = {
   MONTO_DISTINTO: "Monto distinto",
   AMBIGUO: "Ambiguo",
   REPETIDO: "Repetido",
+  YA_PAGADO: "Ya estaba pagada",
 };
+
+/** Los que necesitan que alguien decida algo. El resto se cierra solo: el
+ *  aplicado, el extornado (lo decidió el banco) y los que solo confirman un
+ *  cobro que el sistema ya tenía registrado. */
+const HAY_QUE_MIRARLO = new Set(["SIN_COINCIDENCIA", "MONTO_DISTINTO", "AMBIGUO"]);
 
 export function ConciliacionBCP() {
   const [resumen, setResumen] = useState<Resumen | null>(null);
@@ -303,6 +320,10 @@ export function ConciliacionBCP() {
     ? movimientos.filter((m) => m.resultado === filtro)
     : movimientos;
 
+  // La puesta en marcha ya aplicada, si la hay. Manda el resumen del servidor;
+  // si se acaba de aplicar en esta misma pantalla, se refleja al recargar.
+  const yaHecha = resumen?.importacion_inicial ?? null;
+
   if (cargando) {
     return <div className="py-20 text-center text-gray-400 animate-pulse font-bold">
       Cargando la conciliación…
@@ -484,6 +505,28 @@ export function ConciliacionBCP() {
         </p>
       </Bloque>
 
+      {/* ------------------------------------------ 5. reporte de deudores */}
+      <Bloque numero={5} titulo="Lista de deudores"
+              descripcion="Quién debe, cuánto y desde cuándo. Es el reporte que antes se sacaba a mano del Excel de macros.">
+        <button type="button" onClick={() => descargar("/finance/crep/deudores.xlsx")}
+                className="px-4 py-2.5 bg-[#701C32] text-white rounded-lg font-bold text-sm hover:bg-[#5a1628] flex items-center gap-2">
+          <span className="material-symbols-outlined text-lg">group</span>
+          Descargar deudores (.xlsx)
+        </button>
+        <div className="text-[11px] text-gray-500 mt-3 leading-relaxed space-y-1">
+          <p>El archivo trae varias hojas:</p>
+          <p>· <b>Resumen</b> — cuánto debe cada sección, para ver dónde está el grueso.</p>
+          <p>· <b>Deudores</b> — un alumno por fila, con su total y sus días de atraso.</p>
+          <p>· <b>Detalle por cuota</b> — una cuota por fila, para cuadrar importe a importe.</p>
+          <p>· <b>Una hoja por sección</b> — con su total al pie, lista para pasársela al tutor.</p>
+          <p>· <b>Deuda anterior</b> — retirados y trasladados, que ya no tienen sección.</p>
+          <p className="text-gray-400 pt-1">
+            La sección es la de la matrícula de este año, no la que tenía cuando se
+            generó la cuota: el que reclama es el tutor de ahora.
+          </p>
+        </div>
+      </Bloque>
+
       {/* ------------------------------------------------ historial */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b bg-gray-50">
@@ -591,16 +634,60 @@ export function ConciliacionBCP() {
 
       {/* ------------------------------- puesta en marcha (una sola vez) */}
       <details className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <summary className="px-4 py-3 cursor-pointer text-sm font-black text-gray-700 hover:bg-gray-50">
+        <summary className="px-4 py-3 cursor-pointer text-sm font-black text-gray-700 hover:bg-gray-50 flex flex-wrap items-center gap-2">
           Puesta en marcha · importar el CREP que usa hoy el colegio
+          {yaHecha ? (
+            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
+              ✓ Hecha el {FECHA(yaHecha.fecha)}
+            </span>
+          ) : (
+            <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold">
+              Pendiente
+            </span>
+          )}
         </summary>
         <div className="p-4 border-t space-y-3">
-          <p className="text-xs text-gray-600 leading-relaxed">
-            Esto se hace <strong>una sola vez</strong>, al empezar a usar el módulo.
-            Toma el archivo de cobranza vigente como foto de la deuda real: da de
-            alta la deuda de quien ya no está matriculado, iguala la mora a la del
-            archivo y marca como pagadas las cuotas que el archivo ya no trae.
-          </p>
+          {yaHecha ? (
+            /* Ya está hecha: lo que hay que decir es que no hay que repetirla.
+               Antes la pantalla se veía igual antes y después, y no había forma
+               de saber si el paso estaba dado. */
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs text-emerald-900 space-y-1">
+              <p className="font-bold">Esta puesta en marcha ya está hecha.</p>
+              {yaHecha.registrada ? (
+                <p>
+                  Se importó <b>{yaHecha.archivo}</b> el <b>{FECHA(yaHecha.fecha)}</b>:{" "}
+                  {yaHecha.cuotas} cuotas del archivo, {yaHecha.cuadraron} cuadraron con
+                  el sistema y {yaHecha.deuda_historica} se guardaron como deuda anterior.
+                </p>
+              ) : (
+                /* Se hizo antes de que el sistema lo anotara: se reconoce por el
+                   rastro que deja, así que se dice lo que se sabe y nada más. */
+                <p>
+                  Se hizo antes de que el sistema lo anotara, así que no hay ficha de
+                  aquella carga; se reconoce por lo que dejó en los datos:{" "}
+                  {!!yaHecha.sincronizadas && (
+                    <><b>{yaHecha.sincronizadas} cuotas</b> dadas por pagadas al
+                    sincronizar con el archivo del BCP{yaHecha.deuda_historica ? " y " : ""}</>
+                  )}
+                  {!!yaHecha.deuda_historica && (
+                    <><b>{yaHecha.deuda_historica} cuotas</b> de deuda anterior</>
+                  )}
+                  {yaHecha.fecha ? <> · alrededor del <b>{FECHA(yaHecha.fecha)}</b></> : null}.
+                </p>
+              )}
+              <p className="text-emerald-800">
+                <b>No hace falta repetirla.</b> A partir de aquí lo que se sube son los
+                reportes de cobros del día, arriba.
+              </p>
+            </div>
+          ) : (
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Esto se hace <strong>una sola vez</strong>, al empezar a usar el módulo.
+              Toma el archivo de cobranza vigente como foto de la deuda real: da de
+              alta la deuda de quien ya no está matriculado, iguala la mora a la del
+              archivo y marca como pagadas las cuotas que el archivo ya no trae.
+            </p>
+          )}
           <input ref={entradaInicial} type="file" accept=".txt"
                  onChange={(e) => { setInicial(e.target.files?.[0] ?? null); setPrevioInicial(null); }}
                  className="block w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4
@@ -808,10 +895,13 @@ function Dato({ etiqueta, valor, resaltar }: {
 function ResultadoProceso({ datos }: { datos: any }) {
   const t = datos.totales ?? {};
   const problemas = (t.SIN_COINCIDENCIA ?? 0) + (t.MONTO_DISTINTO ?? 0) + (t.AMBIGUO ?? 0);
+  // Cobros de algo que el sistema ya daba por cobrado. No son un problema:
+  // solo confirman lo que ya había, o repiten un cobro ya aplicado.
+  const yaEstaban = (t.YA_PAGADO ?? 0) + (t.REPETIDO ?? 0);
   const cobros: any[] = datos.cobros ?? [];
   const [soloProblemas, setSoloProblemas] = useState(false);
   const lista = soloProblemas
-    ? cobros.filter((c) => c.resultado !== "APLICADO")
+    ? cobros.filter((c) => HAY_QUE_MIRARLO.has(c.resultado))
     : cobros;
   return (
     <div className="mt-4 border border-gray-200 rounded-lg overflow-hidden">
@@ -852,6 +942,14 @@ function ResultadoProceso({ datos }: { datos: any }) {
           Están marcados abajo, con el motivo en la etiqueta.
         </p>
       )}
+      {yaEstaban > 0 && (
+        <p className="px-4 py-2 text-[11px] text-sky-800 bg-sky-50 border-t border-sky-100">
+          {yaEstaban} cobro{yaEstaban > 1 ? "s corresponden" : " corresponde"} a cuotas que
+          el sistema <b>ya tenía por pagadas</b>. No hace falta hacer nada: normalmente es
+          la puesta en marcha, que las dio por cobradas sin ver el cobro, y este reporte lo
+          confirma. Pasa el cursor por la etiqueta para ver cada caso.
+        </p>
+      )}
 
       {/* Quién pagó, en el orden en que se cobró. Se ve ANTES de aplicar nada,
           que es lo que permite revisar el día antes de tocar la base. */}
@@ -887,7 +985,8 @@ function ResultadoProceso({ datos }: { datos: any }) {
               <tbody className="divide-y divide-gray-100">
                 {lista.map((c, i) => (
                   <tr key={`${c.archivo}-${c.linea}-${i}`}
-                      className={c.resultado === "APLICADO" ? "hover:bg-gray-50" : "bg-red-50/40 hover:bg-red-50"}>
+                      className={HAY_QUE_MIRARLO.has(c.resultado)
+                        ? "bg-red-50/40 hover:bg-red-50" : "hover:bg-gray-50"}>
                     <td className="px-3 py-1.5 whitespace-nowrap text-gray-600">
                       {FECHA(c.fecha_pago)}
                       <span className="text-gray-400"> {c.hora}</span>
@@ -945,6 +1044,38 @@ function ResultadoProceso({ datos }: { datos: any }) {
 }
 
 function ResultadoInicial({ datos }: { datos: any }) {
+  // Qué se decidió en cada fila de «importe distinto», por cuota.
+  //   "archivo" -> ya se guardó el precio del banco (esto SÍ escribió)
+  //   "sistema" -> se deja como está; no toca nada, solo quita el aviso
+  const [decidido, setDecidido] = useState<Record<string, "archivo" | "sistema">>({});
+  const [guardando, setGuardando] = useState<string | null>(null);
+
+  const usarElDelArchivo = async (d: any) => {
+    const clave = `${d.tipo}-${d.id}`;
+    setGuardando(clave);
+    try {
+      const cuerpo = new FormData();
+      cuerpo.append("tipo", d.tipo);
+      cuerpo.append("id_cuota", String(d.id));
+      cuerpo.append("monto", String(d.en_el_archivo));
+      const res = await apiFetch("/finance/crep/ajustar-importe",
+                                 { method: "POST", body: cuerpo });
+      if (!res.ok) {
+        toast.error(await mensajeDeError(res, "No se pudo cambiar el importe"),
+                    { duration: 10000 });
+        return;
+      }
+      const r = await res.json();
+      setDecidido((p) => ({ ...p, [clave]: "archivo" }));
+      toast.success(`${r.concepto ?? "Cuota"} de ${r.alumno ?? d.dni}: ` +
+                    `${SOLES(r.antes)} → ${SOLES(r.ahora)}`);
+    } catch {
+      toast.error("Error de conexión al cambiar el importe");
+    } finally {
+      setGuardando(null);
+    }
+  };
+
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden">
       <div className="bg-gray-100 border-b px-4 py-2">
@@ -952,6 +1083,15 @@ function ResultadoInicial({ datos }: { datos: any }) {
           {datos.simulado ? "Esto es lo que pasaría (nada guardado todavía)" : "Importación aplicada"}
         </p>
       </div>
+      {datos.ya_se_habia_hecho && (
+        <p className="px-4 py-2 text-[11px] text-amber-800 bg-amber-50 border-b border-amber-200">
+          <b>Ojo:</b> la puesta en marcha ya se hizo el{" "}
+          {FECHA(datos.ya_se_habia_hecho.fecha)} con «{datos.ya_se_habia_hecho.archivo}».{" "}
+          {datos.ya_se_habia_hecho.mismo_archivo
+            ? "Es el mismo archivo: aplicarlo otra vez está bloqueado porque no cambiaría nada."
+            : "Este es otro archivo. Solo tiene sentido volver a hacerla si la primera se hizo con un CREP equivocado."}
+        </p>
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4">
         <Dato etiqueta="En el archivo" valor={datos.cuotas_en_el_archivo} />
         <Dato etiqueta="Cuadran" valor={datos.coinciden} />
@@ -962,10 +1102,102 @@ function ResultadoInicial({ datos }: { datos: any }) {
       <div className="px-4 pb-4 text-[11px] text-gray-600 space-y-1">
         <p>· Se iguala la mora de {datos.mora_ajustada} cuotas a la del archivo del banco.</p>
         {datos.importes_que_no_cuadran > 0 && (
-          <p className="text-orange-700">
-            · {datos.importes_que_no_cuadran} cuota{datos.importes_que_no_cuadran > 1 ? "s" : ""} con
-            importe distinto al del archivo. No se toca el precio: revísalas a mano.
-          </p>
+          <details className="group">
+            <summary className="text-orange-700 cursor-pointer list-none marker:content-none">
+              · {datos.importes_que_no_cuadran} cuota{datos.importes_que_no_cuadran > 1 ? "s" : ""} con
+              importe distinto al del archivo. No se toca el precio: revísalas a mano.
+              <span className="ml-1 font-bold underline group-open:hidden">ver cuál{datos.importes_que_no_cuadran > 1 ? "es" : ""}</span>
+              <span className="ml-1 font-bold underline hidden group-open:inline">ocultar</span>
+            </summary>
+            {/* Quién es y cuánto baila. La diferencia suele ser una beca, media
+                pensión o un convenio que está en el archivo del banco pero no en
+                la cuota del sistema (o al revés). Se decide a mano. */}
+            <div className="mt-2 overflow-x-auto border border-orange-200 rounded">
+              <table className="w-full text-[11px]">
+                <thead className="bg-orange-50">
+                  <tr className="text-[10px] uppercase tracking-wider text-orange-800">
+                    <th className="text-left px-2 py-1.5 font-bold">Alumno</th>
+                    <th className="text-left px-2 py-1.5 font-bold">DNI</th>
+                    <th className="text-left px-2 py-1.5 font-bold">Cuota</th>
+                    <th className="text-left px-2 py-1.5 font-bold">Vence</th>
+                    <th className="text-right px-2 py-1.5 font-bold">En el sistema</th>
+                    <th className="text-right px-2 py-1.5 font-bold">En el archivo</th>
+                    <th className="text-right px-2 py-1.5 font-bold">Diferencia</th>
+                    <th className="text-left px-2 py-1.5 font-bold">¿Cuál es el bueno?</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-orange-100 bg-white">
+                  {(datos.detalle_importes ?? []).map((d: any, i: number) => {
+                    const dif = (d.en_el_archivo ?? 0) - (d.en_el_sistema ?? 0);
+                    const clave = `${d.tipo}-${d.id}`;
+                    const yaEstá = decidido[clave];
+                    return (
+                      <tr key={`${d.dni}-${d.vencimiento}-${i}`}
+                          className={yaEstá ? "bg-gray-50 text-gray-400" : undefined}>
+                        <td className="px-2 py-1.5 text-gray-700 max-w-[16rem] truncate"
+                            title={d.alumno ?? ""}>
+                          {d.alumno ?? <span className="text-gray-400 italic">sin nombre</span>}
+                        </td>
+                        <td className="px-2 py-1.5 font-mono text-gray-600">{d.dni}</td>
+                        <td className="px-2 py-1.5 text-gray-600">{d.concepto ?? "—"}</td>
+                        <td className="px-2 py-1.5 text-gray-600 whitespace-nowrap">
+                          {FECHA(d.vencimiento)}
+                        </td>
+                        <td className="px-2 py-1.5 text-right text-gray-800 whitespace-nowrap">
+                          {SOLES(d.en_el_sistema)}
+                        </td>
+                        <td className="px-2 py-1.5 text-right text-gray-800 whitespace-nowrap">
+                          {SOLES(d.en_el_archivo)}
+                        </td>
+                        <td className={`px-2 py-1.5 text-right font-bold whitespace-nowrap ${
+                              yaEstá ? "text-gray-400" : dif > 0 ? "text-red-600" : "text-emerald-700"}`}>
+                          {dif > 0 ? "+" : "−"}{SOLES(Math.abs(dif))}
+                        </td>
+                        <td className="px-2 py-1.5 whitespace-nowrap">
+                          {yaEstá === "archivo" ? (
+                            <span className="text-emerald-700 font-bold">
+                              ✓ Guardado en {SOLES(d.en_el_archivo)}
+                            </span>
+                          ) : yaEstá === "sistema" ? (
+                            <span className="text-gray-500">
+                              Se deja en {SOLES(d.en_el_sistema)}
+                              <button type="button"
+                                      onClick={() => setDecidido(({ [clave]: _, ...resto }) => resto)}
+                                      className="ml-2 underline hover:text-gray-700">
+                                deshacer
+                              </button>
+                            </span>
+                          ) : (
+                            <div className="flex gap-1.5">
+                              {/* Único botón de toda la importación que escribe
+                                  sin simular: se pulsa fila a fila, después de
+                                  mirar los dos importes. */}
+                              <button type="button" disabled={!d.id || guardando === clave}
+                                      onClick={() => usarElDelArchivo(d)}
+                                      className="px-2 py-1 rounded bg-[#093E7A] text-white font-bold hover:bg-[#062d59] disabled:opacity-40">
+                                {guardando === clave ? "Guardando..." : "Usar el del archivo"}
+                              </button>
+                              <button type="button" disabled={guardando === clave}
+                                      onClick={() => setDecidido((p) => ({ ...p, [clave]: "sistema" }))}
+                                      className="px-2 py-1 rounded border border-gray-300 text-gray-600 font-bold hover:bg-gray-100 disabled:opacity-40">
+                                Dejar el del sistema
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-1.5 text-[10px] text-gray-500">
+              <b>Usar el del archivo</b> cambia el precio de la cuota ahora mismo (esto sí
+              se guarda, no es simulación) y la mora se respeta.{" "}
+              <b>Dejar el del sistema</b> no toca nada: el precio se manda tal cual en el
+              próximo CREP que generes y el banco se alinea solo.
+            </p>
+          </details>
         )}
         {datos.marcadas_como_pagadas > 0 && (
           <p className="text-amber-700">

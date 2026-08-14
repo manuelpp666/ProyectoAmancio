@@ -10,9 +10,9 @@ import {
 } from "lucide-react";
 import { Noticia, NoticiaCreate } from "@/src/interfaces/noticia";
 import { useForm } from "@/src/hooks/useForm";
-import ImageUpload from "@/src/components/utils/ImageUpload";
+import ImagenesUpload, { ImagenElegida } from "@/src/components/utils/ImagenesUpload";
 import { uploadToCloudinary } from "@/src/components/utils/cloudinary";
-import { getYouTubeID } from "@/src/components/utils/youtube";
+import { getYouTubeID, imagenesDeNoticia, MAXIMO_IMAGENES } from "@/src/components/utils/youtube";
 import { toast } from 'sonner';
 
 interface NoticiaFormProps {
@@ -23,8 +23,15 @@ interface NoticiaFormProps {
 
 export function NoticiaForm({ initialData, onSubmit, loading }: NoticiaFormProps) {
     // 1. Estado local para archivos y carga de imagen
-    const [portada, setPortada] = useState<File | null>(null);
+    const [imagenes, setImagenes] = useState<ImagenElegida[]>([]);
     const [isuploading, setIsUploading] = useState(false);
+    // Al publicar una noticia nueva hay que vaciar el selector de imágenes, que
+    // guarda su propio estado. Cambiar su `key` lo monta de cero.
+    const [reinicio, setReinicio] = useState(0);
+
+    // Las que ya tiene la noticia. Las de antes de la galería solo traen la
+    // portada, así que se convierten en una lista de una para editarlas igual.
+    const imagenesIniciales = imagenesDeNoticia(initialData);
 
     // 2. Inicializar form con useForm
     const { formData, handleChange, setFormData, resetForm } = useForm({
@@ -72,20 +79,35 @@ export function NoticiaForm({ initialData, onSubmit, loading }: NoticiaFormProps
         // Validaciones
         if (!titulo) return toast.warning("El título es obligatorio");
         if (tipoContenido === "video" && !videoId) return toast.warning("La URL de YouTube no es válida");
-        if (tipoContenido === "texto" && !portada && !initialData?.imagen_portada_url) {
-            return toast.warning("Debes subir una imagen de portada");
+        if (tipoContenido === "texto" && !imagenes.length) {
+            return toast.warning("Debes subir al menos una imagen");
         }
 
         setIsUploading(true);
         try {
             let urlFinal = initialData?.imagen_portada_url || "";
+            let galeria: string[] | null = null;
 
             if (tipoContenido === "video") {
                 urlFinal = videoUrl;
-            } else if (portada) {
-                const url = await uploadToCloudinary(portada);
-                if (!url) throw new Error("Error al subir la imagen");
-                urlFinal = url;
+            } else {
+                // Se suben EN ORDEN, una detrás de otra, no en paralelo: así la
+                // lista final queda igual que lo que se ve en el formulario. Las
+                // que ya estaban en la noticia se reutilizan sin volver a subir.
+                const subidas: string[] = [];
+                for (const img of imagenes) {
+                    if (img.url) {
+                        subidas.push(img.url);
+                        continue;
+                    }
+                    if (!img.file) continue;
+                    const url = await uploadToCloudinary(img.file);
+                    if (!url) throw new Error("Error al subir una de las imágenes");
+                    subidas.push(url);
+                }
+                if (!subidas.length) throw new Error("No se pudo subir ninguna imagen");
+                galeria = subidas;
+                urlFinal = subidas[0];
             }
 
             const noticiaPayload: NoticiaCreate = {
@@ -94,14 +116,16 @@ export function NoticiaForm({ initialData, onSubmit, loading }: NoticiaFormProps
                 categoria: tipoContenido,
                 contenido: editor?.getHTML() || "",
                 imagen_portada_url: urlFinal,
+                imagenes: galeria,
             };
 
             // EJECUTAR FUNCIÓN DEL PADRE (Crear o Editar)
             await onSubmit(noticiaPayload);
-            
+
             if (!initialData) { // Si es creación, limpiar
                 resetForm();
-                setPortada(null);
+                setImagenes([]);
+                setReinicio((n) => n + 1);
                 editor?.commands.setContent("");
             }
 
@@ -193,10 +217,12 @@ export function NoticiaForm({ initialData, onSubmit, loading }: NoticiaFormProps
                                         </div>
                                     ) : (
                                         <div className="space-y-2">
-                                            <ImageUpload
-                                                label="Portada del Artículo"
-                                                initialImage={initialData?.imagen_portada_url}
-                                                onImageChange={(file) => setPortada(file)}
+                                            <ImagenesUpload
+                                                key={reinicio}
+                                                label="Imágenes del Artículo"
+                                                maximo={MAXIMO_IMAGENES}
+                                                initialImages={imagenesIniciales}
+                                                onChange={setImagenes}
                                             />
                                         </div>
                                     )}

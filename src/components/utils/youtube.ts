@@ -31,3 +31,25 @@ export const getNoticiaImagen = (noticia: {
   }
   return noticia.imagen_portada_url || "/placeholder-news.svg";
 };
+
+/** Cuántas imágenes admite una noticia. El backend recorta a este mismo número. */
+export const MAXIMO_IMAGENES = 4;
+
+/**
+ * Las imágenes de una noticia, en orden, sea cual sea su antigüedad.
+ *
+ * Las noticias creadas con la galería traen `imagenes`. Las de antes solo
+ * tienen `imagen_portada_url`, y se devuelven como una lista de una para que
+ * el resto del código no tenga que distinguir los dos casos. Las de video no
+ * tienen galería: ahí la portada es la URL de YouTube, no una imagen.
+ */
+export const imagenesDeNoticia = (noticia?: {
+  categoria?: string;
+  imagen_portada_url?: string | null;
+  imagenes?: string[] | null;
+} | null): string[] => {
+  if (!noticia || noticia.categoria === "video") return [];
+  const galeria = (noticia.imagenes ?? []).filter(Boolean);
+  if (galeria.length) return galeria.slice(0, MAXIMO_IMAGENES);
+  return noticia.imagen_portada_url ? [noticia.imagen_portada_url] : [];
+};

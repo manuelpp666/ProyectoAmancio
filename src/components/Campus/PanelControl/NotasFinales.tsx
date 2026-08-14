@@ -19,10 +19,10 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, Loader2 } from "lucide-react";
+import { Download, FileStack, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch, mensajeDeError } from "@/src/lib/api";
-import { generarPDFLibreta, type DatosLibreta } from "@/src/lib/pdfLibreta";
+import { generarPDFLibreta, generarPDFLibretas, type DatosLibreta } from "@/src/lib/pdfLibreta";
 
 interface Columna {
   id_curso: number; curso: string;
@@ -85,6 +85,8 @@ export function NotasFinales() {
   // id_matricula de la libreta que se está descargando en este momento, para
   // deshabilitar solo ese botón y no toda la tabla.
   const [descargando, setDescargando] = useState<number | null>(null);
+  // Progreso de la descarga en bloque: null cuando no hay ninguna en marcha.
+  const [lote, setLote] = useState<{ hechas: number; total: number } | null>(null);
 
   // --- opciones de los desplegables ---
   useEffect(() => {
@@ -159,6 +161,49 @@ export function NotasFinales() {
       setDescargando(null);
     }
   }, [bimestre]);
+
+  // Descarga TODA la selección de los filtros en un solo PDF, una libreta por
+  // página. No se descarga la página que se está viendo, sino el conjunto
+  // filtrado entero: es lo que el colegio imprime y reparte.
+  const descargarTodas = useCallback(async () => {
+    if (!datos || datos.total === 0) return;
+    setLote({ hechas: 0, total: datos.total });
+    try {
+      const p = new URLSearchParams({ anio });
+      if (bimestre) p.append("bimestre", bimestre);
+      if (nivel) p.append("nivel", nivel);
+      if (idGrado) p.append("id_grado", idGrado);
+      if (idSeccion) p.append("id_seccion", idSeccion);
+      if (dniBuscado) p.append("dni", dniBuscado);
+
+      const res = await apiFetch(`/academic/libretas?${p.toString()}`);
+      if (!res.ok) {
+        throw new Error(await mensajeDeError(res, "No se pudieron obtener las libretas"));
+      }
+      const cuerpo: { descripcion: string; libretas: DatosLibreta[] } = await res.json();
+      if (!cuerpo.libretas?.length) throw new Error("La selección no devolvió ninguna libreta");
+
+      setLote({ hechas: 0, total: cuerpo.libretas.length });
+      const r = await generarPDFLibretas(cuerpo.libretas, cuerpo.descripcion,
+        (hechas, total) => setLote({ hechas, total }));
+
+      if (r.fallidas.length) {
+        // Se avisa de las que quedaron fuera, con nombre: si no, el archivo
+        // saldría con menos hojas de las esperadas y nadie sabría de quién.
+        toast.warning(
+          `${r.generadas} libretas descargadas. ${r.fallidas.length} no se pudieron ` +
+          `generar: ${r.fallidas.map((f) => f.alumno).join(", ")}`,
+          { duration: 12000 });
+      } else {
+        toast.success(`${r.generadas} libretas en un solo PDF`);
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudieron descargar las libretas",
+                  { duration: 10000 });
+    } finally {
+      setLote(null);
+    }
+  }, [datos, anio, bimestre, nivel, idGrado, idSeccion, dniBuscado]);
 
   // Al cambiar cualquier filtro se vuelve a la primera página: si no, se
   // podría quedar en la página 7 de un resultado que ahora tiene 2.
@@ -291,6 +336,20 @@ export function NotasFinales() {
           </p>
           {datos && datos.total > 0 && (
             <div className="flex items-center gap-2 text-[11px]">
+              {/* Descarga toda la selección, no solo la página que se ve. */}
+              <button type="button" disabled={!!lote || cargando}
+                      onClick={descargarTodas}
+                      title={`Descargar las ${datos.total} libretas de esta selección en un solo PDF`}
+                      className="px-2.5 py-1 rounded-lg bg-[#093E7A] text-white font-bold
+                                 hover:bg-[#062d59] disabled:opacity-40 inline-flex
+                                 items-center gap-1.5">
+                {lote
+                  ? <><Loader2 size={13} className="animate-spin" />
+                      {lote.hechas}/{lote.total}</>
+                  : <><FileStack size={13} />
+                      Descargar las {datos.total} libretas</>}
+              </button>
+              <span className="w-px h-4 bg-gray-200" />
               <button type="button" disabled={pagina <= 1 || cargando}
                       onClick={() => setPagina((p) => Math.max(1, p - 1))}
                       className={BOTON_PAG}>Anterior</button>
