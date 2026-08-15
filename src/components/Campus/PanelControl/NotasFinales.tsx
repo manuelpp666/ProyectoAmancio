@@ -38,6 +38,8 @@ interface FilaAlumno {
    *  cambio no lo manda y la tabla sigue funcionando. */
   exonerados?: string[];
   cursos_con_nota: number;
+  /** Nota de conducta del bimestre o más reciente */
+  conducta?: number | null;
   /** Suma de los promedios de área: el "puntaje acumulado" de la libreta. */
   puntaje_acumulado?: number | null;
   /** Áreas que entran en el promedio (las que tienen al menos una nota). */
@@ -391,6 +393,9 @@ export function NotasFinales() {
                       className="px-3 py-2 font-black text-gray-700 text-center
                                  border-l border-gray-200 whitespace-nowrap">Prom.</th>
                   <th rowSpan={2}
+                      className="px-3 py-2 font-black text-[#701C32] text-center
+                                 border-l border-gray-200 whitespace-nowrap bg-[#701C32]/[0.04]">Conducta</th>
+                  <th rowSpan={2}
                       className="px-3 py-2 font-black text-gray-700 text-center
                                  border-l border-gray-200 whitespace-nowrap">Libreta</th>
                 </tr>
@@ -459,6 +464,18 @@ export function NotasFinales() {
                           ? `${a.puntaje_acumulado} pts · ${a.num_areas} área${a.num_areas !== 1 ? "s" : ""}`
                           : `${a.cursos_con_nota} curso${a.cursos_con_nota !== 1 ? "s" : ""}`}
                       </span>
+                    </td>
+                    <td className="px-3 py-1.5 text-center border-l border-gray-200 bg-[#701C32]/[0.02]">
+                      {a.conducta === null || a.conducta === undefined ? (
+                        <span className="text-gray-300">—</span>
+                      ) : (
+                        <span
+                          className={`font-black ${color(a.conducta)}`}
+                          title={`Nota de conducta: ${a.conducta}`}
+                        >
+                          {a.conducta}
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-1.5 text-center border-l border-gray-200">
                       <button type="button"

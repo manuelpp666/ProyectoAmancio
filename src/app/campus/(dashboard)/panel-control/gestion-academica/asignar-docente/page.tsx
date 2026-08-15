@@ -27,6 +27,8 @@ export default function AsignacionDocentesPage() {
   // --- ESTADOS DE UI ---
   const [searchTerm, setSearchTerm] = useState(""); 
   const [searchDocente, setSearchDocente] = useState(""); 
+  const [isDocenteDropdownOpen, setIsDocenteDropdownOpen] = useState(false);
+  const [isTutorDocenteDropdownOpen, setIsTutorDocenteDropdownOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTutorModalOpen, setIsTutorModalOpen] = useState(false); 
   const [loading, setLoading] = useState(true);
@@ -55,14 +57,15 @@ export default function AsignacionDocentesPage() {
 
   // --- LÓGICA DE FILTRADO ---
   const vinculosFiltrados = vinculos.filter((v: any) => {
-    const nombreDocente = v.docente ? `${v.docente.nombres} ${v.docente.apellidos}`.toLowerCase() : "";
+    const nombreDocente = v.docente ? `${v.docente.nombres} ${v.docente.apellidos}`.toLowerCase() : "no definido";
     const nombreCurso = (v.curso_nombre ?? "").toLowerCase();
+    const gradoSeccion = `${v.grado_nombre ?? ""} ${v.seccion_nombre ?? ""}`.toLowerCase();
     const busqueda = searchTerm.toLowerCase();
-    return nombreDocente.includes(busqueda) || nombreCurso.includes(busqueda);
+    return nombreDocente.includes(busqueda) || nombreCurso.includes(busqueda) || gradoSeccion.includes(busqueda);
   });
 
   const tutoresFiltradosList = tutores.filter((t: any) => {
-    const nombreDocente = t.docente ? `${t.docente.nombres} ${t.docente.apellidos}`.toLowerCase() : "";
+    const nombreDocente = t.docente ? `${t.docente.nombres} ${t.docente.apellidos}`.toLowerCase() : "no definido";
     const gradoSeccion = `${t.grado_nombre ?? ""} ${t.seccion_nombre ?? ""}`.toLowerCase();
     const busqueda = searchTerm.toLowerCase();
     return nombreDocente.includes(busqueda) || gradoSeccion.includes(busqueda);
@@ -72,15 +75,11 @@ export default function AsignacionDocentesPage() {
     `${d.nombres ?? ""} ${d.apellidos ?? ""}`.toLowerCase().includes(searchDocente.toLowerCase())
   );
 
+  const docenteSeleccionado = docentes.find(d => String(d.id_docente) === String(formData.id_docente));
+  const tutorDocenteSeleccionado = docentes.find(d => String(d.id_docente) === String(tutorFormData.id_docente));
+
   /**
    * Lee una respuesta que debe ser una lista.
-   *
-   * apiFetch no lanza excepción cuando la API responde con un error: devuelve
-   * la respuesta tal cual. Si se guardaba ese cuerpo ({"detail": "..."}) en el
-   * estado, el filter() de arriba reventaba durante el render y se caía la
-   * página entera con "This page couldn't load", sin decir qué había fallado.
-   * Aquí se comprueba antes y se deja la lista vacía, para que el fallo se vea
-   * como un aviso y la pantalla siga en pie.
    */
   const leerLista = async (res: Response, queEs: string): Promise<any[] | null> => {
     if (!res.ok) {
@@ -91,7 +90,7 @@ export default function AsignacionDocentesPage() {
       const datos = await res.json();
       if (Array.isArray(datos)) return datos;
     } catch {
-      // Respuesta sin JSON válido (un HTML de error de la pasarela, por ejemplo)
+      // Respuesta sin JSON válido
     }
     toast.error(`La respuesta de ${queEs} no tiene el formato esperado`);
     return null;
@@ -133,8 +132,11 @@ export default function AsignacionDocentesPage() {
 
 
   const handleSeccionChange = async (id_seccion: string) => {
-    setFormData({ ...formData, id_seccion, id_curso: "" });
-    if (!id_seccion) return;
+    setFormData(prev => ({ ...prev, id_seccion, id_curso: prev.id_seccion === id_seccion ? prev.id_curso : "" }));
+    if (!id_seccion) {
+      setCursosDisponibles([]);
+      return;
+    }
     try {
       const res = await apiFetch(`/academic/cursos-por-seccion/${id_seccion}`);
       const data = await res.json();
@@ -146,13 +148,32 @@ export default function AsignacionDocentesPage() {
 
   // --- MÉTODOS PARA CARGA ACADÉMICA ---
   const handleEditar = (v: any) => {
-    setEditingId(v.id_carga_academica);
+    setEditingId(v.id_carga_academica || null);
     setFormData({
-      id_seccion: v.id_seccion.toString(),
-      id_curso: v.id_curso.toString(),
-      id_docente: v.docente?.id_docente.toString() || ""
+      id_seccion: v.id_seccion?.toString() || "",
+      id_curso: v.id_curso?.toString() || "",
+      id_docente: v.docente?.id_docente ? v.docente.id_docente.toString() : ""
     });
-    handleSeccionChange(v.id_seccion.toString());
+    setSearchDocente(v.docente ? `${v.docente.nombres} ${v.docente.apellidos}` : "");
+    setIsDocenteDropdownOpen(false);
+    if (v.id_seccion) {
+      handleSeccionChange(v.id_seccion.toString());
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleAsignarFila = (v: any) => {
+    setEditingId(v.id_carga_academica || null);
+    setFormData({
+      id_seccion: v.id_seccion?.toString() || "",
+      id_curso: v.id_curso?.toString() || "",
+      id_docente: ""
+    });
+    setSearchDocente("");
+    setIsDocenteDropdownOpen(true);
+    if (v.id_seccion) {
+      handleSeccionChange(v.id_seccion.toString());
+    }
     setIsModalOpen(true);
   };
 
@@ -160,23 +181,41 @@ export default function AsignacionDocentesPage() {
     setIsModalOpen(false);
     setEditingId(null);
     setSearchDocente("");
+    setIsDocenteDropdownOpen(false);
     setFormData({ id_seccion: "", id_curso: "", id_docente: "" });
   };
 
   const guardarAsignacion = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.id_seccion) {
+      toast.error("Debe seleccionar una sección");
+      return;
+    }
+    if (!formData.id_curso) {
+      toast.error("Debe seleccionar un curso");
+      return;
+    }
+    if (!formData.id_docente) {
+      toast.error("Debe seleccionar a un docente de la lista");
+      setIsDocenteDropdownOpen(true);
+      return;
+    }
+
     const url = editingId ? `/gestion/carga/${editingId}` : `/gestion/carga/`;
     const method = editingId ? "PATCH" : "POST";
+    const body = editingId
+      ? JSON.stringify({ id_docente: parseInt(formData.id_docente) })
+      : JSON.stringify({
+          id_anio_escolar: anioPlanificacion,
+          id_seccion: parseInt(formData.id_seccion),
+          id_curso: parseInt(formData.id_curso),
+          id_docente: parseInt(formData.id_docente),
+        });
 
     const promise = apiFetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id_anio_escolar: anioPlanificacion,
-        id_seccion: parseInt(formData.id_seccion),
-        id_curso: parseInt(formData.id_curso),
-        id_docente: parseInt(formData.id_docente),
-      }),
+      body,
     });
 
     toast.promise(promise, {
@@ -184,7 +223,7 @@ export default function AsignacionDocentesPage() {
       success: () => {
         cerrarModal();
         fetchData();
-        return editingId ? "Asignación actualizada" : "Asignación creada con éxito";
+        return editingId ? "Asignación actualizada con éxito" : "Asignación creada con éxito";
       },
       error: (err) => `Error: ${err.message || 'No se pudo guardar'}`
     });
@@ -197,7 +236,8 @@ export default function AsignacionDocentesPage() {
         toast.success("Asignación eliminada correctamente");
         fetchData();
       } else {
-        toast.error("No se pudo eliminar la asignación");
+        const errorData = await res.json().catch(() => null);
+        toast.error(errorData?.detail || "Una asignación que tiene notas o registros no se puede borrar, solo actualizar.", { duration: 6000 });
       }
     } catch (error) {
       toast.error("Error de conexión al eliminar");
@@ -209,11 +249,22 @@ export default function AsignacionDocentesPage() {
   const cerrarModalTutor = () => {
     setIsTutorModalOpen(false);
     setSearchDocente("");
+    setIsTutorDocenteDropdownOpen(false);
     setTutorFormData({ id_seccion: "", id_docente: "" });
   };
 
   const guardarTutor = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!tutorFormData.id_seccion) {
+      toast.error("Debe seleccionar una sección");
+      return;
+    }
+    if (!tutorFormData.id_docente) {
+      toast.error("Debe seleccionar a un docente para la tutoría");
+      setIsTutorDocenteDropdownOpen(true);
+      return;
+    }
+
     const promise = apiFetch(`/gestion/tutores/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -291,7 +342,7 @@ export default function AsignacionDocentesPage() {
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400">search</span>
                 <input
                   type="text"
-                  placeholder={activeTab === "carga" ? "Buscar por curso o docente..." : "Buscar por sección o tutor..."}
+                  placeholder={activeTab === "carga" ? "Buscar por curso, grado o docente..." : "Buscar por sección o tutor..."}
                   className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#093E7A]/20 transition-all"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -303,6 +354,8 @@ export default function AsignacionDocentesPage() {
                 <button
                   onClick={() => {
                     setEditingId(null);
+                    setSearchDocente("");
+                    setIsDocenteDropdownOpen(false);
                     setFormData({ id_seccion: "", id_curso: "", id_docente: "" });
                     setIsModalOpen(true);
                   }}
@@ -314,7 +367,12 @@ export default function AsignacionDocentesPage() {
                 </button>
               ) : (
                 <button
-                  onClick={() => setIsTutorModalOpen(true)}
+                  onClick={() => {
+                    setSearchDocente("");
+                    setIsTutorDocenteDropdownOpen(false);
+                    setTutorFormData({ id_seccion: "", id_docente: "" });
+                    setIsTutorModalOpen(true);
+                  }}
                   disabled={!anioPlanificacion}
                   className="flex items-center gap-2 px-6 py-3 bg-[#093E7A] text-white rounded-xl hover:bg-[#062d59] transition-all font-bold shadow-lg"
                 >
@@ -354,31 +412,57 @@ export default function AsignacionDocentesPage() {
                       <tr>
                         <td colSpan={4} className="px-6 py-12 text-center text-gray-400">
                           <span className="material-symbols-outlined text-4xl block mb-2">info</span>
-                          No hay docentes asignados en carga académica.
+                          No hay cursos ni asignaciones que coincidan con la búsqueda.
                         </td>
                       </tr>
                     ) : (
                       vinculosFiltrados.map((v: any, i) => (
                         <tr key={v.id_carga_academica || `vinc-${i}`} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4 font-bold text-gray-800">{v.curso_nombre}</td>
-                          <td className="px-6 py-4 text-gray-600">{v.grado_nombre} - {v.seccion_nombre}</td>
+                          <td className="px-6 py-4 text-gray-600 font-medium">{v.grado_nombre} - Sección {v.seccion_nombre}</td>
                           <td className="px-6 py-4">
-                            <div className="flex items-center gap-2 text-[#093E7A] font-semibold">
-                              <span className="material-symbols-outlined text-sm">person</span>
-                              {v.docente ? `${v.docente.nombres} ${v.docente.apellidos}` : "No definido"}
-                            </div>
+                            {v.docente ? (
+                              <div className="flex items-center gap-2 text-[#093E7A] font-semibold">
+                                <span className="material-symbols-outlined text-sm">person</span>
+                                <span>{v.docente.nombres} {v.docente.apellidos}</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5 text-amber-700 font-bold bg-amber-50 px-2.5 py-1 rounded-full w-fit border border-amber-200 text-xs">
+                                <span className="material-symbols-outlined text-sm text-amber-500">person_off</span>
+                                <span>No definido</span>
+                              </div>
+                            )}
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <div className="flex justify-end gap-2">
-                              {v.id_carga_academica && (
+                            <div className="flex justify-end gap-2 items-center">
+                              {v.docente ? (
                                 <>
-                                  <button onClick={() => handleEditar(v)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar docente">
+                                  <button
+                                    onClick={() => handleEditar(v)}
+                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                    title="Editar / Reasignar docente"
+                                  >
                                     <span className="material-symbols-outlined text-xl">edit</span>
                                   </button>
-                                  <button onClick={() => setConfirmDelete({ isOpen: true, id: v.id_carga_academica })} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar asignación">
-                                    <span className="material-symbols-outlined text-xl">delete</span>
-                                  </button>
+                                  {v.id_carga_academica && (
+                                    <button
+                                      onClick={() => setConfirmDelete({ isOpen: true, id: v.id_carga_academica })}
+                                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                      title="Eliminar asignación"
+                                    >
+                                      <span className="material-symbols-outlined text-xl">delete</span>
+                                    </button>
+                                  )}
                                 </>
+                              ) : (
+                                <button
+                                  onClick={() => handleAsignarFila(v)}
+                                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#093E7A] text-white hover:bg-[#062d59] rounded-xl transition-all text-xs font-bold shadow-sm"
+                                  title="Asignar docente a este curso"
+                                >
+                                  <span className="material-symbols-outlined text-sm">person_add</span>
+                                  <span>Asignar</span>
+                                </button>
                               )}
                             </div>
                           </td>
@@ -398,7 +482,7 @@ export default function AsignacionDocentesPage() {
                       tutoresFiltradosList.map((t: any) => (
                         <tr key={t.id_tutor_seccion} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4">
-                            <div className="font-bold text-gray-800">{t.grado_nombre} - {t.seccion_nombre}</div>
+                            <div className="font-bold text-gray-800">{t.grado_nombre} - Sección {t.seccion_nombre}</div>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2 text-[#093E7A] font-bold bg-blue-50 px-3 py-1 rounded-full w-fit border border-blue-100">
@@ -433,7 +517,7 @@ export default function AsignacionDocentesPage() {
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">link</span></div>
                   <div>
-                    <h3 className="font-black text-lg leading-tight">{editingId ? "Editar Asignación" : "Nuevo Vínculo Docente"}</h3>
+                    <h3 className="font-black text-lg leading-tight">{editingId ? "Editar Asignación" : "Asignar Docente al Curso"}</h3>
                     <p className="text-[11px] text-white/70 mt-0.5">Vincula un docente a un curso de una sección.</p>
                   </div>
                 </div>
@@ -447,17 +531,21 @@ export default function AsignacionDocentesPage() {
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Sección</label>
                   <select
                     required
-                    disabled={editingId !== null}
-                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#093E7A]/20"
+                    disabled={editingId !== null || (formData.id_seccion !== "" && formData.id_curso !== "" && !editingId && Boolean(cursosDisponibles.length))}
+                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#093E7A]/20 font-medium text-gray-800 disabled:opacity-80"
                     value={formData.id_seccion}
                     onChange={(e) => handleSeccionChange(e.target.value)}
                   >
                     <option value="">Seleccione una sección...</option>
-                    {secciones.map(s => (
-                      <option key={s.id_seccion} value={s.id_seccion}>
-                        {s.grado?.nombre || "Grado"} - {s.nombre}
-                      </option>
-                    ))}
+                    {secciones.map(s => {
+                      const nivel = s.grado?.nivel?.nombre ? `${s.grado.nivel.nombre} · ` : "";
+                      const grado = s.grado?.nombre || "Grado";
+                      return (
+                        <option key={s.id_seccion} value={s.id_seccion}>
+                          {nivel}{grado} - Sección {s.nombre}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -465,10 +553,10 @@ export default function AsignacionDocentesPage() {
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Curso</label>
                   <select
                     required
-                    disabled={editingId !== null || !formData.id_seccion}
-                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#093E7A]/20 disabled:opacity-50"
+                    disabled={editingId !== null || !formData.id_seccion || (formData.id_curso !== "" && !editingId && Boolean(cursosDisponibles.length))}
+                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#093E7A]/20 disabled:opacity-80 font-medium text-gray-800"
                     value={formData.id_curso}
-                    onChange={(e) => setFormData({ ...formData, id_curso: e.target.value })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, id_curso: e.target.value }))}
                   >
                     <option value="">{formData.id_seccion ? "Seleccione el curso..." : "Primero elija una sección"}</option>
                     {cursosDisponibles.map(c => (
@@ -477,17 +565,101 @@ export default function AsignacionDocentesPage() {
                   </select>
                 </div>
 
-                <div className="pt-2 border-t">
+                {/* BUSCADOR DE DOCENTE EN TIEMPO REAL */}
+                <div className="pt-2 border-t relative">
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Asignar Docente</label>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-sm text-gray-400">person_search</span>
-                      <input type="text" placeholder="Filtrar por nombre..." className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#093E7A]" value={searchDocente} onChange={(e) => setSearchDocente(e.target.value)} />
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400">person_search</span>
+                      <input
+                        type="text"
+                        placeholder="Escriba el nombre del docente..."
+                        className="w-full pl-10 pr-10 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#093E7A]/20 font-medium text-gray-800 text-sm"
+                        value={searchDocente}
+                        onFocus={() => setIsDocenteDropdownOpen(true)}
+                        onChange={(e) => {
+                          setSearchDocente(e.target.value);
+                          setIsDocenteDropdownOpen(true);
+                          if (!e.target.value.trim()) {
+                            setFormData(prev => ({ ...prev, id_docente: "" }));
+                          }
+                        }}
+                      />
+                      {searchDocente && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchDocente("");
+                            setFormData(prev => ({ ...prev, id_docente: "" }));
+                            setIsDocenteDropdownOpen(true);
+                          }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                        >
+                          <span className="material-symbols-outlined text-sm">close</span>
+                        </button>
+                      )}
                     </div>
-                    <select required className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#093E7A]/20" value={formData.id_docente} onChange={(e) => setFormData({ ...formData, id_docente: e.target.value })}>
-                      <option value="">Seleccione al docente...</option>
-                      {docentesFiltrados.map((d: any) => <option key={d.id_docente} value={d.id_docente}>{d.nombres} {d.apellidos}</option>)}
-                    </select>
+
+                    {/* LISTA FLOTANTE DE DOCENTES FILTRADOS EN VIVO */}
+                    {isDocenteDropdownOpen && (
+                      <div className="bg-white border border-gray-200 rounded-xl shadow-xl max-h-48 overflow-y-auto divide-y divide-gray-50 animate-in fade-in zoom-in-95 duration-100">
+                        {docentesFiltrados.length === 0 ? (
+                          <div className="p-4 text-center text-xs text-gray-400 font-medium">
+                            <span className="material-symbols-outlined text-base block mb-1 text-gray-300">person_off</span>
+                            No se encontraron docentes con ese nombre
+                          </div>
+                        ) : (
+                          docentesFiltrados.map((d: any) => {
+                            const isSelected = String(formData.id_docente) === String(d.id_docente);
+                            return (
+                              <button
+                                key={d.id_docente}
+                                type="button"
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, id_docente: String(d.id_docente) }));
+                                  setSearchDocente(`${d.nombres} ${d.apellidos}`);
+                                  setIsDocenteDropdownOpen(false);
+                                }}
+                                className={`w-full px-4 py-2.5 flex items-center justify-between text-left hover:bg-blue-50/70 transition-colors ${isSelected ? 'bg-blue-50 font-bold text-[#093E7A]' : 'text-gray-700'}`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${isSelected ? 'bg-[#093E7A] text-white' : 'bg-gray-100 text-gray-600'}`}>
+                                    {(d.nombres?.[0] || 'D').toUpperCase()}{(d.apellidos?.[0] || '').toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold leading-tight">{d.nombres} {d.apellidos}</p>
+                                  </div>
+                                </div>
+                                {isSelected && (
+                                  <span className="material-symbols-outlined text-lg text-[#093E7A]">check_circle</span>
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+
+                    {/* INDICADOR VISUAL DEL DOCENTE SELECCIONADO */}
+                    {docenteSeleccionado && (
+                      <div className="flex items-center justify-between bg-blue-50/80 border border-blue-100 rounded-xl px-3.5 py-2">
+                        <div className="flex items-center gap-2.5 text-xs text-[#093E7A] font-bold">
+                          <span className="material-symbols-outlined text-base text-green-600">verified</span>
+                          <span>Docente seleccionado: {docenteSeleccionado.nombres} {docenteSeleccionado.apellidos}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData(prev => ({ ...prev, id_docente: "" }));
+                            setSearchDocente("");
+                            setIsDocenteDropdownOpen(true);
+                          }}
+                          className="text-[11px] font-bold text-blue-700 hover:underline"
+                        >
+                          Cambiar
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -524,30 +696,118 @@ export default function AsignacionDocentesPage() {
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Sección de Tutoría</label>
                   <select
                     required
-                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#093E7A]/20"
+                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#093E7A]/20 font-medium text-gray-800"
                     value={tutorFormData.id_seccion}
-                    onChange={(e) => setTutorFormData({ ...tutorFormData, id_seccion: e.target.value })}
+                    onChange={(e) => setTutorFormData(prev => ({ ...prev, id_seccion: e.target.value }))}
                   >
                     <option value="">Seleccione una sección...</option>
-                    {secciones.map(s => (
-                      <option key={s.id_seccion} value={s.id_seccion}>
-                        {s.grado?.nombre || "Grado"} - {s.nombre}
-                      </option>
-                    ))}
+                    {secciones.map(s => {
+                      const nivel = s.grado?.nivel?.nombre ? `${s.grado.nivel.nombre} · ` : "";
+                      const grado = s.grado?.nombre || "Grado";
+                      return (
+                        <option key={s.id_seccion} value={s.id_seccion}>
+                          {nivel}{grado} - Sección {s.nombre}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
-                <div className="pt-2 border-t">
+                {/* BUSCADOR DE TUTOR EN TIEMPO REAL */}
+                <div className="pt-2 border-t relative">
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Asignar Docente como Tutor</label>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-sm text-gray-400">person_search</span>
-                      <input type="text" placeholder="Filtrar por nombre..." className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#093E7A]" value={searchDocente} onChange={(e) => setSearchDocente(e.target.value)} />
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400">person_search</span>
+                      <input
+                        type="text"
+                        placeholder="Escriba el nombre del docente..."
+                        className="w-full pl-10 pr-10 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#093E7A]/20 font-medium text-gray-800 text-sm"
+                        value={searchDocente}
+                        onFocus={() => setIsTutorDocenteDropdownOpen(true)}
+                        onChange={(e) => {
+                          setSearchDocente(e.target.value);
+                          setIsTutorDocenteDropdownOpen(true);
+                          if (!e.target.value.trim()) {
+                            setTutorFormData(prev => ({ ...prev, id_docente: "" }));
+                          }
+                        }}
+                      />
+                      {searchDocente && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchDocente("");
+                            setTutorFormData(prev => ({ ...prev, id_docente: "" }));
+                            setIsTutorDocenteDropdownOpen(true);
+                          }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                        >
+                          <span className="material-symbols-outlined text-sm">close</span>
+                        </button>
+                      )}
                     </div>
-                    <select required className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#093E7A]/20" value={tutorFormData.id_docente} onChange={(e) => setTutorFormData({ ...tutorFormData, id_docente: e.target.value })}>
-                      <option value="">Seleccione al tutor...</option>
-                      {docentesFiltrados.map((d: any) => <option key={d.id_docente} value={d.id_docente}>{d.nombres} {d.apellidos}</option>)}
-                    </select>
+
+                    {/* LISTA FLOTANTE DE DOCENTES FILTRADOS */}
+                    {isTutorDocenteDropdownOpen && (
+                      <div className="bg-white border border-gray-200 rounded-xl shadow-xl max-h-48 overflow-y-auto divide-y divide-gray-50 animate-in fade-in zoom-in-95 duration-100">
+                        {docentesFiltrados.length === 0 ? (
+                          <div className="p-4 text-center text-xs text-gray-400 font-medium">
+                            <span className="material-symbols-outlined text-base block mb-1 text-gray-300">person_off</span>
+                            No se encontraron docentes con ese nombre
+                          </div>
+                        ) : (
+                          docentesFiltrados.map((d: any) => {
+                            const isSelected = String(tutorFormData.id_docente) === String(d.id_docente);
+                            return (
+                              <button
+                                key={d.id_docente}
+                                type="button"
+                                onClick={() => {
+                                  setTutorFormData(prev => ({ ...prev, id_docente: String(d.id_docente) }));
+                                  setSearchDocente(`${d.nombres} ${d.apellidos}`);
+                                  setIsTutorDocenteDropdownOpen(false);
+                                }}
+                                className={`w-full px-4 py-2.5 flex items-center justify-between text-left hover:bg-blue-50/70 transition-colors ${isSelected ? 'bg-blue-50 font-bold text-[#093E7A]' : 'text-gray-700'}`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${isSelected ? 'bg-[#093E7A] text-white' : 'bg-gray-100 text-gray-600'}`}>
+                                    {(d.nombres?.[0] || 'D').toUpperCase()}{(d.apellidos?.[0] || '').toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold leading-tight">{d.nombres} {d.apellidos}</p>
+                                  </div>
+                                </div>
+                                {isSelected && (
+                                  <span className="material-symbols-outlined text-lg text-[#093E7A]">check_circle</span>
+                                )}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    )}
+
+                    {/* INDICADOR VISUAL DEL TUTOR SELECCIONADO */}
+                    {tutorDocenteSeleccionado && (
+                      <div className="flex items-center justify-between bg-blue-50/80 border border-blue-100 rounded-xl px-3.5 py-2">
+                        <div className="flex items-center gap-2.5 text-xs text-[#093E7A] font-bold">
+                          <span className="material-symbols-outlined text-base text-green-600">verified</span>
+                          <span>Tutor seleccionado: {tutorDocenteSeleccionado.nombres} {tutorDocenteSeleccionado.apellidos}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTutorFormData(prev => ({ ...prev, id_docente: "" }));
+                            setSearchDocente("");
+                            setIsTutorDocenteDropdownOpen(true);
+                          }}
+                          className="text-[11px] font-bold text-blue-700 hover:underline"
+                        >
+                          Cambiar
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

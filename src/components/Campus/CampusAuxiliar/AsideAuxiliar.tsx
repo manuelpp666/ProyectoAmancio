@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Home, ClipboardCheck, FileWarning, MessageSquare, X, LogOut } from "lucide-react";
+import { Home, ClipboardCheck, FileWarning, Award, MessageSquare, X, LogOut } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useUser } from "@/src/context/userContext";
 
@@ -51,6 +51,13 @@ export function AsideAuxiliar({ isOpen, onClose }: { isOpen: boolean; onClose: (
           className={claseLink(esActivo(`${BASE}/reportes`))}
         >
           <FileWarning size={20} /> Reportes y Partes
+        </Link>
+        <Link
+          href={`${BASE}/conducta`}
+          onClick={onClose}
+          className={claseLink(esActivo(`${BASE}/conducta`))}
+        >
+          <Award size={20} /> Notas de Conducta
         </Link>
         <Link
           href={`${BASE}/mensajeria`}

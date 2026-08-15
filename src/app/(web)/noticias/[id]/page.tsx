@@ -108,31 +108,29 @@ export default function DetalleNoticiaPage() {
                         </div>
                     ) : (
                         <div className="mb-10 md:mb-12 space-y-4">
-                            {/* La primera manda: va a lo ancho y más alta. */}
-                            <div className="rounded-3xl overflow-hidden shadow-2xl bg-slate-100 aspect-[16/9]">
+                            {/* La primera manda: el recuadro se adapta al tamaño real de la imagen */}
+                            <div className="rounded-3xl overflow-hidden shadow-2xl bg-slate-100 w-full">
                                 <img
                                     src={galeria[0] || "/placeholder-news.svg"}
                                     alt={noticia.titulo}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-auto object-cover block"
                                 />
                             </div>
-                            {/* El resto, en el mismo orden en que se subieron. Con
-                                una sola de resto ocupa el ancho completo; con dos o
-                                tres se reparten en columnas iguales. */}
+                            {/* El resto, en el mismo orden en que se subieron. */}
                             {galeria.length > 1 && (
                                 <div className={`grid gap-4 ${
-                                    galeria.length === 2 ? "grid-cols-1"
+                                    galeria.length === 2 ? "grid-cols-1 md:grid-cols-2"
                                         : galeria.length === 3 ? "grid-cols-2"
-                                            : "grid-cols-3"}`}>
+                                            : "grid-cols-2 md:grid-cols-3"}`}>
                                     {galeria.slice(1).map((url, i) => (
                                         <div key={url + i}
-                                             className="rounded-2xl overflow-hidden shadow-lg bg-slate-100 aspect-[4/3]">
+                                             className="rounded-2xl overflow-hidden shadow-lg bg-slate-100 w-full">
                                             <img
                                                 src={url}
                                                 alt={`${noticia.titulo} — imagen ${i + 2}`}
                                                 loading="lazy"
                                                 decoding="async"
-                                                className="w-full h-full object-cover"
+                                                className="w-full h-auto object-cover block"
                                             />
                                         </div>
                                     ))}
