@@ -1,13 +1,34 @@
 "use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, BookOpen, MessageSquare, X, Clock } from "lucide-react";
+import { Home, BookOpen, MessageSquare, X, Clock, Award } from "lucide-react";
+import { apiFetch } from "@/src/lib/api";
 
 const BASE = "/campus/campus-docente/inicio-docente";
 
 export function AsideDocente({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
 
   const pathname = usePathname();
+  const [esTutor, setEsTutor] = useState<boolean>(false);
+
+  // Verificar si el docente tiene tutorías asignadas
+  useEffect(() => {
+    let montado = true;
+    apiFetch("/conducta/filtros")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (montado && data) {
+          setEsTutor(Boolean(data.es_tutor && data.secciones && data.secciones.length > 0));
+        }
+      })
+      .catch(() => {
+        if (montado) setEsTutor(false);
+      });
+    return () => {
+      montado = false;
+    };
+  }, []);
 
   // Detectar la sección activa según la ruta actual
   const esActivo = (ruta: string, exacto = false) =>
@@ -59,6 +80,18 @@ export function AsideDocente({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           <Clock size={20} className="group-hover:text-white" />
           Horario
         </Link>
+
+        {/* Solo visible si el docente es tutor de al menos una sección */}
+        {esTutor && (
+          <Link
+            href={`${BASE}/conducta`}
+            onClick={onClose}
+            className={claseLink(esActivo(`${BASE}/conducta`))}
+          >
+            <Award size={20} className="group-hover:text-white" />
+            Notas de Conducta
+          </Link>
+        )}
 
         <Link
           href={`${BASE}/mensajeria`}

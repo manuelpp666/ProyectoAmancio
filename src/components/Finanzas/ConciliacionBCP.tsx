@@ -19,6 +19,45 @@ import { apiFetch, mensajeDeError } from "@/src/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+export interface SincronizacionCREP {
+  fecha_ultimo_crep: string | null;
+  nombre_archivo_ultimo_crep: string | null;
+  total_cuotas_ultimo_crep: number;
+  monto_ultimo_crep: number;
+  mora_ultimo_crep?: number;
+  total_cambios_pendientes: number;
+  bajas: {
+    documento: string;
+    nombre: string;
+    vencimiento: string;
+    monto: number;
+    mora: number;
+    tipo: string;
+    motivo: string;
+  }[];
+  altas: {
+    documento: string;
+    nombre: string;
+    vencimiento: string;
+    monto: number;
+    mora: number;
+    tipo: string;
+    motivo: string;
+  }[];
+  modificaciones: {
+    documento: string;
+    nombre: string;
+    vencimiento: string;
+    monto_anterior: number;
+    monto_actual: number;
+    mora_anterior: number;
+    mora_actual: number;
+    tipo: string;
+    motivo: string;
+  }[];
+  al_dia: boolean;
+}
+
 interface Resumen {
   cuotas_pendientes: number;
   de_alumnos: number;
@@ -41,6 +80,7 @@ interface Resumen {
     id_lote: number; archivo: string; fecha_reporte: string | null;
     fecha_carga: string | null; aplicados: number; sin_coincidencia: number;
   } | null;
+  sincronizacion_crep?: SincronizacionCREP | null;
 }
 
 interface Lote {
@@ -63,6 +103,23 @@ const FECHA = (iso: string | null) => {
   if (!iso) return "—";
   const [a, m, d] = iso.slice(0, 10).split("-");
   return `${d}/${m}/${a}`;
+};
+
+const FECHA_HORA = (iso: string | null) => {
+  if (!iso) return "Aún no registrado";
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleString("es-PE", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
 };
 
 /** Cada resultado con su color, para reconocerlo de un vistazo en la tabla. */
@@ -114,6 +171,33 @@ export function ConciliacionBCP() {
   const [inicial, setInicial] = useState<File | null>(null);
   const [previoInicial, setPrevioInicial] = useState<any>(null);
   const entradaInicial = useRef<HTMLInputElement>(null);
+
+  // --- Sincronización y Control de Cambios del CREP ---
+  const [modalConfirmarIncorporacion, setModalConfirmarIncorporacion] = useState(false);
+  const [verDetalleCambios, setVerDetalleCambios] = useState(false);
+  const [incorporando, setIncorporando] = useState(false);
+
+  const ejecutarIncorporacion = async () => {
+    setIncorporando(true);
+    try {
+      const res = await apiFetch("/finance/crep/incorporar-cambios", {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.detail || "No se pudieron incorporar los cambios al CREP");
+      }
+      const data = await res.json();
+      toast.success(data.message || "Cambios incorporados exitosamente al CREP oficial");
+      setModalConfirmarIncorporacion(false);
+      setVerDetalleCambios(false);
+      cargar();
+    } catch (error: any) {
+      toast.error(error.message || "Error al incorporar cambios");
+    } finally {
+      setIncorporando(false);
+    }
+  };
 
   // ---------------------------------------------------------------- cargar
   const cargar = useCallback(async () => {
@@ -484,16 +568,149 @@ export function ConciliacionBCP() {
       </Bloque>
 
       {/* ------------------------------------------- 4. generar el CREP */}
-      <Bloque numero={4} titulo="Generar el archivo para el BCP"
-              descripcion="Sale con todo lo que sigue por cobrar en este momento, con el mismo formato que el banco espera.">
+      <Bloque numero={4} titulo="Generar y sincronizar archivo para el BCP"
+              descripcion="Gestiona las altas, bajas por retiros de alumnos y cambios en cuotas para emitir el archivo CREP oficial que espera el banco.">
+        
+        {/* Banner de Estado del CREP y Fecha de Última Generación */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-gray-50 border border-gray-200 rounded-xl mb-4">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-[#093E7A]/10 text-[#093E7A] flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-2xl">event_available</span>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">
+                Última Generación Oficial del CREP
+              </p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-black text-gray-800">
+                  {FECHA_HORA(resumen?.sincronizacion_crep?.fecha_ultimo_crep || null)}
+                </span>
+                {resumen?.sincronizacion_crep?.nombre_archivo_ultimo_crep && (
+                  <span className="text-xs font-semibold text-gray-500 bg-white border border-gray-200 px-2 py-0.5 rounded-md">
+                    {resumen.sincronizacion_crep.nombre_archivo_ultimo_crep}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <div>
+            {(resumen?.sincronizacion_crep?.total_cambios_pendientes ?? 0) > 0 ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-800 text-xs font-bold rounded-full border border-amber-200 shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                {resumen?.sincronizacion_crep?.total_cambios_pendientes} cambio(s) pendiente(s) de incorporar
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-800 text-xs font-bold rounded-full border border-green-200 shadow-sm">
+                <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                CREP al día con la base de datos
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Panel de Cambios Pendientes de Incorporar */}
+        {(resumen?.sincronizacion_crep?.total_cambios_pendientes ?? 0) > 0 ? (
+          <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 mb-4 space-y-3">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <h4 className="text-sm font-black text-amber-950 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-amber-600 text-lg">sync_problem</span>
+                  Cambios del sistema pendientes de incorporar al CREP
+                </h4>
+                <p className="text-xs text-amber-800 mt-0.5">
+                  Hay {resumen?.sincronizacion_crep?.bajas.length || 0} baja(s) por retiros o eliminaciones y {resumen?.sincronizacion_crep?.altas.length || 0} alta(s) nuevas detectadas desde la última generación.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setVerDetalleCambios(!verDetalleCambios)}
+                  className="px-3 py-1.5 border border-amber-300 text-amber-900 bg-white hover:bg-amber-100 rounded-lg text-xs font-bold transition-all"
+                >
+                  {verDetalleCambios ? "Ocultar detalle" : "Ver lista de cambios"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalConfirmarIncorporacion(true)}
+                  className="px-4 py-2 bg-[#093E7A] hover:bg-[#072d5a] text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[16px]">sync</span>
+                  Incorporar Cambios al CREP
+                </button>
+              </div>
+            </div>
+
+            {verDetalleCambios && (
+              <div className="mt-3 border border-amber-200 rounded-lg overflow-hidden bg-white shadow-inner max-h-64 overflow-y-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-amber-100/60 sticky top-0 text-amber-900 font-bold border-b border-amber-200">
+                    <tr>
+                      <th className="px-3 py-2">Tipo</th>
+                      <th className="px-3 py-2">Estudiante</th>
+                      <th className="px-3 py-2">DNI</th>
+                      <th className="px-3 py-2">Vencimiento</th>
+                      <th className="px-3 py-2 text-right">Importe</th>
+                      <th className="px-3 py-2">Motivo</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 text-gray-700">
+                    {resumen?.sincronizacion_crep?.bajas.map((b, idx) => (
+                      <tr key={`b-${idx}`} className="hover:bg-red-50/40">
+                        <td className="px-3 py-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700">
+                            {b.tipo === "BAJA_RETIRO" ? "BAJA (RETIRO)" : "BAJA"}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 font-bold text-gray-800">{b.nombre}</td>
+                        <td className="px-3 py-2 text-gray-500">{b.documento}</td>
+                        <td className="px-3 py-2">{FECHA(b.vencimiento)}</td>
+                        <td className="px-3 py-2 text-right font-bold text-red-600">{SOLES(b.monto + b.mora)}</td>
+                        <td className="px-3 py-2 text-gray-500 text-[11px]">{b.motivo}</td>
+                      </tr>
+                    ))}
+                    {resumen?.sincronizacion_crep?.altas.map((a, idx) => (
+                      <tr key={`a-${idx}`} className="hover:bg-green-50/40">
+                        <td className="px-3 py-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700">
+                            ALTA
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 font-bold text-gray-800">{a.nombre}</td>
+                        <td className="px-3 py-2 text-gray-500">{a.documento}</td>
+                        <td className="px-3 py-2">{FECHA(a.vencimiento)}</td>
+                        <td className="px-3 py-2 text-right font-bold text-green-700">{SOLES(a.monto + a.mora)}</td>
+                        <td className="px-3 py-2 text-gray-500 text-[11px]">{a.motivo}</td>
+                      </tr>
+                    ))}
+                    {resumen?.sincronizacion_crep?.modificaciones.map((m, idx) => (
+                      <tr key={`m-${idx}`} className="hover:bg-amber-50/40">
+                        <td className="px-3 py-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700">
+                            MODIFICACIÓN
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 font-bold text-gray-800">{m.nombre}</td>
+                        <td className="px-3 py-2 text-gray-500">{m.documento}</td>
+                        <td className="px-3 py-2">{FECHA(m.vencimiento)}</td>
+                        <td className="px-3 py-2 text-right font-bold text-amber-800">{SOLES(m.monto_actual + m.mora_actual)}</td>
+                        <td className="px-3 py-2 text-gray-500 text-[11px]">{m.motivo}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => descargar("/finance/crep/descargar")}
-                  className="px-4 py-2.5 bg-[#093E7A] text-white rounded-lg font-bold text-sm hover:bg-[#062d59] flex items-center gap-2">
+                  className="px-4 py-2.5 bg-[#093E7A] text-white rounded-lg font-bold text-sm hover:bg-[#062d59] flex items-center gap-2 shadow-sm transition-all">
             <span className="material-symbols-outlined text-lg">download</span>
             Descargar CREP (.txt)
           </button>
           <button type="button" onClick={() => descargar("/finance/crep/descargar-excel")}
-                  className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-bold text-sm hover:bg-gray-50 flex items-center gap-2">
+                  className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-bold text-sm hover:bg-gray-50 flex items-center gap-2 transition-all">
             <span className="material-symbols-outlined text-lg">table_view</span>
             Descargar en Excel
           </button>
@@ -825,6 +1042,79 @@ export function ConciliacionBCP() {
                   Marcar como pagada
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------ modal confirmar incorporacion al CREP */}
+      {modalConfirmarIncorporacion && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in duration-200 border border-gray-100 flex flex-col">
+            {/* Header */}
+            <div className="p-5 text-white flex items-center justify-between bg-[#093E7A]">
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-2xl">sync</span>
+                <div>
+                  <h3 className="font-black text-lg">Incorporar Cambios al CREP</h3>
+                  <p className="text-xs text-white/80">Sincronización oficial del padrón de cobranza</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setModalConfirmarIncorporacion(false)}
+                className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-900 space-y-2">
+                <div className="flex items-center gap-2 text-amber-950 font-bold text-sm">
+                  <span className="material-symbols-outlined text-amber-600 text-xl">help</span>
+                  ¿Ya subiste y procesaste los últimos archivos de Reportes de Cobros del BCP?
+                </div>
+                <p className="text-amber-800 leading-relaxed">
+                  Es indispensable que primero proceses los reportes de cobros recibidos hoy. Si incorporas las <b>bajas de cuotas (por retiros de estudiantes)</b> antes de conciliar los pagos de hoy, el banco podría haber cobrado alguna de ellas y no se registrará automáticamente en el sistema.
+                </p>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-xs space-y-2">
+                <p className="font-bold text-gray-700">Resumen de la actualización a incorporar:</p>
+                <ul className="list-disc pl-4 text-gray-600 space-y-1">
+                  <li><b>{resumen?.sincronizacion_crep?.bajas.length || 0} cuotas</b> dadas de baja por retiros de alumnos o eliminaciones.</li>
+                  <li><b>{resumen?.sincronizacion_crep?.altas.length || 0} cuotas nuevas</b> generadas en el sistema.</li>
+                  <li><b>{resumen?.sincronizacion_crep?.modificaciones.length || 0} cuotas modificadas</b> en importe o mora.</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+              <button
+                type="button"
+                disabled={incorporando}
+                onClick={() => setModalConfirmarIncorporacion(false)}
+                className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancelar / Mantener pendientes
+              </button>
+              <button
+                type="button"
+                disabled={incorporando}
+                onClick={ejecutarIncorporacion}
+                className="px-5 py-2.5 bg-[#093E7A] hover:bg-[#072d5a] text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2"
+              >
+                {incorporando ? (
+                  <span>Incorporando...</span>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                    <span>Sí, ya procesé los cobros e Incorporar al CREP</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

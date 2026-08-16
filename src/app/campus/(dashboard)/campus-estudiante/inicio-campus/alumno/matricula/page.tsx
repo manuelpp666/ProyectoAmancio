@@ -36,6 +36,8 @@ interface InfoRenovacion {
   condicion_academica?: string | null;
   ya_matriculado_destino: boolean;
   puede_solicitar: boolean;
+  requiere_reincorporacion?: boolean;
+  motivo_reincorporacion?: string | null;
   inscripcion_estado: "NO_CONFIGURADO" | "PROXIMAMENTE" | "ABIERTA" | "CERRADA";
   inscripciones_abiertas: boolean;
   inscripcion_inicio?: string | null;
@@ -270,7 +272,25 @@ export default function MatriculaPage() {
             <CalendarCheck size={14} /> Renovación {info.anio_destino}
           </p>
 
-          {info.egresa ? (
+          {info.requiere_reincorporacion ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
+              <School size={40} className="text-[#093E7A] mb-3" />
+              <h3 className="font-black text-gray-800 mb-1">Reincorporación Requerida</h3>
+              <p className="text-xs text-gray-600 leading-relaxed max-w-md mb-4">
+                {info.motivo_reincorporacion || "Tu situación académica o periodo de inactividad requiere validación presencial por Administración."}
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-900 font-medium text-left w-full">
+                <p className="font-bold mb-1 flex items-center gap-1.5">
+                  <AlertCircle size={14} className="text-blue-700" />
+                  Pasos para reincorporarte:
+                </p>
+                <ul className="list-disc pl-4 space-y-0.5 text-blue-800 text-[11px]">
+                  <li>Presenta tu Certificado Oficial de Estudios o Libreta del último año cursado.</li>
+                  <li>La Dirección / Secretaría validará tu grado y formalizará tu matrícula en el sistema.</li>
+                </ul>
+              </div>
+            </div>
+          ) : info.egresa ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
               <GraduationCap size={40} className="text-[#701C32] mb-3" />
               <h3 className="font-black text-gray-800 mb-1">¡Estás por culminar el colegio!</h3>

@@ -12,9 +12,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { apiFetch } from "@/src/lib/api";
 
 export default function AuxiliarDashboardPage() {
-  const { username } = useUser();
+  const { username, loading } = useUser();
+  const [nombreAuxiliar, setNombreAuxiliar] = useState("");
   const [fechaActual, setFechaActual] = useState("");
 
   useEffect(() => {
@@ -27,6 +29,30 @@ export default function AuxiliarDashboardPage() {
     const formatted = new Intl.DateTimeFormat("es-PE", options).format(new Date());
     setFechaActual(formatted.charAt(0).toUpperCase() + formatted.slice(1));
   }, []);
+
+  // Cargar nombre real del auxiliar
+  useEffect(() => {
+    const cargarNombre = async () => {
+      if (username) {
+        try {
+          const resPerfil = await apiFetch(`/perfil/mi-perfil/${username}`);
+          if (resPerfil.ok) {
+            const dataPerfil = await resPerfil.json();
+            if (dataPerfil.datos?.nombres) {
+              const primerNombre = dataPerfil.datos.nombres.split(" ")[0];
+              setNombreAuxiliar(primerNombre);
+            }
+          }
+        } catch (err) {
+          console.error("Error al cargar nombre del auxiliar:", err);
+        }
+      }
+    };
+
+    if (!loading) {
+      cargarNombre();
+    }
+  }, [username, loading]);
 
   const accesos = [
     {
@@ -48,7 +74,7 @@ export default function AuxiliarDashboardPage() {
   ];
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto p-4 md:p-8">
+    <div className="space-y-6 md:space-y-8 max-w-6xl mx-auto">
       {/* BANNER DE BIENVENIDA */}
       <div className="bg-[#701C32] rounded-3xl p-8 md:p-10 text-white shadow-lg relative overflow-hidden">
         <div className="absolute -right-12 -top-12 w-52 h-52 rounded-full bg-white/5 pointer-events-none" />
@@ -59,7 +85,7 @@ export default function AuxiliarDashboardPage() {
               <ShieldCheck size={12} /> Auxiliar de Educación
             </div>
             <h1 className="text-3xl md:text-4xl font-black leading-tight">
-              ¡Hola de nuevo, {username}!
+              ¡Hola de nuevo{nombreAuxiliar ? `, ${nombreAuxiliar}` : ""}!
             </h1>
             <p className="text-white/85 mt-2 text-sm md:text-base flex items-center gap-2">
               <CalendarDays size={16} /> {fechaActual}

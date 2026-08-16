@@ -36,7 +36,7 @@ export function AsideAuxiliar({ isOpen, onClose }: { isOpen: boolean; onClose: (
           onClick={onClose}
           className={claseLink(esActivo(`${BASE}/inicio`))}
         >
-          <Home size={20} /> Inicio / Dashboard
+          <Home size={20} /> Inicio
         </Link>
         <Link
           href={`${BASE}/asistencia`}

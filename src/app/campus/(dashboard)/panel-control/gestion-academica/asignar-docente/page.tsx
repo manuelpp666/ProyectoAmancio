@@ -33,6 +33,7 @@ export default function AsignacionDocentesPage() {
   const [isTutorModalOpen, setIsTutorModalOpen] = useState(false); 
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingTutorId, setEditingTutorId] = useState<number | null>(null);
   
   const [formData, setFormData] = useState({
     id_seccion: "",
@@ -246,8 +247,20 @@ export default function AsignacionDocentesPage() {
 
 
   // --- NUEVOS MÉTODOS PARA TUTORES ---
+  const handleEditarTutor = (t: any) => {
+    setEditingTutorId(t.id_tutor_seccion || null);
+    setTutorFormData({
+      id_seccion: t.id_seccion?.toString() || "",
+      id_docente: t.docente?.id_docente ? t.docente.id_docente.toString() : "",
+    });
+    setSearchDocente(t.docente ? `${t.docente.nombres} ${t.docente.apellidos}` : "");
+    setIsTutorDocenteDropdownOpen(false);
+    setIsTutorModalOpen(true);
+  };
+
   const cerrarModalTutor = () => {
     setIsTutorModalOpen(false);
+    setEditingTutorId(null);
     setSearchDocente("");
     setIsTutorDocenteDropdownOpen(false);
     setTutorFormData({ id_seccion: "", id_docente: "" });
@@ -265,8 +278,11 @@ export default function AsignacionDocentesPage() {
       return;
     }
 
-    const promise = apiFetch(`/gestion/tutores/`, {
-      method: "POST",
+    const url = editingTutorId ? `/gestion/tutores/${editingTutorId}` : `/gestion/tutores/`;
+    const method = editingTutorId ? "PUT" : "POST";
+
+    const promise = apiFetch(url, {
+      method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id_anio_escolar: anioPlanificacion,
@@ -276,13 +292,15 @@ export default function AsignacionDocentesPage() {
     });
 
     toast.promise(promise, {
-      loading: 'Asignando tutor...',
+      loading: editingTutorId ? 'Actualizando tutoría...' : 'Asignando tutor...',
       success: () => {
         cerrarModalTutor();
         fetchData();
-        return "Tutor asignado con éxito";
+        return editingTutorId
+          ? "Tutor actualizado y cursos sincronizados con éxito"
+          : "Tutor asignado y cursos sincronizados con éxito";
       },
-      error: (err) => `Error: ${err.message || 'No se pudo asignar el tutor'}`
+      error: (err) => `Error: ${err.message || 'No se pudo guardar el tutor'}`
     });
   };
 
@@ -491,7 +509,14 @@ export default function AsignacionDocentesPage() {
                             </div>
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <div className="flex justify-end gap-2">
+                            <div className="flex justify-end gap-2 items-center">
+                              <button
+                                onClick={() => handleEditarTutor(t)}
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Editar / Reasignar Tutor"
+                              >
+                                <span className="material-symbols-outlined text-xl">edit</span>
+                              </button>
                               <button onClick={() => setConfirmDeleteTutor({ isOpen: true, id: t.id_tutor_seccion })} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Remover Tutor">
                                 <span className="material-symbols-outlined text-xl">delete</span>
                               </button>
@@ -682,8 +707,10 @@ export default function AsignacionDocentesPage() {
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">supervisor_account</span></div>
                   <div>
-                    <h3 className="font-black text-lg leading-tight">Asignar Tutor</h3>
-                    <p className="text-[11px] text-white/70 mt-0.5">Designa al docente tutor de una sección.</p>
+                    <h3 className="font-black text-lg leading-tight">{editingTutorId ? "Modificar Tutor de Sección" : "Asignar Tutor a Sección"}</h3>
+                    <p className="text-[11px] text-white/70 mt-0.5">
+                      {editingTutorId ? "Actualiza el docente tutor y reasigna los cursos automáticamente." : "Designa al docente tutor y asigna los cursos de la sección."}
+                    </p>
                   </div>
                 </div>
                 <button type="button" onClick={cerrarModalTutor} className="hover:text-gray-300 mt-0.5">
@@ -692,11 +719,20 @@ export default function AsignacionDocentesPage() {
               </div>
 
               <div className="p-6 space-y-4">
+                {/* AVISO INFORMATIVO DE ASIGNACIÓN AUTOMÁTICA */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-[#093E7A] leading-relaxed flex items-start gap-2">
+                  <span className="material-symbols-outlined text-base text-[#093E7A] shrink-0 mt-0.5">info</span>
+                  <span>
+                    Al {editingTutorId ? "actualizar" : "asignar"} el tutor, se vincularán automáticamente <b>todos los cursos</b> de esta sección al docente (a excepción de <i>Violín, Inglés, Computación y Ajedrez</i>).
+                  </span>
+                </div>
+
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Sección de Tutoría</label>
                   <select
                     required
-                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#093E7A]/20 font-medium text-gray-800"
+                    disabled={editingTutorId !== null}
+                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-[#093E7A]/20 font-medium text-gray-800 disabled:opacity-80"
                     value={tutorFormData.id_seccion}
                     onChange={(e) => setTutorFormData(prev => ({ ...prev, id_seccion: e.target.value }))}
                   >
@@ -814,7 +850,9 @@ export default function AsignacionDocentesPage() {
 
               <div className="p-6 border-t bg-gray-50 flex gap-3 rounded-b-2xl">
                 <button type="button" onClick={cerrarModalTutor} className="flex-1 px-4 py-3 border border-gray-300 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-all">Cancelar</button>
-                <button type="submit" className="flex-1 px-4 py-3 bg-[#093E7A] text-white rounded-xl font-bold hover:bg-[#062d59] transition-all shadow-md">Asignar Tutor</button>
+                <button type="submit" className="flex-1 px-4 py-3 bg-[#093E7A] text-white rounded-xl font-bold hover:bg-[#062d59] transition-all shadow-md">
+                  {editingTutorId ? "Actualizar Tutor y Cursos" : "Asignar Tutor y Cursos"}
+                </button>
               </div>
             </form>
           </div>

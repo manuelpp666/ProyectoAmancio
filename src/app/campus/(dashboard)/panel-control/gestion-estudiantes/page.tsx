@@ -94,6 +94,7 @@ function InfoItem({ label, value }: { label: string, value: string }) {
 export default function GestionEstudiantesPage() {
 
     const [busqueda, setBusqueda] = useState("");
+    const [filtroEstadoEstudiante, setFiltroEstadoEstudiante] = useState<"ESTUDIANTE" | "RETIRADO" | "TODOS">("ESTUDIANTE");
     const [alumnos, setAlumnos] = useState<AlumnoBase[]>([]);
     const [loading, setLoading] = useState(true);
     // Vista actual: "estudiantes" | "postulantes" | "renovaciones" | "verano" | "notas"
@@ -129,16 +130,135 @@ export default function GestionEstudiantesPage() {
     const [respuestaAdmin, setRespuestaAdmin] = useState("");
     const [procesando, setProcesando] = useState(false);
 
+    // --- Modal de Retiro de Estudiante ---
+    const [modalRetiro, setModalRetiro] = useState<{ abierto: boolean; alumno: AlumnoBase | null }>({
+        abierto: false,
+        alumno: null,
+    });
+    const [procesandoRetiro, setProcesandoRetiro] = useState(false);
+
+    // --- Modal de Reincorporación de Estudiante ---
+    const [modalReincorporar, setModalReincorporar] = useState<{ abierto: boolean; alumno: AlumnoBase | null }>({
+        abierto: false,
+        alumno: null,
+    });
+    const [idGradoReincorporar, setIdGradoReincorporar] = useState<number | "">("");
+    const [idSeccionReincorporar, setIdSeccionReincorporar] = useState<number | "">("");
+    const [generarPagosReincorporar, setGenerarPagosReincorporar] = useState(true);
+    const [listaGrados, setListaGrados] = useState<any[]>([]);
+    const [listaSecciones, setListaSecciones] = useState<any[]>([]);
+    const [procesandoReincorporar, setProcesandoReincorporar] = useState(false);
+
+    const cargarGrados = async () => {
+        try {
+            const res = await apiFetch("/academic/grados/");
+            if (res.ok) {
+                const data = await res.json();
+                setListaGrados(Array.isArray(data) ? data : []);
+            }
+        } catch (e) {
+            console.error("Error cargando grados:", e);
+        }
+    };
+
+    const cargarSecciones = async (idGrado: number) => {
+        try {
+            const res = await apiFetch(`/academic/secciones/?grado_id=${idGrado}`);
+            if (res.ok) {
+                const data = await res.json();
+                setListaSecciones(Array.isArray(data) ? data : []);
+            }
+        } catch (e) {
+            console.error("Error cargando secciones:", e);
+        }
+    };
+
+    const abrirModalReincorporar = (alumno: AlumnoBase) => {
+        cargarGrados();
+        setIdGradoReincorporar(alumno.id_grado_ingreso || "");
+        if (alumno.id_grado_ingreso) {
+            cargarSecciones(alumno.id_grado_ingreso);
+        } else {
+            setListaSecciones([]);
+        }
+        setIdSeccionReincorporar("");
+        setGenerarPagosReincorporar(true);
+        setModalReincorporar({ abierto: true, alumno });
+    };
+
+    const ejecutarReincorporacion = async () => {
+        if (!modalReincorporar.alumno || !idGradoReincorporar) {
+            toast.error("Por favor selecciona el grado al que se reincorporará el estudiante");
+            return;
+        }
+        setProcesandoReincorporar(true);
+        try {
+            const res = await apiFetch(`/alumnos/reincorporar/${modalReincorporar.alumno.id_alumno}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id_grado: Number(idGradoReincorporar),
+                    id_seccion: idSeccionReincorporar ? Number(idSeccionReincorporar) : null,
+                    generar_pagos: generarPagosReincorporar,
+                }),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => null);
+                throw new Error(err?.detail || "No se pudo reincorporar al estudiante");
+            }
+            const data = await res.json();
+            toast.success(data.message || "Estudiante reincorporado con éxito");
+            setModalReincorporar({ abierto: false, alumno: null });
+            cargarDatos();
+        } catch (error: any) {
+            toast.error(error.message || "Error al reincorporar estudiante");
+        } finally {
+            setProcesandoReincorporar(false);
+        }
+    };
+
+    const ejecutarRetiro = async () => {
+        if (!modalRetiro.alumno) return;
+        setProcesandoRetiro(true);
+        try {
+            const res = await apiFetch(`/alumnos/retirar/${modalRetiro.alumno.id_alumno}`, {
+                method: "POST",
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => null);
+                throw new Error(err?.detail || "No se pudo retirar al estudiante");
+            }
+            const data = await res.json();
+            toast.success(data.message || "Estudiante retirado con éxito");
+            setModalRetiro({ abierto: false, alumno: null });
+            cargarDatos();
+        } catch (error: any) {
+            toast.error(error.message || "Error al retirar estudiante");
+        } finally {
+            setProcesandoRetiro(false);
+        }
+    };
+
     const cargarDatos = async () => {
         setLoading(true);
         try {
             let urlRuta = vista === "postulantes" ? "/alumnos/solicitudes-pendientes" : "/alumnos/";
+            const params: string[] = [];
 
             // La búsqueda acepta nombre, apellidos o DNI. Va codificada porque
             // un nombre lleva espacios y tildes, que no son válidos en una URL.
             if (busqueda.trim()) {
+                params.push(`busqueda=${encodeURIComponent(busqueda.trim())}`);
+            }
+
+            // Filtro de estado en la pestaña Estudiantes (ESTUDIANTE / RETIRADO / TODOS)
+            if (vista === "estudiantes" && filtroEstadoEstudiante !== "TODOS") {
+                params.push(`estado=${encodeURIComponent(filtroEstadoEstudiante)}`);
+            }
+
+            if (params.length > 0) {
                 const separador = urlRuta.includes("?") ? "&" : "?";
-                urlRuta += `${separador}busqueda=${encodeURIComponent(busqueda.trim())}`;
+                urlRuta += `${separador}${params.join("&")}`;
             }
 
             // Usamos tu función apiFetch pasándole el string limpio
@@ -224,7 +344,7 @@ export default function GestionEstudiantesPage() {
         }, 300); // 300ms de debounce para no saturar la API mientras escribes
 
         return () => clearTimeout(delayDebounceFn);
-    }, [vista, busqueda]);
+    }, [vista, busqueda, filtroEstadoEstudiante]);
 
     // Recargar renovaciones al cambiar el filtro de estado
     useEffect(() => {
@@ -534,9 +654,35 @@ export default function GestionEstudiantesPage() {
                                 </div>
                             </div>
                         ) : (
-                        <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden shadow-sm">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
+                        <div className="space-y-4">
+                            {vista === "estudiantes" && (
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {(["ESTUDIANTE", "RETIRADO", "TODOS"] as const).map((est) => (
+                                        <button
+                                            key={est}
+                                            onClick={() => setFiltroEstadoEstudiante(est)}
+                                            className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 ${
+                                                filtroEstadoEstudiante === est
+                                                    ? est === "RETIRADO"
+                                                        ? "bg-red-600 border-red-600 text-white"
+                                                        : "bg-[#093E7A] border-[#093E7A] text-white"
+                                                    : "bg-white border-gray-200 text-gray-500 hover:border-[#093E7A]/40"
+                                            }`}
+                                        >
+                                            <span className="material-symbols-outlined text-[16px]">
+                                                {est === "ESTUDIANTE" ? "person" : est === "RETIRADO" ? "person_off" : "groups"}
+                                            </span>
+                                            <span>
+                                                {est === "ESTUDIANTE" ? "Estudiantes" : est === "RETIRADO" ? "Retirados" : "Todos"}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden shadow-sm">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="bg-[#fcfafa] border-b border-[#e5e7eb]">
                                             <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Nombre Completo</th>
@@ -594,6 +740,25 @@ export default function GestionEstudiantesPage() {
                                                             >
                                                                 <span className="material-symbols-outlined text-[20px]">edit</span>
                                                             </button>
+                                                            {vista === "estudiantes" && (
+                                                                alumno.estado_ingreso === "RETIRADO" ? (
+                                                                    <button
+                                                                        onClick={() => abrirModalReincorporar(alumno)}
+                                                                        title="Reincorporar estudiante a la institución"
+                                                                        className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-all"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[20px]">how_to_reg</span>
+                                                                    </button>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={() => setModalRetiro({ abierto: true, alumno })}
+                                                                        title="Retirar estudiante"
+                                                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[20px]">person_remove</span>
+                                                                    </button>
+                                                                )
+                                                            )}
                                                             {alumno.estado_ingreso === "POSTULANTE" && (
                                                                 <>
                                                                     <button
@@ -614,6 +779,7 @@ export default function GestionEstudiantesPage() {
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
                         </div>
                         )}
                     </div>
@@ -836,7 +1002,172 @@ export default function GestionEstudiantesPage() {
                     </div>
                 </div>
             )}
-        </>
+
+            {/* --- MODAL 3: RETIRO DE ESTUDIANTE (Z-70) --- */}
+            {modalRetiro.abierto && modalRetiro.alumno && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200 border border-gray-100">
+                        <div className="p-5 text-white flex items-center gap-3 bg-red-600">
+                            <span className="material-symbols-outlined text-2xl">person_remove</span>
+                            <h3 className="font-black text-lg">
+                                Confirmar Retiro de Estudiante
+                            </h3>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <p className="text-gray-600 text-sm">
+                                ¿Estás seguro de que deseas retirar al estudiante <b className="text-gray-900">{modalRetiro.alumno.nombres} {modalRetiro.alumno.apellidos}</b> (DNI: {modalRetiro.alumno.dni})?
+                            </p>
+                            <div className="bg-red-50 border border-red-200 rounded-xl p-3.5 text-xs text-red-800 space-y-1.5 leading-relaxed">
+                                <p className="font-bold flex items-center gap-1.5 text-red-900">
+                                    <span className="material-symbols-outlined text-base">warning</span>
+                                    Consecuencias de esta acción:
+                                </p>
+                                <ul className="list-disc pl-4 space-y-1 text-red-700">
+                                    <li>El estado del estudiante pasará a <b>RETIRADO</b>.</li>
+                                    <li>La <b>cuenta de usuario</b> del estudiante será desactivada para impedir el acceso al campus virtual.</li>
+                                    <li>Se <b>eliminarán los pagos pendientes no vencidos</b> (las deudas ya vencidas se conservarán en el historial).</li>
+                                </ul>
+                            </div>
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    disabled={procesandoRetiro}
+                                    onClick={() => setModalRetiro({ abierto: false, alumno: null })}
+                                    className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={procesandoRetiro}
+                                    onClick={ejecutarRetiro}
+                                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+                                >
+                                    {procesandoRetiro ? "Procesando..." : "Sí, retirar estudiante"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+                {/* --- MODAL 4: REINCORPORACIÓN DE ESTUDIANTE RETIRADO (Z-70) --- */}
+                {modalReincorporar.abierto && modalReincorporar.alumno && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in duration-200 border border-gray-100">
+                            {/* Header */}
+                            <div className="p-5 text-white flex items-center gap-3 bg-[#093E7A]">
+                                <span className="material-symbols-outlined text-2xl">how_to_reg</span>
+                                <div>
+                                    <h3 className="font-black text-lg">
+                                        Reincorporar Estudiante
+                                    </h3>
+                                    <p className="text-xs text-white/80">
+                                        {modalReincorporar.alumno.nombres} {modalReincorporar.alumno.apellidos} (DNI: {modalReincorporar.alumno.dni})
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Body */}
+                            <div className="p-6 space-y-4">
+                                {/* Alert Box */}
+                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 text-xs text-blue-900 space-y-1.5 leading-relaxed">
+                                    <p className="font-bold flex items-center gap-1.5 text-blue-950">
+                                        <span className="material-symbols-outlined text-base">info</span>
+                                        Acciones de la Reincorporación:
+                                    </p>
+                                    <ul className="list-disc pl-4 space-y-1 text-blue-800">
+                                        <li>El estado cambiará a <b>ESTUDIANTE</b> activo.</li>
+                                        <li>Se <b>reactivará su cuenta de usuario</b> para el campus virtual.</li>
+                                        <li>Se creará su matrícula en el año activo y quedará inscrito en todos los cursos del grado.</li>
+                                    </ul>
+                                </div>
+
+                                {/* Selector de Grado */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                                        Grado de Reincorporación <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={idGradoReincorporar}
+                                        onChange={(e) => {
+                                            const gId = e.target.value ? Number(e.target.value) : "";
+                                            setIdGradoReincorporar(gId);
+                                            setIdSeccionReincorporar("");
+                                            if (gId) {
+                                                cargarSecciones(Number(gId));
+                                            } else {
+                                                setListaSecciones([]);
+                                            }
+                                        }}
+                                        className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#093E7A] transition-all font-medium"
+                                    >
+                                        <option value="">-- Seleccionar Grado --</option>
+                                        {listaGrados.map((g) => (
+                                            <option key={g.id_grado} value={g.id_grado}>
+                                                {g.nombre} {g.nivel?.nombre ? `(${g.nivel.nombre})` : ""}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Selector de Sección (Opcional) */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
+                                        Sección (Opcional)
+                                    </label>
+                                    <select
+                                        value={idSeccionReincorporar}
+                                        onChange={(e) => setIdSeccionReincorporar(e.target.value ? Number(e.target.value) : "")}
+                                        disabled={!idGradoReincorporar || listaSecciones.length === 0}
+                                        className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-[#093E7A] transition-all font-medium disabled:opacity-50"
+                                    >
+                                        <option value="">-- Asignar Sección luego --</option>
+                                        {listaSecciones.map((s) => (
+                                            <option key={s.id_seccion} value={s.id_seccion}>
+                                                Sección {s.nombre}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Generación de Pagos Checkbox */}
+                                <div className="pt-2">
+                                    <label className="flex items-center gap-2.5 cursor-pointer text-xs text-gray-700 font-bold select-none">
+                                        <input
+                                            type="checkbox"
+                                            checked={generarPagosReincorporar}
+                                            onChange={(e) => setGenerarPagosReincorporar(e.target.checked)}
+                                            className="w-4 h-4 rounded border-gray-300 text-[#093E7A] focus:ring-[#093E7A]"
+                                        />
+                                        <span>Generar pensiones del año escolar activo</span>
+                                    </label>
+                                </div>
+
+                                {/* Footer Buttons */}
+                                <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
+                                    <button
+                                        type="button"
+                                        disabled={procesandoReincorporar}
+                                        onClick={() => setModalReincorporar({ abierto: false, alumno: null })}
+                                        className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={procesandoReincorporar || !idGradoReincorporar}
+                                        onClick={ejecutarReincorporacion}
+                                        className="px-5 py-2.5 bg-[#093E7A] hover:bg-[#072d5a] text-white rounded-xl text-xs font-bold transition-all shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+                                    >
+                                        {procesandoReincorporar ? "Procesando..." : "Confirmar Reincorporación"}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </>
         </RoleGuard>
     );
 }
