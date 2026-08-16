@@ -56,6 +56,22 @@ export default function AsignacionDocentesPage() {
     id: null
   });
 
+  const anioObj = listaAnios.find(a => a.id_anio_escolar === anioPlanificacion);
+  const esVerano = anioObj?.tipo === "VERANO";
+
+  const getNombreSeccionCompleto = (s: Seccion) => {
+    if (esVerano) {
+      if ([1, 2].includes(s.id_grado)) return `Primaria · 1ro y 2do de Primaria - Sección ${s.nombre}`;
+      if ([3, 4].includes(s.id_grado)) return `Primaria · 3ro y 4to de Primaria - Sección ${s.nombre}`;
+      if ([5, 6].includes(s.id_grado)) return `Primaria · 5to y 6to de Primaria - Sección ${s.nombre}`;
+      if ([7, 8, 9].includes(s.id_grado)) return `Secundaria · ${s.grado?.nombre || 'Grado'} de Secundaria - Sección ${s.nombre}`;
+      if ([10, 11].includes(s.id_grado)) return `Pre Academia · Sección ${s.nombre}`;
+    }
+    const nivel = s.grado?.nivel?.nombre ? `${s.grado.nivel.nombre} · ` : "";
+    const grado = s.grado?.nombre || "Grado";
+    return `${nivel}${grado} - Sección ${s.nombre}`;
+  };
+
   // --- LÓGICA DE FILTRADO ---
   const vinculosFiltrados = vinculos.filter((v: any) => {
     const nombreDocente = v.docente ? `${v.docente.nombres} ${v.docente.apellidos}`.toLowerCase() : "no definido";
@@ -330,7 +346,15 @@ export default function AsignacionDocentesPage() {
             {/* TABS SUPERIORES */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
               <div>
-                <h3 className="text-2xl font-black text-gray-900 mb-4">Vínculos Académicos</h3>
+                <div className="flex items-center gap-3 mb-4">
+                  <h3 className="text-2xl font-black text-gray-900">Vínculos Académicos</h3>
+                  {esVerano && (
+                    <span className="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full border border-amber-200 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-sm text-amber-600">sunny</span>
+                      Ciclo Verano
+                    </span>
+                  )}
+                </div>
                 <div className="flex gap-4 sm:gap-6 border-b border-gray-200 overflow-x-auto">
                   <button
                     onClick={() => setActiveTab("carga")}
@@ -562,15 +586,11 @@ export default function AsignacionDocentesPage() {
                     onChange={(e) => handleSeccionChange(e.target.value)}
                   >
                     <option value="">Seleccione una sección...</option>
-                    {secciones.map(s => {
-                      const nivel = s.grado?.nivel?.nombre ? `${s.grado.nivel.nombre} · ` : "";
-                      const grado = s.grado?.nombre || "Grado";
-                      return (
-                        <option key={s.id_seccion} value={s.id_seccion}>
-                          {nivel}{grado} - Sección {s.nombre}
-                        </option>
-                      );
-                    })}
+                    {secciones.map(s => (
+                      <option key={s.id_seccion} value={s.id_seccion}>
+                        {getNombreSeccionCompleto(s)}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -737,15 +757,11 @@ export default function AsignacionDocentesPage() {
                     onChange={(e) => setTutorFormData(prev => ({ ...prev, id_seccion: e.target.value }))}
                   >
                     <option value="">Seleccione una sección...</option>
-                    {secciones.map(s => {
-                      const nivel = s.grado?.nivel?.nombre ? `${s.grado.nivel.nombre} · ` : "";
-                      const grado = s.grado?.nombre || "Grado";
-                      return (
-                        <option key={s.id_seccion} value={s.id_seccion}>
-                          {nivel}{grado} - Sección {s.nombre}
-                        </option>
-                      );
-                    })}
+                    {secciones.map(s => (
+                      <option key={s.id_seccion} value={s.id_seccion}>
+                        {getNombreSeccionCompleto(s)}
+                      </option>
+                    ))}
                   </select>
                 </div>
 

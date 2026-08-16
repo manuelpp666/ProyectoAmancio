@@ -3,6 +3,12 @@ export interface Area {
   nombre: string;
 }
 
+export interface DesgloseGrado {
+  id_grado: number;
+  nombre: string;
+  conteo: number;
+}
+
 export interface Seccion {
   id_seccion?: number;
   id_grado: number;
@@ -10,6 +16,7 @@ export interface Seccion {
   nombre: string;
   vacantes?: number;
   ocupadas?: number;
+  desglose_grados?: DesgloseGrado[];
   grado?: Grado;
 }
 

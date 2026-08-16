@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 import { useReactToPrint } from "react-to-print";
 import { toast } from "sonner";
@@ -42,6 +42,46 @@ const colorCurso = (nombre: string) => {
   return COLORES_CURSO[h % COLORES_CURSO.length];
 };
 
+const COLOR_SECCION: Record<string, string> = {
+  Rojo: "bg-red-500",
+  Azul: "bg-blue-500",
+  Amarillo: "bg-yellow-400",
+  Verde: "bg-green-500",
+  Naranja: "bg-orange-500",
+  A: "bg-blue-600",
+  B: "bg-indigo-600",
+  C: "bg-purple-600",
+};
+
+const obtenerEtiquetaSeccion = (sec?: Seccion, esVerano?: boolean): string => {
+  if (!sec) return "";
+  if (esVerano) {
+    if (sec.id_grado === 1) return `1ro y 2do Primaria - ${sec.nombre}`;
+    if (sec.id_grado === 3) return `3ro y 4to Primaria - ${sec.nombre}`;
+    if (sec.id_grado === 5) return `5to y 6to Primaria - ${sec.nombre}`;
+    if (sec.id_grado === 7) return `1ro Secundaria - ${sec.nombre}`;
+    if (sec.id_grado === 8) return `2do Secundaria - ${sec.nombre}`;
+    if (sec.id_grado === 9) return `3ro Secundaria - ${sec.nombre}`;
+    if (sec.id_grado === 10 || sec.id_grado === 11) return `Pre Academia - ${sec.nombre}`;
+  }
+  const gradoNombre = sec.grado?.nombre || `Grado ${sec.id_grado}`;
+  return `${gradoNombre} - ${sec.nombre}`;
+};
+
+const obtenerEtiquetaGradoOGrupo = (sec?: Seccion, esVerano?: boolean): string => {
+  if (!sec) return "";
+  if (esVerano) {
+    if (sec.id_grado === 1) return "1ro y 2do de Primaria";
+    if (sec.id_grado === 3) return "3ro y 4to de Primaria";
+    if (sec.id_grado === 5) return "5to y 6to de Primaria";
+    if (sec.id_grado === 7) return "1ro de Secundaria";
+    if (sec.id_grado === 8) return "2do de Secundaria";
+    if (sec.id_grado === 9) return "3ro de Secundaria";
+    if (sec.id_grado === 10 || sec.id_grado === 11) return "Pre Academia";
+  }
+  return sec.grado?.nombre || `Grado ${sec.id_grado}`;
+};
+
 export default function ConstructorHorariosPage() {
   const {
     anioPlanificacion,
@@ -50,14 +90,15 @@ export default function ConstructorHorariosPage() {
     loadingAnios
   } = useAnioAcademico();
 
+  const anioObj = listaAnios.find(a => a.id_anio_escolar === anioPlanificacion);
+  const esVerano = anioObj?.tipo === "VERANO";
+
   // --- ESTADOS PARA LA DATA ---
   const [secciones, setSecciones] = useState<Seccion[]>([]);
   const [seccionActiva, setSeccionActiva] = useState<number | null>(null);
+  const [nivelSeleccionado, setNivelSeleccionado] = useState<number>(1);
   const [materiasDisponibles, setMateriasDisponibles] = useState<MateriaDisponibleExt[]>([]);
   const [horarioAsignado, setHorarioAsignado] = useState<HorarioAsignadoExt[]>([]);
-  // La rejilla ya no se calcula aquí: la construye el backend a partir de la
-  // configuración (duración del bloque, jornada y recesos), así que el panel,
-  // el horario del docente, el del alumno y el PDF pintan siempre lo mismo.
   const [bloques, setBloques] = useState<BloqueHorario[]>([]);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -70,11 +111,56 @@ export default function ConstructorHorariosPage() {
 
   const seccionActivaObj = secciones.find(s => s.id_seccion === seccionActiva);
 
+  const obtenerNivelDeSeccion = useCallback((sec: Seccion): number => {
+    if (esVerano) {
+      if ([1, 2, 3, 4, 5, 6].includes(sec.id_grado)) return 1; // Primaria
+      if ([7, 8, 9].includes(sec.id_grado)) return 2;         // Secundaria
+      if ([10, 11].includes(sec.id_grado)) return 3;        // Pre Academia
+    }
+    return sec.grado?.id_nivel || (sec.id_grado <= 6 ? 1 : 2);
+  }, [esVerano]);
+
+  const nivelesDisponibles = useMemo(() => {
+    if (esVerano) {
+      return [
+        { id: 1, nombre: "Primaria (Verano)", icono: "domain" },
+        { id: 2, nombre: "Secundaria (Verano)", icono: "domain" },
+        { id: 3, nombre: "Pre Academia", icono: "school" },
+      ];
+    }
+    return [
+      { id: 1, nombre: "Primaria", icono: "domain" },
+      { id: 2, nombre: "Secundaria", icono: "domain" },
+    ];
+  }, [esVerano]);
+
+  const seccionesDelNivel = useMemo(() => {
+    return secciones.filter((s: Seccion) => obtenerNivelDeSeccion(s) === nivelSeleccionado);
+  }, [secciones, nivelSeleccionado, obtenerNivelDeSeccion]);
+
+  // Si la sección activa cambia de año o de nivel, sincronizamos
+  useEffect(() => {
+    if (seccionesDelNivel.length > 0) {
+      const existeEnNivel = seccionesDelNivel.some((s: Seccion) => s.id_seccion === seccionActiva);
+      if (!existeEnNivel) {
+        setSeccionActiva(seccionesDelNivel[0].id_seccion as number);
+      }
+    } else if (secciones.length > 0) {
+      const primerNivelConSecciones = nivelesDisponibles.find(
+        (n: { id: number; nombre: string; icono: string }) => secciones.some((s: Seccion) => obtenerNivelDeSeccion(s) === n.id)
+      );
+      if (primerNivelConSecciones && primerNivelConSecciones.id !== nivelSeleccionado) {
+        setNivelSeleccionado(primerNivelConSecciones.id);
+      }
+    }
+  }, [nivelSeleccionado, seccionesDelNivel, seccionActiva, secciones, nivelesDisponibles, obtenerNivelDeSeccion]);
+
   const exportarPDF = () => {
     if (!seccionActivaObj) {
       toast.error("Elige primero una sección");
       return;
     }
+    const etiquetaGrado = obtenerEtiquetaGradoOGrupo(seccionActivaObj, esVerano);
     try {
       const { nombreArchivo, filas } = generarPDFHorario({
         bloques,
@@ -84,7 +170,7 @@ export default function ConstructorHorariosPage() {
           curso_nombre: h.curso_nombre,
           docente_nombre: h.docente_nombre,
         })),
-        grado: seccionActivaObj.grado?.nombre ?? "",
+        grado: etiquetaGrado,
         seccion: seccionActivaObj.nombre,
         anio: anioPlanificacion || "",
       });
@@ -103,7 +189,7 @@ export default function ConstructorHorariosPage() {
   // --- CONFIGURACIÓN DE IMPRESIÓN ---
   const handlePrint = useReactToPrint({
     contentRef,
-    documentTitle: `Horario_${seccionActivaObj?.grado?.nombre ?? ""}_${seccionActivaObj?.nombre ?? ""}_${anioPlanificacion}`,
+    documentTitle: `Horario_${obtenerEtiquetaGradoOGrupo(seccionActivaObj, esVerano)}_${seccionActivaObj?.nombre ?? ""}_${anioPlanificacion}`,
   });
 
   // --- 1. CARGA INICIAL (Secciones) ---
@@ -121,10 +207,11 @@ export default function ConstructorHorariosPage() {
           return;
         }
         const dataSec = await res.json();
-        const lista = Array.isArray(dataSec) ? dataSec : [];
+        const lista: Seccion[] = Array.isArray(dataSec) ? dataSec : [];
         setSecciones(lista);
 
         if (lista.length > 0) {
+          setNivelSeleccionado(obtenerNivelDeSeccion(lista[0]));
           setSeccionActiva(lista[0].id_seccion as number);
         } else {
           setSeccionActiva(null);
@@ -139,7 +226,7 @@ export default function ConstructorHorariosPage() {
       }
     };
     cargarConfiguracion();
-  }, [anioPlanificacion]);
+  }, [anioPlanificacion, obtenerNivelDeSeccion]);
 
   // --- 2. CARGA POR SECCIÓN (Rejilla, materias y horario guardado) ---
   //
@@ -320,21 +407,63 @@ export default function ConstructorHorariosPage() {
             </div>
           </div>
 
-          <div className="bg-white px-4 md:px-8 border-b shrink-0 flex gap-6 overflow-x-auto no-print">
-            {secciones.length === 0 ? (
-              <span className="py-4 text-sm font-medium text-gray-400 italic">
-                No hay secciones registradas para este año.
-              </span>
-            ) : secciones.map((sec) => (
-              <button
-                key={sec.id_seccion}
-                onClick={() => setSeccionActiva(sec.id_seccion as number)}
-                className={`py-4 px-2 text-sm font-bold whitespace-nowrap border-b-[3px] transition-all ${seccionActiva === sec.id_seccion ? "text-[#093E7A] border-[#093E7A]" : "text-gray-400 border-transparent hover:text-gray-600"
-                  }`}
-              >
-                {sec.grado?.nombre} - {sec.nombre}
-              </button>
-            ))}
+          {/* SELECTOR DE NIVELES Y SECCIONES ORDENADOS */}
+          <div className="bg-white border-b shrink-0 no-print">
+            {/* 1. Pestañas de Nivel */}
+            <div className="flex items-center gap-2 px-4 md:px-8 pt-3 border-b border-gray-100 overflow-x-auto">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mr-2 shrink-0">Nivel:</span>
+              {nivelesDisponibles.map((nivel: { id: number; nombre: string; icono: string }) => {
+                const cant = secciones.filter((s: Seccion) => obtenerNivelDeSeccion(s) === nivel.id).length;
+                const activo = nivelSeleccionado === nivel.id;
+                return (
+                  <button
+                    key={nivel.id}
+                    onClick={() => setNivelSeleccionado(nivel.id)}
+                    className={`flex items-center gap-2 px-4 py-2 text-xs font-bold transition-all border-b-2 whitespace-nowrap ${
+                      activo
+                        ? `${nivel.id === 3 ? "text-[#701C32] border-[#701C32] bg-orange-50/50" : "text-[#093E7A] border-[#093E7A] bg-blue-50/50"}`
+                        : "text-gray-500 border-transparent hover:text-gray-800 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[16px]">{nivel.icono}</span>
+                    <span>{nivel.nombre}</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${activo ? "bg-white shadow-2xs font-black" : "bg-gray-100 text-gray-500"}`}>
+                      {cant}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 2. Lista de Secciones del Nivel */}
+            <div className="px-4 md:px-8 py-2.5 flex items-center gap-2.5 overflow-x-auto bg-gray-50/50">
+              {seccionesDelNivel.length === 0 ? (
+                <span className="py-2 text-xs font-medium text-gray-400 italic">
+                  No hay secciones registradas en este nivel para este año.
+                </span>
+              ) : (
+                seccionesDelNivel.map((sec: Seccion) => {
+                  const activo = seccionActiva === sec.id_seccion;
+                  const colorPunto = COLOR_SECCION[sec.nombre] || (activo ? "bg-white" : "bg-gray-400");
+                  return (
+                    <button
+                      key={sec.id_seccion}
+                      onClick={() => setSeccionActiva(sec.id_seccion as number)}
+                      className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 border whitespace-nowrap shadow-2xs ${
+                        activo
+                          ? nivelSeleccionado === 3
+                            ? "bg-[#701C32] text-white border-[#701C32] shadow-sm ring-2 ring-[#701C32]/20"
+                            : "bg-[#093E7A] text-white border-[#093E7A] shadow-sm ring-2 ring-[#093E7A]/20"
+                          : "bg-white text-gray-700 border-gray-200 hover:bg-gray-100 hover:border-gray-300"
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${colorPunto}`} />
+                      <span>{obtenerEtiquetaSeccion(sec, esVerano)}</span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </div>
 
           <div className="flex-1 flex overflow-hidden">
@@ -396,7 +525,7 @@ export default function ConstructorHorariosPage() {
                 <div className="hidden print:block text-center mb-4">
                   <h1 className="text-2xl font-black text-[#093E7A]">HORARIO ESCOLAR {anioPlanificacion}</h1>
                   <p className="text-base font-bold text-gray-500 uppercase tracking-widest">
-                    Sección: {seccionActivaObj?.grado?.nombre} - {seccionActivaObj?.nombre}
+                    Sección: {obtenerEtiquetaSeccion(seccionActivaObj, esVerano)}
                   </p>
                 </div>
 

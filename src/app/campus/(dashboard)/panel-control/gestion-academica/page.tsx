@@ -239,6 +239,51 @@ export default function GestionAcademicaPage() {
     return Math.max(0, Math.round((fin.getTime() - hoy.getTime()) / 86400000) + 1);
   };
 
+  // Grupos de Verano para Primaria (1-2, 3-4, 5-6)
+  const GRUPOS_VERANO_PRIMARIA = [
+    {
+      clave: "PRIM_1_2",
+      nombre: "1ro y 2do de Primaria",
+      subtitulo: "1ero y 2do Grado juntos",
+      id_grado: 1,
+      grados_ids: [1, 2],
+      orden: 1,
+      gradosEsperados: [
+        { id_grado: 1, nombre: "1º Primaria", etiqueta: "1º" },
+        { id_grado: 2, nombre: "2º Primaria", etiqueta: "2º" }
+      ]
+    },
+    {
+      clave: "PRIM_3_4",
+      nombre: "3ro y 4to de Primaria",
+      subtitulo: "3ero y 4to Grado juntos",
+      id_grado: 3,
+      grados_ids: [3, 4],
+      orden: 2,
+      gradosEsperados: [
+        { id_grado: 3, nombre: "3º Primaria", etiqueta: "3º" },
+        { id_grado: 4, nombre: "4º Primaria", etiqueta: "4º" }
+      ]
+    },
+    {
+      clave: "PRIM_5_6",
+      nombre: "5to y 6to de Primaria",
+      subtitulo: "5to y 6to Grado juntos",
+      id_grado: 5,
+      grados_ids: [5, 6],
+      orden: 3,
+      gradosEsperados: [
+        { id_grado: 5, nombre: "5º Primaria", etiqueta: "5º" },
+        { id_grado: 6, nombre: "6º Primaria", etiqueta: "6º" }
+      ]
+    },
+  ];
+
+  const GRADOS_ESPERADOS_PRE_ACADEMIA = [
+    { id_grado: 10, nombre: "4º Secundaria", etiqueta: "4º" },
+    { id_grado: 11, nombre: "5º Secundaria", etiqueta: "5º" }
+  ];
+
   const getNivelesVisibles = () => {
     if (loadingAnios || !anioObj) return niveles;
     const esVerano = anioObj.tipo === "VERANO";
@@ -251,15 +296,26 @@ export default function GestionAcademicaPage() {
 
   const getOpcionesSeccion = (gradoId: number) => {
     const grado = grados.find(g => g.id_grado === gradoId);
-    if (!grado) return ["A", "B", "C"];
+    if (!grado) return ["A", "B", "C", "Aula 1", "Aula 2"];
     const nivel = niveles.find(n => n.id_nivel === grado.id_nivel);
     const nombreNivel = nivel?.nombre.toLowerCase() || "";
-    if (nombreNivel.includes("primaria")) return ["Azul", "Amarillo", "Rojo", "Verde", "Naranja"];
-    return ["A", "B", "C", "D", "E", "F"];
+    if (nombreNivel.includes("primaria")) return ["Azul", "Amarillo", "Rojo", "Verde", "Naranja", "A", "B", "C"];
+    return ["A", "B", "C", "D", "E", "F", "Aula 1", "Aula 2", "Aula 3", "Aula Magna"];
   };
 
-  // Totales para la tira de resumen (basados en los niveles visibles)
+  // Totales para la tira de resumen
   const getResumen = () => {
+    if (anioObj?.tipo === "VERANO") {
+      const totalVacantes = secciones.reduce((acc, s) => acc + (s.vacantes ?? 0), 0);
+      const totalOcupadas = secciones.reduce((acc, s) => acc + (s.ocupadas ?? 0), 0);
+      return {
+        niveles: 3, // Primaria, Secundaria, Pre Academia
+        grados: 7,  // 3 grupos primaria + 3 grados secundaria + 1 pre academia
+        secciones: secciones.length,
+        vacantes: totalVacantes,
+        ocupadas: totalOcupadas,
+      };
+    }
     const idsNivelesVisibles = new Set(getNivelesVisibles().map(n => n.id_nivel));
     const gradosVisibles = grados.filter(g => idsNivelesVisibles.has(g.id_nivel));
     const idsGradosVisibles = new Set(gradosVisibles.map(g => g.id_grado));
@@ -632,83 +688,81 @@ export default function GestionAcademicaPage() {
               </div>
             </section>
 
-            {/* Calendario de Bimestres */}
-            <section className="space-y-4">
-              <div>
-                <h3 className="text-xl font-black text-gray-900">Calendario de Bimestres</h3>
-                <p className="text-sm text-gray-500">
-                  Fechas de cada bimestre. La libreta de conducta se reinicia en cada uno, así que de aquí depende a qué bimestre se asigna cada reporte.
-                </p>
-              </div>
+            {/* Calendario de Bimestres (Solo para Años Regulares) */}
+            {anioObj?.tipo !== "VERANO" && (
+              <section className="space-y-4">
+                <div>
+                  <h3 className="text-xl font-black text-gray-900">Calendario de Bimestres</h3>
+                  <p className="text-sm text-gray-500">
+                    Fechas de cada bimestre. La libreta de conducta se reinicia en cada uno, así que de aquí depende a qué bimestre se asigna cada reporte.
+                  </p>
+                </div>
 
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                {bimestresAproximados && (
-                  <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 font-medium flex items-center gap-2">
-                    <span className="material-symbols-outlined text-sm">warning</span>
-                    Fechas aproximadas, todavía sin confirmar. El colegio no las ha guardado: revísalas y ajústalas antes de guardar.
-                  </div>
-                )}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                  {bimestresAproximados && (
+                    <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 font-medium flex items-center gap-2">
+                      <span className="material-symbols-outlined text-sm">warning</span>
+                      Fechas aproximadas, todavía sin confirmar. El colegio no las ha guardado: revísalas y ajústalas antes de guardar.
+                    </div>
+                  )}
 
-                {cargandoBimestres ? (
-                  <div className="flex items-center justify-center py-8 text-gray-400 text-sm font-bold">Cargando bimestres...</div>
-                ) : (
-                  <>
-                    <div className="space-y-3">
-                      {bimestres.map((b) => (
-                        <div key={b.numero} className="grid grid-cols-1 sm:grid-cols-[140px_1fr_1fr] gap-3 sm:items-center border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
-                          <span className="text-sm font-black text-gray-700">{ROMANOS_BIMESTRE[b.numero - 1]} BIMESTRE</span>
-                          <div>
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Inicio</label>
-                            <input
-                              type="date"
-                              value={b.fecha_inicio}
-                              onChange={(e) => handleCambiarBimestre(b.numero, "fecha_inicio", e.target.value)}
-                              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A]"
-                            />
+                  {cargandoBimestres ? (
+                    <div className="flex items-center justify-center py-8 text-gray-400 text-sm font-bold">Cargando bimestres...</div>
+                  ) : (
+                    <>
+                      <div className="space-y-3">
+                        {bimestres.map((b) => (
+                          <div key={b.numero} className="grid grid-cols-1 sm:grid-cols-[140px_1fr_1fr] gap-3 sm:items-center border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
+                            <span className="text-sm font-black text-gray-700">{ROMANOS_BIMESTRE[b.numero - 1]} BIMESTRE</span>
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Inicio</label>
+                              <input
+                                type="date"
+                                value={b.fecha_inicio}
+                                onChange={(e) => handleCambiarBimestre(b.numero, "fecha_inicio", e.target.value)}
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Fin</label>
+                              <input
+                                type="date"
+                                value={b.fecha_fin}
+                                onChange={(e) => handleCambiarBimestre(b.numero, "fecha_fin", e.target.value)}
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A]"
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Fin</label>
-                            <input
-                              type="date"
-                              value={b.fecha_fin}
-                              onChange={(e) => handleCambiarBimestre(b.numero, "fecha_fin", e.target.value)}
-                              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A]"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="pt-4 flex justify-end">
-                      <button
-                        onClick={handleGuardarBimestres}
-                        disabled={guardandoBimestres || !anioSeleccionado}
-                        className="py-2.5 px-6 bg-[#093E7A] text-white rounded-lg font-bold text-sm hover:bg-[#072d5a] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                      >
-                        <span className="material-symbols-outlined text-sm">save</span>
-                        {guardandoBimestres ? "Guardando..." : "Guardar Bimestres"}
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </section>
+                        ))}
+                      </div>
+                      <div className="pt-4 flex justify-end">
+                        <button
+                          onClick={handleGuardarBimestres}
+                          disabled={guardandoBimestres || !anioSeleccionado}
+                          className="py-2.5 px-6 bg-[#093E7A] text-white rounded-lg font-bold text-sm hover:bg-[#072d5a] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                          <span className="material-symbols-outlined text-sm">save</span>
+                          {guardandoBimestres ? "Guardando..." : "Guardar Bimestres"}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </section>
+            )}
 
             {/* Tira de resumen */}
-            {!isLoading && getNivelesVisibles().length > 0 && (() => {
+            {!isLoading && (() => {
               const r = getResumen();
               const pct = r.vacantes > 0 ? Math.round((r.ocupadas / r.vacantes) * 100) : 0;
               const items = [
                 { label: "Niveles", valor: r.niveles, icon: "domain" },
-                { label: "Grados", valor: r.grados, icon: "stairs" },
+                { label: "Grados / Grupos", valor: r.grados, icon: "stairs" },
                 { label: "Secciones", valor: r.secciones, icon: "groups" },
                 { label: "Vacantes", valor: r.vacantes, icon: "event_seat" },
                 { label: "Ocupación", valor: `${r.ocupadas}/${r.vacantes} (${pct}%)`, icon: "person_check" },
               ];
               return (
-                // Cinco tarjetas en fila solo cuando hay sitio: con md (768px)
-                // cada una se quedaba en unos 170px y la ocupación se cortaba
-                // en "577/88…". El valor ahora pasa a la línea siguiente antes
-                // que recortarse: es el dato, no un rótulo.
                 <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
                   {items.map((it) => (
                     <div key={it.label} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3 shadow-sm">
@@ -725,12 +779,226 @@ export default function GestionAcademicaPage() {
 
             {/* Listado de Niveles */}
             <section className="space-y-4">
-              <h3 className="text-xl font-black text-gray-900">Niveles Educativos ({anioObj?.tipo || '...'})</h3>
+              <h3 className="text-xl font-black text-gray-900">
+                Niveles Educativos {anioObj?.tipo === "VERANO" ? "(Ciclo Verano)" : "(Año Regular)"}
+              </h3>
 
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                   <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#093E7A] mb-4"></div>
                   <p className="font-bold">Cargando estructura escolar...</p>
+                </div>
+              ) : anioObj?.tipo === "VERANO" ? (
+                /* ========================================================
+                   ESTRUCTURA DE NIVELES PARA CICLO VERANO
+                   ======================================================== */
+                <div className="space-y-6">
+                  {/* 1. NIVEL PRIMARIA (3 Grupos por Ciclos) */}
+                  <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden mb-6">
+                    <button
+                      onClick={() => toggleNivel(1)}
+                      className="w-full px-6 py-4 bg-gray-50 flex items-center justify-between border-b border-gray-200 hover:bg-gray-100 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-[#093E7A] fill-icon">domain</span>
+                        <h4 className="font-black text-gray-800 uppercase tracking-wide">PRIMARIA (VERANO)</h4>
+                        <span className="text-xs font-semibold text-gray-400 normal-case">
+                          3 grupos agrupados · {secciones.filter(s => [1, 3, 5].includes(s.id_grado)).length} secciones
+                        </span>
+                      </div>
+                      <span className={`material-symbols-outlined text-gray-400 transition-transform ${nivelesColapsados.has(1) ? "" : "rotate-180"}`}>
+                        expand_more
+                      </span>
+                    </button>
+                    {!nivelesColapsados.has(1) && (
+                      <div className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {GRUPOS_VERANO_PRIMARIA.map((grupo) => {
+                            const seccionesDelGrupo = secciones.filter(s => s.id_grado === grupo.id_grado);
+                            const gradoGrupoObj = {
+                              id_grado: grupo.id_grado,
+                              id_nivel: 1,
+                              nombre: grupo.nombre,
+                              subtitulo: grupo.subtitulo,
+                              orden: grupo.orden,
+                              secciones: seccionesDelGrupo,
+                            };
+                            return (
+                              <GradoCard
+                                key={grupo.clave}
+                                grado={gradoGrupoObj}
+                                onAddSeccion={() => prepararNuevaSeccion(grupo.id_grado)}
+                                onEditSeccion={prepararEditarSeccion}
+                                onDeleteSeccion={handleEliminarSeccion}
+                                esVerano={true}
+                                gradosEsperados={grupo.gradosEsperados}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2. NIVEL SECUNDARIA (1ro, 2do y 3ero Individuales) */}
+                  <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden mb-6">
+                    <button
+                      onClick={() => toggleNivel(2)}
+                      className="w-full px-6 py-4 bg-gray-50 flex items-center justify-between border-b border-gray-200 hover:bg-gray-100 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-[#093E7A] fill-icon">domain</span>
+                        <h4 className="font-black text-gray-800 uppercase tracking-wide">SECUNDARIA (VERANO)</h4>
+                        <span className="text-xs font-semibold text-gray-400 normal-case">
+                          3 grados (1º a 3º) · {secciones.filter(s => [7, 8, 9].includes(s.id_grado)).length} secciones
+                        </span>
+                      </div>
+                      <span className={`material-symbols-outlined text-gray-400 transition-transform ${nivelesColapsados.has(2) ? "" : "rotate-180"}`}>
+                        expand_more
+                      </span>
+                    </button>
+                    {!nivelesColapsados.has(2) && (
+                      <div className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {grados
+                            .filter(g => g.id_nivel === 2 && g.orden <= 3)
+                            .map((grado) => {
+                              const seccionesDelGrado = secciones.filter(s => s.id_grado === grado.id_grado);
+                              const gradoConSecciones = {
+                                ...grado,
+                                nombre: `${grado.nombre} de Secundaria`,
+                                secciones: seccionesDelGrado
+                              };
+                              return (
+                                <GradoCard
+                                  key={grado.id_grado}
+                                  grado={gradoConSecciones}
+                                  onAddSeccion={() => prepararNuevaSeccion(grado.id_grado)}
+                                  onEditSeccion={prepararEditarSeccion}
+                                  onDeleteSeccion={handleEliminarSeccion}
+                                  esVerano={true}
+                                />
+                              );
+                            })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 3. NIVEL PRE ACADEMIA (Sin grados, solo secciones de 4to y 5to) */}
+                  <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden mb-6">
+                    <button
+                      onClick={() => toggleNivel(3)}
+                      className="w-full px-6 py-4 bg-gray-50 flex items-center justify-between border-b border-gray-200 hover:bg-gray-100 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-[#701C32] fill-icon">school</span>
+                        <h4 className="font-black text-gray-800 uppercase tracking-wide">PRE ACADEMIA</h4>
+                        <span className="text-xs font-semibold text-gray-400 normal-case">
+                          Nivel Preuniversitario (4to y 5to) · {secciones.filter(s => s.id_grado === 10).length} secciones
+                        </span>
+                      </div>
+                      <span className={`material-symbols-outlined text-gray-400 transition-transform ${nivelesColapsados.has(3) ? "" : "rotate-180"}`}>
+                        expand_more
+                      </span>
+                    </button>
+                    {!nivelesColapsados.has(3) && (
+                      <div className="p-6 space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-orange-50/70 border border-orange-200 rounded-xl">
+                          <div>
+                            <h5 className="font-bold text-orange-950 text-sm flex items-center gap-2">
+                              <span className="material-symbols-outlined text-orange-600 text-lg">local_library</span>
+                              Ciclo Preuniversitario / Pre Academia
+                            </h5>
+                            <p className="text-xs text-orange-800 mt-0.5">
+                              En este nivel no hay grados divididos: acoge a los estudiantes de 4to y 5to de secundaria. Las vacantes se administran directamente por sección.
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => prepararNuevaSeccion(10)}
+                            className="px-4 py-2 bg-[#701C32] hover:bg-[#591628] text-white rounded-lg font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm shrink-0"
+                          >
+                            <span className="material-symbols-outlined text-sm">add</span>
+                            Agregar Sección Pre Academia
+                          </button>
+                        </div>
+
+                        {secciones.filter(s => s.id_grado === 10).length > 0 ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {secciones
+                              .filter(s => s.id_grado === 10)
+                              .map((sec) => {
+                                const ocupadas = sec.ocupadas ?? 0;
+                                const vacantes = sec.vacantes ?? 0;
+                                const ratio = vacantes > 0 ? ocupadas / vacantes : 0;
+                                const colorOcupacion = ratio >= 1 ? "text-red-600" : ratio >= 0.8 ? "text-amber-600" : "text-green-600";
+                                const colorBarra = ratio >= 1 ? "bg-red-500" : ratio >= 0.8 ? "bg-amber-500" : "bg-green-500";
+
+                                return (
+                                  <div key={sec.id_seccion} className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-orange-300 transition flex flex-col justify-between">
+                                    <div>
+                                      <div className="flex items-center justify-between gap-2 mb-3">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                          <span className="w-3 h-3 rounded-full bg-[#701C32] shrink-0"></span>
+                                          <h4 className="text-base font-bold text-gray-800 truncate">Sección {sec.nombre}</h4>
+                                        </div>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                          <button
+                                            onClick={() => prepararEditarSeccion(sec)}
+                                            title="Editar Sección"
+                                            className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md p-1 transition"
+                                          >
+                                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                                          </button>
+                                          <button
+                                            onClick={() => handleEliminarSeccion(sec.id_seccion || 0)}
+                                            title="Eliminar Sección"
+                                            className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md p-1 transition"
+                                          >
+                                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                                          </button>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center justify-between text-xs mb-1.5">
+                                        <span className="text-gray-500 font-medium">Ocupación:</span>
+                                        <span className={`font-black ${colorOcupacion}`}>{ocupadas}/{vacantes} vacantes</span>
+                                      </div>
+
+                                      {/* Desglose de alumnos por grado en Pre Academia */}
+                                      <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-1.5 border-t border-orange-100 text-[11px]">
+                                        <span className="text-gray-400 font-semibold text-[10px]">Alumnos:</span>
+                                        {GRADOS_ESPERADOS_PRE_ACADEMIA.map((ge) => {
+                                          const match = sec.desglose_grados?.find(d => d.id_grado === ge.id_grado);
+                                          const conteo = match ? match.conteo : 0;
+                                          return (
+                                            <span
+                                              key={ge.id_grado}
+                                              className="inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded-md border border-orange-200 text-gray-700 shadow-2xs font-medium text-[11px]"
+                                            >
+                                              <span>{ge.etiqueta || ge.nombre}:</span>
+                                              <strong className="text-[#701C32] font-bold">{conteo}</strong>
+                                            </span>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+
+                                    <div className="mt-2 h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                                      <div className={`h-full rounded-full transition-all ${colorBarra}`} style={{ width: `${Math.min(ratio * 100, 100)}%` }}></div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        ) : (
+                          <div className="bg-gray-50 rounded-xl p-8 text-center border-2 border-dashed border-gray-200">
+                            <p className="text-xs text-gray-500">Sin secciones de Pre Academia asignadas en este ciclo de verano.</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : getNivelesVisibles().length === 0 ? (
                 <div className="bg-white p-10 text-center rounded-xl border-2 border-dashed border-gray-200">
@@ -771,9 +1039,10 @@ export default function GestionAcademicaPage() {
                             <GradoCard
                               key={grado.id_grado}
                               grado={gradoConSecciones}
-                              onAddSeccion={() => prepararNuevaSeccion(grado.id_grado as number)} // <-- Soluciona el Error 3
+                              onAddSeccion={() => prepararNuevaSeccion(grado.id_grado as number)}
                               onEditSeccion={prepararEditarSeccion}
                               onDeleteSeccion={handleEliminarSeccion}
+                              esVerano={false}
                             />
                           );
                         })}

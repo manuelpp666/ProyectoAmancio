@@ -2,13 +2,14 @@ import React from "react";
 import { Grado, Seccion } from "@/src/interfaces/academic"; // Ajusta la ruta si es necesario
 
 interface GradoCardProps {
-  grado: Grado & { secciones?: Seccion[] };
+  grado: Grado & { secciones?: Seccion[]; subtitulo?: string };
   onAddSeccion: () => void;
   onEditSeccion: (seccion: Seccion) => void;
   onDeleteSeccion: (id: number) => void;
-  // Eliminamos las props de edición de grado ya que no se usarán
   onEditGrado?: (grado: Grado) => void;
   onDeleteGrado?: (grado: Grado) => void;
+  esVerano?: boolean;
+  gradosEsperados?: Array<{ id_grado: number; nombre: string; etiqueta?: string }>;
 }
 
 // Mapa de color del punto indicador por nombre de sección
@@ -25,6 +26,8 @@ export default function GradoCard({
   onAddSeccion,
   onEditSeccion,
   onDeleteSeccion,
+  esVerano = false,
+  gradosEsperados,
 }: GradoCardProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-blue-300 transition h-full flex flex-col justify-between group">
@@ -33,7 +36,9 @@ export default function GradoCard({
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="font-bold text-gray-800 text-lg">{grado.nombre}</h3>
-          <span className="text-xs text-gray-400">Orden: {grado.orden}</span>
+          <span className="text-xs text-gray-400">
+            {grado.subtitulo ? grado.subtitulo : `Orden: ${grado.orden}`}
+          </span>
         </div>
 
         {/* BOTÓN AGREGAR SECCIÓN (Único botón visible en la cabecera) */}
@@ -66,7 +71,7 @@ export default function GradoCard({
             return (
               <div
                 key={sec.id_seccion}
-                className="px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 hover:border-blue-200 transition"
+                className="px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 hover:border-blue-200 transition"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
@@ -96,8 +101,28 @@ export default function GradoCard({
                   </div>
                 </div>
 
+                {/* DESGLOSE POR GRADO: SOLO PARA GRUPOS COMBINADOS DE CICLO VERANO */}
+                {esVerano && gradosEsperados && gradosEsperados.length > 1 && (
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-1.5 border-t border-gray-200/70 text-[11px]">
+                    <span className="text-gray-400 font-semibold text-[10px]">Alumnos:</span>
+                    {gradosEsperados.map((ge) => {
+                      const match = sec.desglose_grados?.find(d => d.id_grado === ge.id_grado);
+                      const conteo = match ? match.conteo : 0;
+                      return (
+                        <span
+                          key={ge.id_grado}
+                          className="inline-flex items-center gap-1 bg-white px-2 py-0.5 rounded-md border border-gray-200 text-gray-700 shadow-2xs font-medium text-[11px]"
+                        >
+                          <span>{ge.etiqueta || ge.nombre}:</span>
+                          <strong className="text-[#093E7A] font-bold">{conteo}</strong>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {/* BARRA DE OCUPACIÓN */}
-                <div className="mt-1.5 h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                <div className="mt-2 h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${colorBarra}`}
                     style={{ width: `${Math.min(ratio * 100, 100)}%` }}

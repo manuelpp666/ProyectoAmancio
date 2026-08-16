@@ -26,7 +26,7 @@ export default function VentanaChat({
           </div>
           <div>
             <h3 className="font-bold text-gray-800 text-sm leading-tight">{contacto.nombre}</h3>
-            <p className="text-[10px] text-green-600 font-medium">En línea</p>
+            {contacto.rol && <p className="text-[10px] text-gray-400 font-medium">{contacto.rol}</p>}
           </div>
         </div>
         <button className="text-gray-400 hover:text-gray-600"><MoreVertical size={20} /></button>
