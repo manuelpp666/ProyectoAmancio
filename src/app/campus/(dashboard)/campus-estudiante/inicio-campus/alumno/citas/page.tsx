@@ -27,14 +27,14 @@ export default function ResumenCitasPage() {
     try {
       const [resProxima, resTodas] = await Promise.all([
         apiFetch(`/conducta/usuario/${uid}/proxima-cita`),
-        apiFetch(`/conducta/usuario/${uid}/citas`)
+        apiFetch(`/conducta/usuario/${uid}/citas?solo_pendientes=true`)
       ]);
 
       const proxima = resProxima.ok ? await resProxima.json() : null;
       const todas = resTodas.ok ? await resTodas.json() : [];
 
       setProximaCita(proxima);
-      // Solo citas activas (programadas/reprogramadas) para la agenda
+      // Solo citas pendientes (PROGRAMADA, REPROGRAMADA)
       setCitasProgramadas(
         (Array.isArray(todas) ? todas : []).filter(
           (c: Cita) => ["PROGRAMADA", "REPROGRAMADA"].includes(c.estado)
@@ -55,40 +55,42 @@ export default function ResumenCitasPage() {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
         <Loader2 className="animate-spin text-[#701C32]" size={48} />
-        <p className="text-gray-500 animate-pulse">Cargando tus citas...</p>
+        <p className="text-gray-500 animate-pulse font-medium">Cargando tus citas...</p>
       </div>
     );
   }
 
-  // La agenda muestra el resto de citas (sin repetir la próxima destacada)
+  // La agenda muestra el resto de citas pendientes (sin repetir la próxima destacada)
   const otrasCitas = citasProgramadas.filter(c => c.id_cita !== proximaCita?.id_cita);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-12 px-4 animate-in fade-in duration-500">
+    <div className="max-w-5xl mx-auto space-y-8 pb-12 animate-in fade-in duration-500">
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b pb-6">
         <div>
           <h1 className="text-3xl font-black text-[#701C32] flex items-center gap-3">
             <Stethoscope size={32} /> Citas Psicológicas
           </h1>
-          <p className="text-gray-500 mt-2 text-sm">Acompañamiento y bienestar emocional del estudiante</p>
+          <p className="text-gray-500 mt-2 text-sm">
+            Consulta tus citas programadas pendientes con el área de Psicología
+          </p>
         </div>
         <Link
           href="/campus/campus-estudiante/inicio-campus/alumno/citas/mis-citas"
-          className="text-sm font-bold text-[#701C32] hover:underline flex items-center gap-1 w-fit"
+          className="inline-flex items-center gap-2 bg-[#701C32] text-white px-5 py-2.5 rounded-xl font-bold text-xs hover:bg-[#5a1628] transition-colors shadow-md shadow-[#701C32]/20 w-fit"
         >
-          Ver historial completo <ArrowRight size={16} />
+          Historial de citas <ArrowRight size={15} />
         </Link>
       </div>
 
       {/* PRÓXIMA CITA DESTACADA */}
       <div className="space-y-4">
         <h3 className="text-lg font-black text-gray-800 flex items-center gap-2">
-          <CalendarCheck size={20} className="text-[#701C32]" /> Tu próxima cita
+          <CalendarCheck size={20} className="text-[#701C32]" /> Tu próxima cita pendiente
         </h3>
 
         {proximaCita ? (
-          <div className={`relative overflow-hidden rounded-3xl p-7 text-white shadow-lg bg-[#701C32]`}>
+          <div className="relative overflow-hidden rounded-3xl p-7 text-white shadow-lg bg-[#701C32]">
             <div className="absolute -right-10 -top-10 w-44 h-44 rounded-full bg-white/5 pointer-events-none"></div>
             {proximaCita.es_hoy && (
               <div className="absolute top-0 right-0 bg-amber-400 text-[#701C32] text-[10px] font-black px-4 py-1.5 rounded-bl-xl uppercase tracking-wider">
@@ -120,21 +122,31 @@ export default function ResumenCitasPage() {
             </div>
           </div>
         ) : (
-          <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl p-12 text-center">
-            <Calendar size={40} className="mx-auto text-gray-300 mb-3" />
-            <h4 className="font-bold text-gray-800 mb-1">No tienes citas próximas</h4>
-            <p className="text-gray-400 text-sm">
-              Cuando psicología programe una cita contigo, aparecerá aquí.
+          <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl p-10 text-center space-y-3">
+            <div className="w-14 h-14 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-2">
+              <Calendar size={28} />
+            </div>
+            <h4 className="font-bold text-gray-800 text-base">No tienes citas psicológicas pendientes</h4>
+            <p className="text-gray-500 text-xs max-w-md mx-auto">
+              Cuando el área de psicología programe una cita contigo, aparecerá en esta sección. Al completarse, se archivará automáticamente en tu historial.
             </p>
+            <div className="pt-2">
+              <Link
+                href="/campus/campus-estudiante/inicio-campus/alumno/citas/mis-citas"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#701C32] hover:underline"
+              >
+                Ver historial de citas pasadas <ArrowRight size={14} />
+              </Link>
+            </div>
           </div>
         )}
       </div>
 
-      {/* OTRAS CITAS PROGRAMADAS */}
+      {/* OTRAS CITAS PROGRAMADAS PENDIENTES */}
       {otrasCitas.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-lg font-black text-gray-800 flex items-center gap-2">
-            <Calendar size={20} className="text-[#701C32]" /> También tienes agendado
+            <Calendar size={20} className="text-[#701C32]" /> Otras citas pendientes agendadas
           </h3>
           <div className="grid gap-4">
             {otrasCitas.map((c) => (

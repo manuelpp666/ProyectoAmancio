@@ -211,7 +211,7 @@ export default function MatriculaPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-8">
+    <div className="max-w-5xl mx-auto space-y-8">
       {/* HEADER */}
       <div className="border-b pb-6">
         <h1 className="text-3xl font-bold text-[#701C32] mb-2 flex items-center gap-3">
@@ -608,7 +608,7 @@ export default function MatriculaPage() {
       {/* MODAL: SOLICITAR RENOVACIÓN */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="bg-[#701C32] p-4 flex justify-between items-center text-white">
               <h3 className="font-bold flex items-center gap-2">
                 <CalendarCheck size={18} /> Renovación de Matrícula {info.anio_destino}

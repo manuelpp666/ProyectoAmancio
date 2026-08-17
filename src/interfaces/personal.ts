@@ -19,5 +19,5 @@ export interface Personal {
   telefono: string;
   email: string;
   permisos?: PermisosAdmin | null;
-  usuario: { activo: boolean; username: string };
+  usuario: { activo: boolean; username: string; debe_cambiar_password?: boolean };
 }

@@ -6,7 +6,9 @@ import { toast } from "sonner";
 import { ArrowLeft, History, Search, Loader2, SearchX } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 import { ItemReporte } from "@/src/components/Campus/CampusAuxiliar/ItemReporte";
-import { ReporteReciente, RespuestaReportes } from "@/src/interfaces/conducta";
+import { ModalEditarReporte } from "@/src/components/Campus/CampusAuxiliar/ModalEditarReporte";
+import { ModalEliminarReporte } from "@/src/components/Campus/CampusAuxiliar/ModalEliminarReporte";
+import { ReporteReciente, RespuestaReportes, ResultadoReporte } from "@/src/interfaces/conducta";
 
 const POR_PAGINA = 15;
 const BUSQUEDA_MIN = 3;
@@ -17,6 +19,8 @@ export default function HistorialReportesPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [cargandoMas, setCargandoMas] = useState(false);
+  const [reporteEditar, setReporteEditar] = useState<ReporteReciente | null>(null);
+  const [reporteEliminar, setReporteEliminar] = useState<ReporteReciente | null>(null);
 
   // Descarta respuestas que lleguen fuera de orden al cambiar la búsqueda.
   const peticionActiva = useRef(0);
@@ -33,36 +37,51 @@ export default function HistorialReportesPage() {
     [termino]
   );
 
-  // Primera página: se recarga al cambiar la búsqueda (con debounce)
-  useEffect(() => {
+  const cargarPrimeraPagina = useCallback(async () => {
     const idPeticion = ++peticionActiva.current;
     setLoading(true);
-
-    const timer = setTimeout(async () => {
-      try {
-        const res = await apiFetch(construirUrl(0));
-        if (idPeticion !== peticionActiva.current) return;
-        if (res.ok) {
-          const data: RespuestaReportes = await res.json();
-          setReportes(data.items);
-          setTotal(data.total);
-        } else {
-          setReportes([]);
-          setTotal(0);
-          toast.error("No se pudo cargar el historial de reportes");
-        }
-      } catch {
-        if (idPeticion !== peticionActiva.current) return;
+    try {
+      const res = await apiFetch(construirUrl(0));
+      if (idPeticion !== peticionActiva.current) return;
+      if (res.ok) {
+        const data: RespuestaReportes = await res.json();
+        setReportes(data.items);
+        setTotal(data.total);
+      } else {
         setReportes([]);
         setTotal(0);
-        toast.error("Error de conexión al cargar el historial");
-      } finally {
-        if (idPeticion === peticionActiva.current) setLoading(false);
+        toast.error("No se pudo cargar el historial de reportes");
       }
+    } catch {
+      if (idPeticion !== peticionActiva.current) return;
+      setReportes([]);
+      setTotal(0);
+      toast.error("Error de conexión al cargar el historial");
+    } finally {
+      if (idPeticion === peticionActiva.current) setLoading(false);
+    }
+  }, [construirUrl]);
+
+  // Primera página: se recarga al cambiar la búsqueda (con debounce)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      cargarPrimeraPagina();
     }, termino ? 400 : 0);
 
     return () => clearTimeout(timer);
-  }, [construirUrl, termino]);
+  }, [cargarPrimeraPagina, termino]);
+
+  const handleReporteActualizado = (resultado: ResultadoReporte) => {
+    setReporteEditar(null);
+    toast.success(`Reporte actualizado. Nota de conducta recalculada a ${resultado.puntaje_actual} pts`);
+    cargarPrimeraPagina();
+  };
+
+  const handleReporteEliminado = () => {
+    setReporteEliminar(null);
+    toast.success("Reporte eliminado y nota de conducta recalculada correctamente");
+    cargarPrimeraPagina();
+  };
 
   const cargarMas = async () => {
     const idPeticion = peticionActiva.current;
@@ -172,7 +191,13 @@ export default function HistorialReportesPage() {
 
           <ul className="divide-y divide-gray-50">
             {reportes.map((r) => (
-              <ItemReporte key={r.id_reporte} reporte={r} mostrarDni />
+              <ItemReporte
+                key={r.id_reporte}
+                reporte={r}
+                mostrarDni
+                onEditar={(rep) => setReporteEditar(rep)}
+                onEliminar={(rep) => setReporteEliminar(rep)}
+              />
             ))}
           </ul>
 
@@ -190,6 +215,20 @@ export default function HistorialReportesPage() {
           )}
         </div>
       )}
+
+      <ModalEditarReporte
+        isOpen={!!reporteEditar}
+        reporte={reporteEditar}
+        onClose={() => setReporteEditar(null)}
+        onSuccess={handleReporteActualizado}
+      />
+
+      <ModalEliminarReporte
+        isOpen={!!reporteEliminar}
+        reporte={reporteEliminar}
+        onClose={() => setReporteEliminar(null)}
+        onSuccess={handleReporteEliminado}
+      />
     </div>
   );
 }

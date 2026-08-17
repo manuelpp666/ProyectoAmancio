@@ -57,7 +57,7 @@ export default function HistorialCitasPage() {
   }, [id_usuario, anioSeleccionado, userLoading, fetchCitasPorAnio]);
 
   return (
-    <div className="max-w-[1200px] mx-auto space-y-6 pb-8 px-4">
+    <div className="max-w-[1200px] mx-auto space-y-6 pb-8">
       <Link href="/campus/campus-estudiante/inicio-campus/alumno/citas" className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[#701C32] w-fit">
         <ArrowLeft size={16} /> Volver a citas
       </Link>

@@ -13,7 +13,7 @@ const FORM_INICIAL = {
   estado: "PROGRAMADA"
 };
 
-export function ModalRegistrarCita({ isOpen, onClose, onSuccess, alumnoInicial }: any) {
+export function ModalRegistrarCita({ isOpen, onClose, onSuccess, alumnoInicial, alumnoPreseleccionado }: any) {
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [busqueda, setBusqueda] = useState("");
@@ -23,10 +23,10 @@ export function ModalRegistrarCita({ isOpen, onClose, onSuccess, alumnoInicial }
 
   const [formData, setFormData] = useState(FORM_INICIAL);
 
-  // Id del alumno cuyos familiares se pidieron por última vez; descarta
-  // respuestas que lleguen fuera de orden tras cambiar de alumno o cerrar.
+  // Id del alumno cuyos familiares se pidieron por última vez
   const idAlumnoFamiliares = useRef<any>(null);
-useEffect(() => {
+
+  useEffect(() => {
     setMounted(true);
   }, []);
 
@@ -42,7 +42,7 @@ useEffect(() => {
       if (idAlumnoFamiliares.current !== alumno.id_alumno) return;
       if (res.ok) setFamiliares(await res.json());
       else toast.error("No se pudieron cargar los apoderados del alumno");
-    } catch (error) {
+    } catch {
       if (idAlumnoFamiliares.current === alumno.id_alumno) {
         toast.error("No se pudieron cargar los apoderados del alumno");
       }
@@ -63,17 +63,18 @@ useEffect(() => {
       } else {
         toast.error("No se pudo programar la cita. Revisa los datos e intenta de nuevo.");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error al procesar la solicitud");
     } finally {
       setLoading(false);
     }
   };
 
-  // Preseleccionar alumno cuando se abre desde "Citar" (lista de riesgo)
+  // Preseleccionar alumno cuando se pasa por props
   useEffect(() => {
-    if (isOpen && alumnoInicial?.id_alumno) {
-      handleSelectAlumno(alumnoInicial);
+    const target = alumnoPreseleccionado || alumnoInicial;
+    if (isOpen && target?.id_alumno) {
+      handleSelectAlumno(target);
     } else if (!isOpen) {
       idAlumnoFamiliares.current = null;
       setAlumnoSeleccionado(null);
@@ -82,7 +83,7 @@ useEffect(() => {
       setResultados([]);
       setFormData(FORM_INICIAL);
     }
-  }, [isOpen, alumnoInicial]);
+  }, [isOpen, alumnoInicial, alumnoPreseleccionado]);
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
       if (busqueda.length >= 3) {

@@ -315,20 +315,23 @@ export default function GestionCursosPage() {
           <HeaderPanel />
 
           {/* Sub-Header Dinámico */}
-          <div className="h-16 border-b bg-white flex items-center justify-between px-4 md:px-8 shrink-0">
-            <div className="flex items-center gap-4">
+          {/* min-h-16 y flex-wrap en vez de h-16: en móvil y en pantalla
+              partida el título, el selector de tipo de año y el botón no caben
+              en una línea, y con la altura fija se salían de la pantalla. */}
+          <div className="min-h-16 border-b bg-white flex flex-wrap items-center justify-between gap-3 px-4 md:px-8 py-3 shrink-0">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#093E7A]">menu_book</span>
-                <h2 className="text-xl font-bold text-gray-800">Cursos y Carga Horaria</h2>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-800">Cursos y Carga Horaria</h2>
               </div>
-              <div className="h-6 w-px bg-gray-200 mx-2"></div>
+              <div className="hidden sm:block h-6 w-px bg-gray-200 mx-2"></div>
               {/* Toggle Tipo de año */}
               <div className="flex items-center bg-gray-100 rounded-lg p-1">
                 {(["REGULAR", "VERANO"] as const).map((t) => (
                   <button
                     key={t}
                     onClick={() => setTipoAnio(t)}
-                    className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${
+                    className={`px-3 sm:px-4 py-1.5 rounded-md text-sm font-bold transition-all whitespace-nowrap ${
                       tipoAnio === t ? (t === "VERANO" ? "bg-[#701C32] text-white" : "bg-[#093E7A] text-white") : "text-gray-500"
                     }`}
                   >
@@ -339,7 +342,7 @@ export default function GestionCursosPage() {
             </div>
             <button
               onClick={abrirNuevoCurso}
-              className="flex items-center gap-2 px-6 py-2.5 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-all"
+              className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-all whitespace-nowrap"
             >
               <span className="material-symbols-outlined text-sm">add</span> Nuevo Curso
             </button>
@@ -370,7 +373,11 @@ export default function GestionCursosPage() {
                         <tr className="bg-gray-50 border-b border-gray-200">
                           <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Curso / Asignatura</th>
                           <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Grados Asignados</th>
-                          <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Duración (Min/Sem)</th> {/* NUEVO CAMPO */}
+                          {/* El comentario iba al final de esta línea, después
+                              de un espacio: ese espacio se convertía en un nodo
+                              de texto dentro del <tr> y React avisaba de error
+                              de hidratación en cada carga de la página. */}
+                          <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Duración (Min/Sem)</th>
                           <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Acciones</th>
                         </tr>
                       </thead>
@@ -613,7 +620,7 @@ export default function GestionCursosPage() {
       {/* --- MINI MODAL ÁREA --- */}
       {showAreaModal && (
         <div className="fixed inset-0 z-[60] modal-overlay flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-y-auto max-h-[90vh]">
             <div className="bg-[#093E7A] px-5 py-4 text-white flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px]">category</span>

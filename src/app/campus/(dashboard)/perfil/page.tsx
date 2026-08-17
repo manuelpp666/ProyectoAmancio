@@ -1,9 +1,21 @@
 "use client";
+
 import { useEffect, useState, useRef } from "react";
 import { useUser } from "@/src/context/userContext";
 import {
-  User, BadgeCheck, Loader2, HeartPulse, Phone, Mail, Camera, Save, Pencil, X, Plus, MapPin
-} from 'lucide-react';
+  User,
+  BadgeCheck,
+  Loader2,
+  HeartPulse,
+  Phone,
+  Mail,
+  Camera,
+  Save,
+  Pencil,
+  X,
+  Plus,
+  MapPin,
+} from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 import { uploadToCloudinary } from "@/src/components/utils/cloudinary";
 import { toast } from "sonner";
@@ -15,7 +27,7 @@ export default function MisDatos() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("PERSONALES");
 
-  // Estados de edición (administrador: telefono/email)
+  // Estados de edición de contacto (disponible para TODOS los roles)
   const [editando, setEditando] = useState(false);
   const [form, setForm] = useState({ telefono: "", email: "" });
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
@@ -23,7 +35,7 @@ export default function MisDatos() {
   const [guardando, setGuardando] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // --- Estados del ALUMNO ---
+  // --- Estados adicionales del ALUMNO ---
   // Dirección
   const [editandoDir, setEditandoDir] = useState(false);
   const [formDir, setFormDir] = useState("");
@@ -37,7 +49,13 @@ export default function MisDatos() {
   const [modalFam, setModalFam] = useState(false);
   const [guardandoFam, setGuardandoFam] = useState(false);
   const [formFam, setFormFam] = useState({
-    nombres: "", apellidos: "", dni: "", telefono: "", email: "", direccion: "", tipo_parentesco: ""
+    nombres: "",
+    apellidos: "",
+    dni: "",
+    telefono: "",
+    email: "",
+    direccion: "",
+    tipo_parentesco: "",
   });
 
   // 2. Fetch de datos al backend
@@ -49,9 +67,12 @@ export default function MisDatos() {
         if (response.ok) {
           const data = await response.json();
           setPerfil(data);
+        } else {
+          toast.error("No se pudo cargar la información de perfil");
         }
       } catch (error) {
         console.error("Error cargando perfil:", error);
+        toast.error("Error de conexión al cargar perfil");
       } finally {
         setLoading(false);
       }
@@ -62,7 +83,10 @@ export default function MisDatos() {
   // Sincroniza el formulario cuando llega el perfil
   useEffect(() => {
     if (perfil?.datos) {
-      setForm({ telefono: perfil.datos.telefono || "", email: perfil.datos.email || "" });
+      setForm({
+        telefono: perfil.datos.telefono || "",
+        email: perfil.datos.email || "",
+      });
       setFotoUrl(perfil.datos.url_perfil || null);
       setFormDir(perfil.datos.direccion || "");
       setFormEnf(perfil.datos.enfermedad || "");
@@ -84,11 +108,13 @@ export default function MisDatos() {
       const res = await apiFetch(`/perfil/admin/${username}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url_perfil: url })
+        body: JSON.stringify({ url_perfil: url }),
       });
       if (!res.ok) throw new Error();
       setFotoUrl(url);
-      setPerfil((prev: any) => prev ? { ...prev, datos: { ...prev.datos, url_perfil: url } } : prev);
+      setPerfil((prev: any) =>
+        prev ? { ...prev, datos: { ...prev.datos, url_perfil: url } } : prev
+      );
       toast.success("Foto de perfil actualizada");
     } catch {
       toast.error("No se pudo actualizar la foto");
@@ -98,20 +124,42 @@ export default function MisDatos() {
     }
   };
 
-  const handleGuardar = async () => {
+  // Guardar Teléfono y Correo para TODOS los roles
+  const handleGuardarContacto = async () => {
     setGuardando(true);
     try {
-      const res = await apiFetch(`/perfil/admin/${username}`, {
+      const res = await apiFetch(`/perfil/contacto/${username}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ telefono: form.telefono, email: form.email })
+        body: JSON.stringify({
+          telefono: form.telefono.trim(),
+          email: form.email.trim(),
+        }),
       });
-      if (!res.ok) throw new Error();
-      setPerfil((prev: any) => prev ? { ...prev, datos: { ...prev.datos, telefono: form.telefono, email: form.email } } : prev);
-      toast.success("Datos actualizados con éxito");
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.detail || "Error al actualizar los datos");
+      }
+
+      const resJson = await res.json();
+      setPerfil((prev: any) =>
+        prev
+          ? {
+              ...prev,
+              datos: {
+                ...prev.datos,
+                telefono: resJson.datos?.telefono ?? form.telefono,
+                email: resJson.datos?.email ?? form.email,
+              },
+            }
+          : prev
+      );
+
+      toast.success("Datos de contacto actualizados con éxito");
       setEditando(false);
-    } catch {
-      toast.error("Error al guardar los cambios");
+    } catch (err: any) {
+      toast.error(err.message || "Error al guardar los cambios");
     } finally {
       setGuardando(false);
     }
@@ -128,10 +176,12 @@ export default function MisDatos() {
       const res = await apiFetch(`/perfil/alumno/${username}/direccion`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ direccion: formDir.trim() })
+        body: JSON.stringify({ direccion: formDir.trim() }),
       });
       if (!res.ok) throw new Error();
-      setPerfil((prev: any) => prev ? { ...prev, datos: { ...prev.datos, direccion: formDir.trim() } } : prev);
+      setPerfil((prev: any) =>
+        prev ? { ...prev, datos: { ...prev.datos, direccion: formDir.trim() } } : prev
+      );
       toast.success("Dirección actualizada con éxito");
       setEditandoDir(false);
     } catch {
@@ -147,11 +197,13 @@ export default function MisDatos() {
       const res = await apiFetch(`/perfil/alumno/${username}/medicos`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enfermedad: formEnf.trim() })
+        body: JSON.stringify({ enfermedad: formEnf.trim() }),
       });
       if (!res.ok) throw new Error();
       const valor = formEnf.trim();
-      setPerfil((prev: any) => prev ? { ...prev, datos: { ...prev.datos, enfermedad: valor } } : prev);
+      setPerfil((prev: any) =>
+        prev ? { ...prev, datos: { ...prev.datos, enfermedad: valor } } : prev
+      );
       toast.success("Datos médicos actualizados");
       setEditandoMed(false);
     } catch {
@@ -179,15 +231,23 @@ export default function MisDatos() {
           telefono: formFam.telefono.trim() || null,
           email: formFam.email.trim() || null,
           direccion: formFam.direccion.trim() || null,
-          tipo_parentesco: formFam.tipo_parentesco.trim()
-        })
+          tipo_parentesco: formFam.tipo_parentesco.trim(),
+        }),
       });
       const body = await res.json().catch(() => null);
       if (!res.ok) throw new Error(body?.detail || "Error al agregar familiar");
       setFamiliaresList((prev) => [...prev, body.familiar]);
       toast.success("Familiar agregado con éxito");
       setModalFam(false);
-      setFormFam({ nombres: "", apellidos: "", dni: "", telefono: "", email: "", direccion: "", tipo_parentesco: "" });
+      setFormFam({
+        nombres: "",
+        apellidos: "",
+        dni: "",
+        telefono: "",
+        email: "",
+        direccion: "",
+        tipo_parentesco: "",
+      });
     } catch (err: any) {
       toast.error(err.message || "No se pudo agregar el familiar");
     } finally {
@@ -195,24 +255,29 @@ export default function MisDatos() {
     }
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <Loader2 className="animate-spin text-[#093E7A]" size={48} />
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="animate-spin text-[#093E7A]" size={48} />
+      </div>
+    );
 
-  if (!perfil) return <div className="p-10 text-center text-slate-500">No se encontró información del perfil.</div>;
+  if (!perfil)
+    return (
+      <div className="p-10 text-center text-slate-500 font-medium">
+        No se encontró información del perfil.
+      </div>
+    );
 
   const { datos, rol } = perfil;
-
-  // Helpers para identificar grupos de roles
-  const esPersonal = ["DOCENTE", "ADMIN", "AUXILIAR"].includes(rol);
   const esAlumno = rol === "ALUMNO";
   const esAdmin = rol === "ADMIN";
 
   return (
     <div className="bg-[#F3F4F6] min-h-screen text-slate-800 font-['Lato']">
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         .custom-input {
             border: none;
             border-bottom: 2px solid #E5E7EB;
@@ -226,12 +291,13 @@ export default function MisDatos() {
             border-bottom-color: #093E7A;
             outline: none;
         }
-      `}} />
+      `,
+        }}
+      />
 
       <div className="flex min-h-[calc(100vh-64px)]">
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-5xl mx-auto space-y-6">
-
             {/* Banner Dinámico */}
             <div className="bg-[#701C32] rounded-2xl p-8 text-white relative overflow-hidden shadow-lg">
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20"></div>
@@ -255,7 +321,13 @@ export default function MisDatos() {
                       >
                         {subiendoFoto ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
                       </button>
-                      <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleFoto} />
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleFoto}
+                      />
                     </>
                   )}
                 </div>
@@ -264,11 +336,17 @@ export default function MisDatos() {
                     {datos.nombres} {datos.apellidos}
                   </h1>
                   <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-2">
-                    <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">Rol: {rol}</span>
+                    <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">
+                      Rol: {rol}
+                    </span>
                     {esAlumno && (
-                      <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">Estado: {datos.estado_ingreso}</span>
+                      <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">
+                        Estado: {datos.estado_ingreso}
+                      </span>
                     )}
-                    <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">DNI: {datos.dni}</span>
+                    <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">
+                      DNI: {datos.dni}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -280,7 +358,11 @@ export default function MisDatos() {
               <div className="flex border-b border-slate-200 bg-slate-50/50 overflow-x-auto">
                 <button
                   onClick={() => setActiveTab("PERSONALES")}
-                  className={`px-4 md:px-8 py-4 font-bold whitespace-nowrap transition-all ${activeTab === "PERSONALES" ? "text-[#093E7A] border-b-2 border-[#093E7A] bg-white" : "text-slate-400"}`}
+                  className={`px-4 md:px-8 py-4 font-bold whitespace-nowrap transition-all ${
+                    activeTab === "PERSONALES"
+                      ? "text-[#093E7A] border-b-2 border-[#093E7A] bg-white"
+                      : "text-slate-400"
+                  }`}
                 >
                   DATOS PERSONALES
                 </button>
@@ -288,13 +370,21 @@ export default function MisDatos() {
                   <>
                     <button
                       onClick={() => setActiveTab("MEDICOS")}
-                      className={`px-4 md:px-8 py-4 font-bold whitespace-nowrap transition-all ${activeTab === "MEDICOS" ? "text-[#093E7A] border-b-2 border-[#093E7A] bg-white" : "text-slate-400"}`}
+                      className={`px-4 md:px-8 py-4 font-bold whitespace-nowrap transition-all ${
+                        activeTab === "MEDICOS"
+                          ? "text-[#093E7A] border-b-2 border-[#093E7A] bg-white"
+                          : "text-slate-400"
+                      }`}
                     >
                       DATOS MÉDICOS
                     </button>
                     <button
                       onClick={() => setActiveTab("FAMILIARES")}
-                      className={`px-4 md:px-8 py-4 font-bold whitespace-nowrap transition-all ${activeTab === "FAMILIARES" ? "text-[#093E7A] border-b-2 border-[#093E7A] bg-white" : "text-slate-400"}`}
+                      className={`px-4 md:px-8 py-4 font-bold whitespace-nowrap transition-all ${
+                        activeTab === "FAMILIARES"
+                          ? "text-[#093E7A] border-b-2 border-[#093E7A] bg-white"
+                          : "text-slate-400"
+                      }`}
                     >
                       FAMILIARES
                     </button>
@@ -303,154 +393,205 @@ export default function MisDatos() {
               </div>
 
               <div className="p-8 space-y-12">
-
                 {/* TAB: DATOS PERSONALES */}
                 {activeTab === "PERSONALES" && (
                   <div className="animate-in fade-in duration-500">
                     <section>
-                      <div className="flex items-center justify-between mb-6">
+                      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
                         <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                           <BadgeCheck size={16} className="text-[#093E7A]" /> Identidad y Contacto
                         </h3>
-                        {esAdmin && (
-                          editando ? (
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => {
-                                  setEditando(false);
-                                  setForm({ telefono: datos.telefono || "", email: datos.email || "" });
-                                }}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-slate-500 hover:bg-slate-100 transition-all"
-                              >
-                                <X size={16} /> Cancelar
-                              </button>
-                              <button
-                                onClick={handleGuardar}
-                                disabled={guardando}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white bg-[#701C32] hover:bg-[#5a1628] transition-all disabled:opacity-60"
-                              >
-                                {guardando ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Guardar
-                              </button>
-                            </div>
-                          ) : (
+
+                        {editando ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setEditando(false);
+                                setForm({
+                                  telefono: datos.telefono || "",
+                                  email: datos.email || "",
+                                });
+                              }}
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-slate-500 hover:bg-slate-100 transition-all"
+                            >
+                              <X size={16} /> Cancelar
+                            </button>
+                            <button
+                              onClick={handleGuardarContacto}
+                              disabled={guardando}
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white bg-[#701C32] hover:bg-[#5a1628] transition-all disabled:opacity-60"
+                            >
+                              {guardando ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}{" "}
+                              Guardar
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
                             <button
                               onClick={() => setEditando(true)}
                               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-[#701C32] hover:bg-[#701C32]/10 transition-all"
                             >
-                              <Pencil size={16} /> Editar
+                              <Pencil size={16} /> Editar contacto
                             </button>
-                          )
-                        )}
-                        {/* Alumno: solo puede editar la dirección */}
-                        {esAlumno && (
-                          editandoDir ? (
-                            <div className="flex items-center gap-2">
+                            {esAlumno && !editandoDir && (
                               <button
-                                onClick={() => { setEditandoDir(false); setFormDir(datos.direccion || ""); }}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-slate-500 hover:bg-slate-100 transition-all"
+                                onClick={() => setEditandoDir(true)}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-[#093E7A] hover:bg-[#093E7A]/10 transition-all"
                               >
-                                <X size={16} /> Cancelar
+                                <Pencil size={16} /> Editar dirección
                               </button>
-                              <button
-                                onClick={guardarDireccion}
-                                disabled={guardandoDir}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white bg-[#701C32] hover:bg-[#5a1628] transition-all disabled:opacity-60"
-                              >
-                                {guardandoDir ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Guardar
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => setEditandoDir(true)}
-                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-[#701C32] hover:bg-[#701C32]/10 transition-all"
-                            >
-                              <Pencil size={16} /> Editar dirección
-                            </button>
-                          )
+                            )}
+                          </div>
                         )}
                       </div>
+
+                      {/* CAMPOS REQUERIDOS PARA TODOS LOS ROLES: Nombres, Apellidos, DNI, Teléfono, Correo */}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-8 gap-x-12">
+                        {/* 1. Nombres */}
                         <div className="flex flex-col">
                           <label className="text-xs font-bold text-slate-500 uppercase mb-1">Nombres</label>
-                          <input className="custom-input text-slate-800 font-medium" readOnly value={datos.nombres} />
-                        </div>
-                        <div className="flex flex-col">
-                          <label className="text-xs font-bold text-slate-500 uppercase mb-1">Apellidos</label>
-                          <input className="custom-input text-slate-800 font-medium" readOnly value={datos.apellidos} />
-                        </div>
-                        <div className="flex flex-col">
-                          <label className="text-xs font-bold text-slate-500 uppercase mb-1">DNI</label>
-                          <input className="custom-input text-slate-800 font-medium" readOnly value={datos.dni} />
+                          <input
+                            className="custom-input text-slate-800 font-medium"
+                            readOnly
+                            value={datos.nombres || ""}
+                          />
                         </div>
 
+                        {/* 2. Apellidos */}
+                        <div className="flex flex-col">
+                          <label className="text-xs font-bold text-slate-500 uppercase mb-1">Apellidos</label>
+                          <input
+                            className="custom-input text-slate-800 font-medium"
+                            readOnly
+                            value={datos.apellidos || ""}
+                          />
+                        </div>
+
+                        {/* 3. DNI */}
+                        <div className="flex flex-col">
+                          <label className="text-xs font-bold text-slate-500 uppercase mb-1">DNI</label>
+                          <input
+                            className="custom-input text-slate-800 font-medium"
+                            readOnly
+                            value={datos.dni || ""}
+                          />
+                        </div>
+
+                        {/* 4. Teléfono (Editable) */}
+                        <div className="flex flex-col">
+                          <label className="text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
+                          {editando ? (
+                            <input
+                              type="tel"
+                              className="custom-input text-slate-800 font-medium"
+                              value={form.telefono}
+                              maxLength={15}
+                              placeholder="Ingresa tu número de teléfono"
+                              onChange={(e) =>
+                                setForm({ ...form, telefono: e.target.value.replace(/\D/g, "") })
+                              }
+                            />
+                          ) : (
+                            <div className="flex items-center gap-2 custom-input">
+                              <span className="text-slate-800 font-medium">
+                                {datos.telefono || "Sin registrar"}
+                              </span>
+                              <Phone size={14} className="text-slate-300 ml-auto" />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 5. Correo Electrónico (Editable) */}
+                        <div className="flex flex-col">
+                          <label className="text-xs font-bold text-slate-500 uppercase mb-1">
+                            Correo Electrónico
+                          </label>
+                          {editando ? (
+                            <input
+                              type="email"
+                              className="custom-input text-slate-800 font-medium"
+                              value={form.email}
+                              placeholder="Ingresa tu correo electrónico"
+                              onChange={(e) => setForm({ ...form, email: e.target.value })}
+                            />
+                          ) : (
+                            <div className="flex items-center gap-2 custom-input">
+                              <span className="text-slate-800 font-medium truncate">
+                                {datos.email || "Sin registrar"}
+                              </span>
+                              <Mail size={14} className="text-slate-300 ml-auto shrink-0" />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Especialidad (Docente) */}
+                        {rol === "DOCENTE" && (
+                          <div className="flex flex-col">
+                            <label className="text-xs font-bold text-slate-500 uppercase mb-1">
+                              Especialidad
+                            </label>
+                            <input
+                              className="custom-input text-slate-800 font-medium"
+                              readOnly
+                              value={datos.especialidad || "No asignada"}
+                            />
+                          </div>
+                        )}
+
+                        {/* Género y Dirección (Alumno) */}
                         {esAlumno && (
                           <>
                             <div className="flex flex-col">
                               <label className="text-xs font-bold text-slate-500 uppercase mb-1">Género</label>
-                              <input className="custom-input text-slate-800 font-medium" readOnly value={datos.genero === 'M' ? 'Masculino' : 'Femenino'} />
+                              <input
+                                className="custom-input text-slate-800 font-medium"
+                                readOnly
+                                value={
+                                  datos.genero === "M"
+                                    ? "Masculino"
+                                    : datos.genero === "F"
+                                    ? "Femenino"
+                                    : "No especificado"
+                                }
+                              />
                             </div>
                             <div className="flex flex-col lg:col-span-2">
-                              <label className="text-xs font-bold text-slate-500 uppercase mb-1">Dirección</label>
+                              <label className="text-xs font-bold text-slate-500 uppercase mb-1">
+                                Dirección
+                              </label>
                               {editandoDir ? (
-                                <input
-                                  type="text"
-                                  autoFocus
-                                  className="custom-input text-slate-800 font-medium"
-                                  value={formDir}
-                                  placeholder="Ingresa tu dirección"
-                                  onChange={(e) => setFormDir(e.target.value)}
-                                />
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    className="custom-input text-slate-800 font-medium"
+                                    value={formDir}
+                                    placeholder="Ingresa tu dirección"
+                                    onChange={(e) => setFormDir(e.target.value)}
+                                  />
+                                  <button
+                                    onClick={guardarDireccion}
+                                    disabled={guardandoDir}
+                                    className="px-3 py-1 bg-[#701C32] text-white text-xs font-bold rounded-lg hover:bg-[#5a1628]"
+                                  >
+                                    {guardandoDir ? "..." : "Guardar"}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditandoDir(false);
+                                      setFormDir(datos.direccion || "");
+                                    }}
+                                    className="px-2 py-1 text-slate-500 text-xs font-bold hover:bg-slate-100 rounded-lg"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
                               ) : (
                                 <div className="flex items-center gap-2 custom-input">
-                                  <span className="text-slate-800 font-medium">{datos.direccion || "No registrada"}</span>
+                                  <span className="text-slate-800 font-medium">
+                                    {datos.direccion || "No registrada"}
+                                  </span>
                                   <MapPin size={14} className="text-slate-300 ml-auto" />
-                                </div>
-                              )}
-                            </div>
-                          </>
-                        )}
-
-                        {rol === "DOCENTE" && (
-                          <div className="flex flex-col">
-                            <label className="text-xs font-bold text-slate-500 uppercase mb-1">Especialidad</label>
-                            <input className="custom-input text-slate-800 font-medium" readOnly value={datos.especialidad || "No asignada"} />
-                          </div>
-                        )}
-
-                        {esPersonal && (
-                          <>
-                            <div className="flex flex-col">
-                              <label className="text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
-                              {esAdmin && editando ? (
-                                <input
-                                  type="tel"
-                                  className="custom-input text-slate-800 font-medium"
-                                  value={form.telefono}
-                                  maxLength={9}
-                                  placeholder="Ingresa tu teléfono"
-                                  onChange={(e) => setForm({ ...form, telefono: e.target.value.replace(/\D/g, "") })}
-                                />
-                              ) : (
-                                <div className="flex items-center gap-2 custom-input">
-                                  <span className="text-slate-800 font-medium">{datos.telefono || "Sin registrar"}</span>
-                                  <Phone size={14} className="text-slate-300 ml-auto" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex flex-col">
-                              <label className="text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
-                              {esAdmin && editando ? (
-                                <input
-                                  type="email"
-                                  className="custom-input text-slate-800 font-medium"
-                                  value={form.email}
-                                  placeholder="Ingresa tu email"
-                                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                                />
-                              ) : (
-                                <div className="flex items-center gap-2 custom-input">
-                                  <span className="text-slate-800 font-medium">{datos.email || "Sin registrar"}</span>
-                                  <Mail size={14} className="text-slate-300 ml-auto" />
                                 </div>
                               )}
                             </div>
@@ -472,7 +613,10 @@ export default function MisDatos() {
                         {editandoMed ? (
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => { setEditandoMed(false); setFormEnf(datos.enfermedad || ""); }}
+                              onClick={() => {
+                                setEditandoMed(false);
+                                setFormEnf(datos.enfermedad || "");
+                              }}
                               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-slate-500 hover:bg-slate-100 transition-all"
                             >
                               <X size={16} /> Cancelar
@@ -482,7 +626,12 @@ export default function MisDatos() {
                               disabled={guardandoMed}
                               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white bg-[#701C32] hover:bg-[#5a1628] transition-all disabled:opacity-60"
                             >
-                              {guardandoMed ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Guardar
+                              {guardandoMed ? (
+                                <Loader2 size={16} className="animate-spin" />
+                              ) : (
+                                <Save size={16} />
+                              )}{" "}
+                              Guardar
                             </button>
                           </div>
                         ) : (
@@ -495,7 +644,9 @@ export default function MisDatos() {
                         )}
                       </div>
                       <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
-                        <label className="text-xs font-bold text-blue-600 uppercase mb-2 block tracking-wider">Alergias / Enfermedades</label>
+                        <label className="text-xs font-bold text-blue-600 uppercase mb-2 block tracking-wider">
+                          Alergias / Enfermedades
+                        </label>
                         {editandoMed ? (
                           <textarea
                             autoFocus
@@ -507,11 +658,14 @@ export default function MisDatos() {
                           />
                         ) : (
                           <p className="text-slate-800 font-semibold text-lg leading-relaxed">
-                            {datos.enfermedad || "El estudiante no registra ninguna condición médica o alergia."}
+                            {datos.enfermedad ||
+                              "El estudiante no registra ninguna condición médica o alergia."}
                           </p>
                         )}
                         {editandoMed && (
-                          <p className="text-[11px] text-blue-400 mt-2 text-right">{formEnf.length}/150</p>
+                          <p className="text-[11px] text-blue-400 mt-2 text-right">
+                            {formEnf.length}/150
+                          </p>
                         )}
                       </div>
                     </section>
@@ -534,29 +688,42 @@ export default function MisDatos() {
                         </button>
                       </div>
                       <div className="grid grid-cols-1 gap-4">
-                        {familiaresList && familiaresList.length > 0 ? familiaresList.map((fam: any, idx: number) => (
-                          <div key={fam.id_familiar || idx} className="p-6 border border-slate-100 rounded-xl bg-slate-50 flex flex-col md:flex-row justify-between items-center">
-                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold uppercase">
-                                {fam.nombre?.[0] || "?"}
+                        {familiaresList && familiaresList.length > 0 ? (
+                          familiaresList.map((fam: any, idx: number) => (
+                            <div
+                              key={fam.id_familiar || idx}
+                              className="p-6 border border-slate-100 rounded-xl bg-slate-50 flex flex-col md:flex-row justify-between items-center"
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold uppercase">
+                                  {fam.nombre?.[0] || "?"}
+                                </div>
+                                <div>
+                                  <p className="text-lg font-bold text-slate-800">{fam.nombre}</p>
+                                  <p className="text-sm text-[#093E7A] font-bold uppercase tracking-tighter">
+                                    {fam.parentesco}
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-lg font-bold text-slate-800">{fam.nombre}</p>
-                                <p className="text-sm text-[#093E7A] font-bold uppercase tracking-tighter">{fam.parentesco}</p>
+                              <div className="text-right mt-4 md:mt-0 flex gap-6">
+                                <div>
+                                  <p className="text-[10px] font-black text-slate-400 uppercase">
+                                    Documento
+                                  </p>
+                                  <p className="text-sm font-medium text-slate-700">{fam.dni}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-black text-slate-400 uppercase">
+                                    Contacto
+                                  </p>
+                                  <p className="text-sm font-medium text-slate-700">
+                                    {fam.telefono || "---"}
+                                  </p>
+                                </div>
                               </div>
                             </div>
-                            <div className="text-right mt-4 md:mt-0 flex gap-6">
-                              <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase">Documento</p>
-                                <p className="text-sm font-medium text-slate-700">{fam.dni}</p>
-                              </div>
-                              <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase">Contacto</p>
-                                <p className="text-sm font-medium text-slate-700">{fam.telefono || '---'}</p>
-                              </div>
-                            </div>
-                          </div>
-                        )) : (
+                          ))
+                        ) : (
                           <div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-400 italic">
                             No hay familiares registrados.
                           </div>
@@ -565,7 +732,6 @@ export default function MisDatos() {
                     </section>
                   </div>
                 )}
-
               </div>
             </div>
           </div>
@@ -580,7 +746,10 @@ export default function MisDatos() {
               <h3 className="font-bold flex items-center gap-2">
                 <Plus size={18} /> Agregar Familiar
               </h3>
-              <button onClick={() => setModalFam(false)} className="hover:rotate-90 transition-transform">
+              <button
+                onClick={() => setModalFam(false)}
+                className="hover:rotate-90 transition-transform"
+              >
                 <X size={20} />
               </button>
             </div>
@@ -588,18 +757,24 @@ export default function MisDatos() {
             <form onSubmit={agregarFamiliar} className="p-6 space-y-4 overflow-y-auto">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nombres</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                    Nombres
+                  </label>
                   <input
-                    required type="text"
+                    required
+                    type="text"
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#701C32]/20"
                     value={formFam.nombres}
                     onChange={(e) => setFormFam({ ...formFam, nombres: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Apellidos</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                    Apellidos
+                  </label>
                   <input
-                    required type="text"
+                    required
+                    type="text"
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#701C32]/20"
                     value={formFam.apellidos}
                     onChange={(e) => setFormFam({ ...formFam, apellidos: e.target.value })}
@@ -608,14 +783,20 @@ export default function MisDatos() {
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1">DNI</label>
                   <input
-                    required type="text" maxLength={8}
+                    required
+                    type="text"
+                    maxLength={8}
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#701C32]/20"
                     value={formFam.dni}
-                    onChange={(e) => setFormFam({ ...formFam, dni: e.target.value.replace(/\D/g, "") })}
+                    onChange={(e) =>
+                      setFormFam({ ...formFam, dni: e.target.value.replace(/\D/g, "") })
+                    }
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Parentesco</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                    Parentesco
+                  </label>
                   <select
                     required
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#701C32]/20"
@@ -633,16 +814,23 @@ export default function MisDatos() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Teléfono</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                    Teléfono
+                  </label>
                   <input
-                    type="tel" maxLength={9}
+                    type="tel"
+                    maxLength={9}
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#701C32]/20"
                     value={formFam.telefono}
-                    onChange={(e) => setFormFam({ ...formFam, telefono: e.target.value.replace(/\D/g, "") })}
+                    onChange={(e) =>
+                      setFormFam({ ...formFam, telefono: e.target.value.replace(/\D/g, "") })
+                    }
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email (Opcional)</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                    Email (Opcional)
+                  </label>
                   <input
                     type="email"
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#701C32]/20"
@@ -651,7 +839,9 @@ export default function MisDatos() {
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Dirección (Opcional)</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                    Dirección (Opcional)
+                  </label>
                   <input
                     type="text"
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#701C32]/20"
@@ -674,7 +864,11 @@ export default function MisDatos() {
                   disabled={guardandoFam}
                   className="flex-1 py-3 bg-[#701C32] text-white font-bold text-sm rounded-xl hover:bg-[#5a1628] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  {guardandoFam ? <Loader2 className="animate-spin" size={18} /> : "Guardar familiar"}
+                  {guardandoFam ? (
+                    <Loader2 className="animate-spin" size={18} />
+                  ) : (
+                    "Guardar familiar"
+                  )}
                 </button>
               </div>
             </form>

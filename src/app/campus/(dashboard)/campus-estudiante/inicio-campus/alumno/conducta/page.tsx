@@ -85,7 +85,7 @@ export default function ConductaAlumnoPage() {
   const umbralCritico = data?.umbral_critico ?? 8;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 pb-12 px-4 surface-in">
+    <div className="max-w-5xl mx-auto space-y-8 pb-12 surface-in">
       {/* HEADER */}
       <div>
         <h1 className="text-3xl font-black text-[#701C32] flex items-center gap-3">

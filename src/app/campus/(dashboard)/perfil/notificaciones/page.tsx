@@ -3,20 +3,31 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/src/context/userContext";
-import { Megaphone, Star, Wallet, Calendar, CheckCheck, Clock, Loader2, HeartPulse, MessageSquare, ArrowLeft, GraduationCap } from "lucide-react";
+import { Megaphone, Star, Wallet, Calendar, CheckCheck, Clock, Loader2, HeartPulse, MessageSquare, ArrowLeft, GraduationCap, ShieldAlert, ClipboardCheck } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 // Helper para definir estilos e iconos según el tipo de notificación
 const getNotifStyle = (tipo: string) => {
   switch (tipo) {
-    case "entrega": return { icono: CheckCheck, color: "text-green-600", bg: "bg-green-50" };
-    case "nota": return { icono: Star, color: "text-yellow-600", bg: "bg-yellow-50" };
-    case "pago": return { icono: Wallet, color: "text-red-600", bg: "bg-red-50" };
-    case "evento": return { icono: Calendar, color: "text-purple-600", bg: "bg-purple-50" };
-    case "cita": return { icono: HeartPulse, color: "text-blue-600", bg: "bg-blue-50" };
-    case "mensaje": return { icono: MessageSquare, color: "text-[#701C32]", bg: "bg-[#701C32]/10" };
-    case "academico": return { icono: GraduationCap, color: "text-orange-600", bg: "bg-orange-50" };
-    default: return { icono: Megaphone, color: "text-blue-600", bg: "bg-blue-50" };
+    case "entrega": return { icono: CheckCheck, color: "text-green-600", bg: "bg-green-50", etiqueta: "Entrega" };
+    case "nota": return { icono: Star, color: "text-yellow-600", bg: "bg-yellow-50", etiqueta: "Nota" };
+    case "pago": return { icono: Wallet, color: "text-red-600", bg: "bg-red-50", etiqueta: "Pago" };
+    case "evento": return { icono: Calendar, color: "text-purple-600", bg: "bg-purple-50", etiqueta: "Evento" };
+    case "cita": return { icono: HeartPulse, color: "text-blue-600", bg: "bg-blue-50", etiqueta: "Cita" };
+    case "mensaje": return { icono: MessageSquare, color: "text-[#701C32]", bg: "bg-[#701C32]/10", etiqueta: "Mensaje" };
+    case "academico": return { icono: GraduationCap, color: "text-orange-600", bg: "bg-orange-50", etiqueta: "Académico" };
+    case "conducta": return { icono: ShieldAlert, color: "text-amber-600", bg: "bg-amber-50", etiqueta: "Conducta" };
+    case "inscripcion": return { icono: ClipboardCheck, color: "text-[#093E7A]", bg: "bg-[#093E7A]/10", etiqueta: "Inscripción" };
+    default: return { icono: Megaphone, color: "text-blue-600", bg: "bg-blue-50", etiqueta: "Aviso" };
   }
+};
+
+// El backend deja la fecha en null cuando el dato de origen no la tiene (una
+// cuota sin vencimiento, un año sin cierre de inscripción). `new Date(null)`
+// da "Invalid Date" y se veía impreso en la tarjeta.
+const formatearFecha = (valor: string | null | undefined) => {
+  if (!valor) return null;
+  const fecha = new Date(valor);
+  return Number.isNaN(fecha.getTime()) ? null : fecha.toLocaleDateString();
 };
 
 export default function NotificacionesPage() {
@@ -74,26 +85,28 @@ export default function NotificacionesPage() {
           notificaciones.map((notif: any, index: number) => {
             const style = getNotifStyle(notif.tipo);
             return (
-              <div 
-                key={index} 
-                className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm flex gap-5 hover:shadow-md transition-all"
+              <div
+                key={index}
+                className="bg-white rounded-xl p-4 sm:p-5 border border-gray-100 shadow-sm flex gap-3 sm:gap-5 hover:shadow-md transition-all"
               >
                 {/* Icono dinámico */}
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${style.bg} ${style.color}`}>
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${style.bg} ${style.color}`}>
                   <style.icono size={20} />
                 </div>
 
                 {/* Contenido */}
-                <div className="flex-1">
-                  <div className="flex justify-between items-start mb-1">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap justify-between items-start gap-x-2 gap-y-1 mb-1">
                     <span className={`text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md ${style.bg} ${style.color}`}>
-                      {notif.tipo}
+                      {style.etiqueta}
                     </span>
-                    <span className="text-xs text-gray-400 flex items-center gap-1">
-                      <Clock size={12} /> {new Date(notif.fecha).toLocaleDateString()}
-                    </span>
+                    {formatearFecha(notif.fecha) && (
+                      <span className="text-xs text-gray-400 flex items-center gap-1">
+                        <Clock size={12} /> {formatearFecha(notif.fecha)}
+                      </span>
+                    )}
                   </div>
-                  <p className="text-sm text-gray-700 leading-relaxed">
+                  <p className="text-sm text-gray-700 leading-relaxed break-words">
                     {notif.mensaje}
                   </p>
                 </div>

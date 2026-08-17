@@ -560,9 +560,12 @@ export default function AsignacionDocentesPage() {
       {/* --- MODAL FORMULARIO CARGA ACADÉMICA --- */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in duration-200">
-            <form onSubmit={guardarAsignacion}>
-              <div className="bg-[#093E7A] px-6 py-5 flex justify-between items-start text-white rounded-t-2xl">
+          {/* max-h-[90vh] con el cuerpo desplazable: en móvil apaisado y en
+              pantalla partida este formulario es más alto que la ventana, y sin
+              esto los botones de guardar quedaban fuera de la pantalla. */}
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in duration-200 max-h-[90vh] overflow-hidden flex flex-col">
+            <form onSubmit={guardarAsignacion} className="flex flex-col min-h-0">
+              <div className="bg-[#093E7A] px-6 py-5 flex justify-between items-start text-white rounded-t-2xl shrink-0">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">link</span></div>
                   <div>
@@ -575,7 +578,7 @@ export default function AsignacionDocentesPage() {
                 </button>
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-4 overflow-y-auto min-h-0">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Sección</label>
                   <select
@@ -709,7 +712,7 @@ export default function AsignacionDocentesPage() {
                 </div>
               </div>
 
-              <div className="p-6 border-t bg-gray-50 flex gap-3 rounded-b-2xl">
+              <div className="p-6 border-t bg-gray-50 flex gap-3 rounded-b-2xl shrink-0">
                 <button type="button" onClick={cerrarModal} className="flex-1 px-4 py-3 border border-gray-300 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-all">Cancelar</button>
                 <button type="submit" className="flex-1 px-4 py-3 bg-[#093E7A] text-white rounded-xl font-bold hover:bg-[#062d59] transition-all shadow-md">Guardar Vínculo</button>
               </div>
@@ -721,9 +724,11 @@ export default function AsignacionDocentesPage() {
       {/* --- MODAL FORMULARIO TUTORES --- */}
       {isTutorModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in duration-200">
-            <form onSubmit={guardarTutor}>
-              <div className="bg-[#093E7A] px-6 py-5 flex justify-between items-start text-white rounded-t-2xl">
+          {/* Mismo criterio que el modal de carga académica: cuerpo desplazable
+              para que el pie con los botones no se salga de la pantalla. */}
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl animate-in zoom-in duration-200 max-h-[90vh] overflow-hidden flex flex-col">
+            <form onSubmit={guardarTutor} className="flex flex-col min-h-0">
+              <div className="bg-[#093E7A] px-6 py-5 flex justify-between items-start text-white rounded-t-2xl shrink-0">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">supervisor_account</span></div>
                   <div>
@@ -738,7 +743,7 @@ export default function AsignacionDocentesPage() {
                 </button>
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-4 overflow-y-auto min-h-0">
                 {/* AVISO INFORMATIVO DE ASIGNACIÓN AUTOMÁTICA */}
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-[#093E7A] leading-relaxed flex items-start gap-2">
                   <span className="material-symbols-outlined text-base text-[#093E7A] shrink-0 mt-0.5">info</span>
@@ -864,7 +869,7 @@ export default function AsignacionDocentesPage() {
                 </div>
               </div>
 
-              <div className="p-6 border-t bg-gray-50 flex gap-3 rounded-b-2xl">
+              <div className="p-6 border-t bg-gray-50 flex gap-3 rounded-b-2xl shrink-0">
                 <button type="button" onClick={cerrarModalTutor} className="flex-1 px-4 py-3 border border-gray-300 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-all">Cancelar</button>
                 <button type="submit" className="flex-1 px-4 py-3 bg-[#093E7A] text-white rounded-xl font-bold hover:bg-[#062d59] transition-all shadow-md">
                   {editingTutorId ? "Actualizar Tutor y Cursos" : "Asignar Tutor y Cursos"}

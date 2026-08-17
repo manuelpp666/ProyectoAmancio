@@ -76,15 +76,17 @@ export default function EditarNoticiaPage() {
     <RoleGuard modulo="contenido_web" subModulo="noticias">
     <div className="h-full bg-[#F8FAFC] flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="h-16 bg-white border-b border-gray-100 px-4 md:px-8 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <Link href="/campus/panel-control/pagina-web/noticias-web" className="w-9 h-9 flex items-center justify-center hover:bg-gray-50 rounded-full transition-colors text-gray-400">
+      {/* min-h-16 en vez de h-16, por coherencia con la pantalla de crear
+          noticia: en móvil el título y su subtítulo necesitan dos líneas. */}
+      <header className="min-h-16 bg-white border-b border-gray-100 px-4 md:px-8 py-3 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <Link href="/campus/panel-control/pagina-web/noticias-web" className="w-9 h-9 shrink-0 flex items-center justify-center hover:bg-gray-50 rounded-full transition-colors text-gray-400">
             <ArrowLeft size={20} />
           </Link>
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[#093E7A]">edit_note</span>
-            <div>
-              <h1 className="text-xl font-bold text-gray-800 leading-tight">Editar Noticia</h1>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="material-symbols-outlined text-[#093E7A] shrink-0">edit_note</span>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-800 leading-tight">Editar Noticia</h1>
               <p className="text-[11px] text-[#093E7A] font-bold leading-none">ID: #{params.id}</p>
             </div>
           </div>

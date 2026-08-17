@@ -276,20 +276,20 @@ export default function ChatbotKnowledgePage() {
         confirmText="Eliminar permanentemente"
       />
       <div className="flex-1 flex flex-col h-full overflow-y-auto">
-        <div className="p-8 space-y-10 max-w-[1400px] mx-auto w-full">
+        <div className="p-4 md:p-8 space-y-8 md:space-y-10 max-w-[1400px] mx-auto w-full">
 
           <header>
             <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Entrenamiento del Chatbot</h2>
             <p className="text-sm text-gray-500 font-medium">Gestiona la información que alimenta la inteligencia del asistente virtual. POR AHORA NO SE PUEDEN SUBIR IMÁGENES</p>
           </header>
 
-          <section className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
             <div className="lg:col-span-8 space-y-8">
-              <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
+              <div className="bg-white p-5 md:p-8 rounded-[2rem] border border-gray-100 shadow-sm">
                 <input type="file" hidden ref={fileInputRef} onChange={handleFileUpload} accept=".pdf,.docx" />
                 <div
                   onClick={() => !uploading && fileInputRef.current?.click()}
-                  className={`border-2 border-dashed border-gray-200 rounded-[1.5rem] p-12 flex flex-col items-center justify-center transition-all group ${uploading ? 'cursor-default' : 'cursor-pointer hover:bg-[#701C32]/[0.02]'}`}
+                  className={`border-2 border-dashed border-gray-200 rounded-[1.5rem] p-6 md:p-12 flex flex-col items-center justify-center transition-all group ${uploading ? 'cursor-default' : 'cursor-pointer hover:bg-[#701C32]/[0.02]'}`}
                 >
                   {uploading ? (
                     <div className="w-full max-w-xs flex flex-col items-center">
@@ -322,7 +322,7 @@ export default function ChatbotKnowledgePage() {
 
               <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+                  <table className="w-full text-left border-collapse min-w-[680px]">
                     <thead>
                       <tr className="bg-gray-50/50">
                         <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase">Archivo</th>
@@ -346,7 +346,7 @@ export default function ChatbotKnowledgePage() {
             </div>
 
             <div className="lg:col-span-4">
-              <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm sticky top-8 space-y-8">
+              <div className="bg-white p-5 md:p-8 rounded-[2rem] border border-gray-100 shadow-sm lg:sticky lg:top-8 space-y-8">
                 <div className="flex justify-between items-end mb-3">
                   <p className="text-[10px] font-black text-gray-400 uppercase">Capacidad</p>
                   <p className="text-sm font-black text-gray-900">{documents.length} / 5</p>
@@ -370,7 +370,7 @@ export default function ChatbotKnowledgePage() {
 
       {/* --- MODAL DE CHAT DE PRUEBA --- */}
       {showTestChat && (
-        <div className="fixed inset-0 z-50 flex items-center justify-end p-6 bg-black/20 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center sm:justify-end p-4 sm:p-6 bg-black/20 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-md h-[85vh] rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden border border-gray-100 animate-in slide-in-from-right duration-500">
 
             <div className="p-6 bg-[#701C32] text-white flex justify-between items-center">

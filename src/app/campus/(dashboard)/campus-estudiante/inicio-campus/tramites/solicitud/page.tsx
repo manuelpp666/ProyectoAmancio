@@ -215,7 +215,7 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
       {/* MODAL: NUEVO TRÁMITE */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in duration-200">
             <div className="bg-[#701C32] p-4 flex justify-between items-center text-white">
               <h3 className="font-bold flex items-center gap-2">
                 <Plus size={18} /> Nueva Solicitud de Trámite

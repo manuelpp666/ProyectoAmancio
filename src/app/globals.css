@@ -54,14 +54,21 @@ aside :focus-visible {
 /*
  * Barra de pestañas de los paneles.
  *
- * Cuando caben, las pestañas van en una sola fila; cuando no (ventana partida,
- * o apartados de cinco pestañas como Cursos y Materias) pasan a la fila
+ * De 640px en adelante las pestañas van en una fila y, si no caben (ventana
+ * partida, o apartados de cinco pestañas como Cursos y Materias), pasan a la
  * siguiente. Cada pestaña se mantiene entera: nunca se parte una etiqueta como
  * "Asignación de Estudiantes" a mitad de palabra.
  *
- * Antes esto se resolvía con scroll horizontal y la barra de scroll oculta. En
- * móvil funcionaba, pero en escritorio no hay gesto de arrastre ni barra
- * visible: las pestañas que no cabían quedaban sencillamente inalcanzables.
+ * Aquí no se usa scroll horizontal porque en escritorio no hay gesto de
+ * arrastre: las pestañas que no cupieran quedarían inalcanzables.
+ *
+ * POR DEBAJO DE 640px sí se desplaza, y es lo contrario de un capricho: con
+ * cinco pestañas envueltas la barra medía unos 280px de alto: un tercio de la
+ * pantalla de un móvil solo para navegar, y en el constructor de horarios
+ * dejaba la rejilla sin altura útil. Desplazándose ocupa una sola fila.
+ * La barra de scroll NO se oculta a propósito: así, en una ventana de
+ * escritorio estrecha, quien no pueda deslizar con el dedo todavía puede
+ * arrastrarla con el ratón.
  *
  * Quien use esta clase debe separar las pestañas con `gap-x-*`, nunca con
  * `gap-*`: `gap-*` separa también las filas, y al envolverse quedaban a 32px
@@ -74,6 +81,18 @@ aside :focus-visible {
 .barra-pestanas > * {
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+@media (max-width: 639px) {
+  .barra-pestanas {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    /* Frena el desplazamiento en cada pestaña, para que no queden a medias. */
+    scroll-snap-type: x proximity;
+  }
+  .barra-pestanas > * {
+    scroll-snap-align: start;
+  }
 }
 
 /*

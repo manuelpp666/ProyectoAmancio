@@ -372,11 +372,14 @@ export default function ConstructorHorariosPage() {
             <HeaderPanel />
           </div>
 
-          <div className="h-16 border-b bg-white flex items-center justify-between px-4 md:px-8 shrink-0 no-print">
-            <div className="flex items-center gap-2">
+          {/* min-h-16 y flex-wrap en vez de h-16: aquí conviven el título, el
+              selector de año y tres botones. Con la altura fija y sin envolver,
+              en móvil y en pantalla partida se salían de la pantalla. */}
+          <div className="min-h-16 border-b bg-white flex flex-wrap items-center justify-between gap-3 px-4 md:px-8 py-3 shrink-0 no-print">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-3">
               <span className="material-symbols-outlined text-[#093E7A]">calendar_month</span>
-              <h2 className="text-xl font-bold text-gray-800">Constructor de Horarios{anioPlanificacion ? ` ${anioPlanificacion}` : ""}</h2>
-              <div className="flex items-center gap-2 border-l pl-6">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-800">Constructor de Horarios{anioPlanificacion ? ` ${anioPlanificacion}` : ""}</h2>
+              <div className="flex items-center gap-2 sm:border-l sm:pl-6">
                 <AnioSelector
                   value={anioPlanificacion}
                   onChange={setAnioPlanificacion}
@@ -385,24 +388,24 @@ export default function ConstructorHorariosPage() {
                 />
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               <button
                 onClick={() => setConfigAbierta(true)}
                 title="Duración del bloque, jornada y recesos"
-                className="flex items-center gap-2 px-5 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold text-sm hover:bg-gray-50 transition-all">
+                className="flex items-center gap-2 px-4 sm:px-5 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold text-sm hover:bg-gray-50 transition-all whitespace-nowrap">
                 <span className="material-symbols-outlined text-sm">tune</span> Configurar
               </button>
 
               <button
                 onClick={() => handlePrint()}
-                className="flex items-center gap-2 px-5 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold text-sm hover:bg-gray-50 transition-all">
+                className="flex items-center gap-2 px-4 sm:px-5 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold text-sm hover:bg-gray-50 transition-all whitespace-nowrap">
                 <span className="material-symbols-outlined text-sm">print</span> Imprimir
               </button>
 
               <button
                 onClick={exportarPDF}
-                className="flex items-center gap-2 px-5 py-2 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#062d59] transition-all">
-                <span className="material-symbols-outlined text-sm">download</span> Descargar PDF
+                className="flex items-center gap-2 px-4 sm:px-5 py-2 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#062d59] transition-all whitespace-nowrap">
+                <span className="material-symbols-outlined text-sm">download</span> <span className="sm:hidden">PDF</span><span className="hidden sm:inline">Descargar PDF</span>
               </button>
             </div>
           </div>
@@ -466,8 +469,13 @@ export default function ConstructorHorariosPage() {
             </div>
           </div>
 
-          <div className="flex-1 flex overflow-hidden">
-            <div className="w-72 bg-white border-r flex flex-col shrink-0 no-print">
+          {/* En pantallas estrechas la carga académica no puede ir en una
+              columna de 288px al lado de la rejilla: dejaría menos de 100px
+              para el horario. Se coloca arriba, como una banda con su propio
+              scroll, y la rejilla ocupa el resto. A partir de lg vuelven a ir
+              una al lado de la otra. */}
+          <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+            <div className="w-full lg:w-72 max-h-48 sm:max-h-56 lg:max-h-none bg-white border-b lg:border-b-0 lg:border-r flex flex-col shrink-0 no-print">
               <div className="p-4 border-b bg-gray-50/50">
                 <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Carga Académica Disponible</h3>
                 {materiasDisponibles.length > 0 && (

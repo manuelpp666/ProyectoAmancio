@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
   UserPlus, Edit, ShieldCheck, BookOpen, Briefcase, HeartHandshake, Power, PowerOff, X, Search,
-  LayoutDashboard, Users, UserCog, ClipboardList, GraduationCap, Globe, Bot, MessageSquare,
+  LayoutDashboard, Users, UserCog, ClipboardList, GraduationCap, Globe, Bot, MessageSquare, KeyRound,
 } from "lucide-react";
 import { Personal } from "@/src/interfaces/personal";
 import { TipoPersonal } from "@/src/interfaces/personal";
@@ -188,6 +188,32 @@ export default function GestionPersonalPage() {
     }
   };
 
+  const handleTogglePassword = async (p: Personal, forzar: boolean) => {
+    try {
+      const res = await apiFetch(`/personal/usuario/${p.id_usuario}/forzar-cambio-password?debe_cambiar=${forzar}`, {
+        method: "PATCH",
+      });
+      if (res.ok) {
+        toast.success(
+          forzar
+            ? `Se exigirá cambio de contraseña a ${p.nombres} en su próximo ingreso.`
+            : `Se desactivó la exigencia de cambio de contraseña para ${p.nombres}.`
+        );
+        setPersonal((prev) =>
+          prev.map((item) =>
+            item.id === p.id
+              ? { ...item, usuario: { ...item.usuario, debe_cambiar_password: forzar } }
+              : item
+          )
+        );
+      } else {
+        toast.error(await mensajeDeError(res, "No se pudo actualizar la configuración de contraseña"));
+      }
+    } catch {
+      toast.error("Error de conexión al actualizar");
+    }
+  };
+
   const openNew = () => {
     setFormData({ nombres: "", apellidos: "", dni: "", email: "", telefono: "", password: "" });
     setIsEditing(false);
@@ -255,20 +281,21 @@ export default function GestionPersonalPage() {
 
         {/* TABLA */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
-          <table className="w-full text-left min-w-[600px]">
+          <table className="w-full text-left min-w-[700px]">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase">Personal</th>
                 <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase">DNI / Usuario</th>
                 <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase text-center">Estado</th>
+                <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase text-center">Cambio de Contraseña</th>
                 <th className="px-6 py-4 text-xs font-black text-gray-500 uppercase text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
-                <tr><td colSpan={4} className="py-10 text-center text-gray-400">Cargando datos...</td></tr>
+                <tr><td colSpan={5} className="py-10 text-center text-gray-400">Cargando datos...</td></tr>
               ) : personalFiltrado.length === 0 ? (
-                <tr><td colSpan={4} className="py-10 text-center text-gray-400">
+                <tr><td colSpan={5} className="py-10 text-center text-gray-400">
                   {busqueda.trim()
                     ? `No se encontró personal que coincida con "${busqueda}".`
                     : "No hay personal registrado en esta área."}
@@ -293,6 +320,25 @@ export default function GestionPersonalPage() {
                       <span className={`px-3 py-1 text-xs font-bold rounded-full ${p.usuario.activo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                         {p.usuario.activo ? 'ACTIVO' : 'DADO DE BAJA'}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePassword(p, !p.usuario?.debe_cambiar_password)}
+                        title={
+                          p.usuario?.debe_cambiar_password
+                            ? "Exigencia activa: Se le pedirá cambiar contraseña al iniciar sesión. Clic para desactivar."
+                            : "Contraseña ya actualizada o desactivada. Clic para exigir cambio en el próximo inicio de sesión."
+                        }
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full transition-all border ${
+                          p.usuario?.debe_cambiar_password
+                            ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
+                            : "bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200 hover:text-gray-800"
+                        }`}
+                      >
+                        <KeyRound size={12} className={p.usuario?.debe_cambiar_password ? "text-amber-600" : "text-gray-400"} />
+                        <span>{p.usuario?.debe_cambiar_password ? "Exigir cambio (Activado)" : "Desactivado"}</span>
+                      </button>
                     </td>
                     <td className="px-6 py-4 flex justify-end gap-2">
                       <button onClick={() => openEdit(p)} className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors" title="Editar">

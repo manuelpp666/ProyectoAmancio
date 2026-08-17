@@ -69,13 +69,18 @@ export default function GestionContenidoPage() {
           <HeaderPanel />
 
           {/* BARRA SUPERIOR ESTÁNDAR */}
-          <div className="h-16 border-b bg-white flex items-center justify-between px-4 md:px-8 shrink-0 gap-4">
+          {/* min-h-16 y flex-wrap en vez de h-16: el buscador de 256px fijos y
+              el botón no caben junto al título en móvil ni en pantalla partida. */}
+          <div className="min-h-16 border-b bg-white flex flex-wrap items-center justify-between px-4 md:px-8 py-3 shrink-0 gap-3">
             <div className="flex items-center gap-2 shrink-0">
               <span className="material-symbols-outlined text-[#093E7A]">newspaper</span>
-              <h2 className="text-xl font-bold text-gray-800">Gestión de Noticias</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-800">Gestión de Noticias</h2>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="relative w-64 group">
+            {/* w-full en móvil: si comparte fila con el título, al buscador le
+                quedan unos 40px y se ve solo la lupa. Ocupando el ancho
+                completo baja a su propia línea y se puede escribir en él. */}
+            <div className="flex w-full sm:w-auto items-center gap-3 min-w-0">
+              <div className="relative flex-1 sm:flex-none sm:w-64 min-w-0 group">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#093E7A] transition-colors">
                   <Search size={16} strokeWidth={2.5} />
                 </div>
@@ -87,10 +92,10 @@ export default function GestionContenidoPage() {
                   className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A] transition-all text-sm"
                 />
               </div>
-              <Link href="/campus/panel-control/pagina-web/noticias-web/nueva-noticia">
-                <button className="flex items-center gap-2 px-5 py-2 bg-[#093E7A] text-white rounded-lg hover:bg-[#062d59] transition-all font-bold text-sm shadow-sm active:scale-95">
+              <Link href="/campus/panel-control/pagina-web/noticias-web/nueva-noticia" className="shrink-0">
+                <button className="flex items-center gap-2 px-4 sm:px-5 py-2 bg-[#093E7A] text-white rounded-lg hover:bg-[#062d59] transition-all font-bold text-sm shadow-sm active:scale-95 whitespace-nowrap">
                   <Plus size={18} strokeWidth={3} />
-                  Nueva Noticia
+                  <span className="hidden sm:inline">Nueva Noticia</span><span className="sm:hidden">Nueva</span>
                 </button>
               </Link>
             </div>
@@ -128,7 +133,7 @@ export default function GestionContenidoPage() {
             {/* TABLA */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left">
+                <table className="w-full text-left min-w-[820px]">
                   <thead>
                     <tr className="bg-gray-50/50 border-b border-gray-100">
                       <th className="px-8 py-5 text-[11px] font-black text-gray-400 uppercase tracking-[0.15em]">Noticia</th>

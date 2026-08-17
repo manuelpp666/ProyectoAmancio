@@ -377,9 +377,9 @@ export function NotasFinales() {
                 <tr>
                   <th rowSpan={2}
                       className="sticky left-0 z-20 bg-gray-50 text-left px-3 py-2 font-bold
-                                 border-r border-gray-200 min-w-[13rem]">Estudiante</th>
+                                 border-r border-gray-200 min-w-[9rem] sm:min-w-[13rem]">Estudiante</th>
                   <th rowSpan={2}
-                      className="sticky left-[13rem] z-20 bg-gray-50 text-left px-2 py-2
+                      className="sticky left-[9rem] sm:left-[13rem] z-20 bg-gray-50 text-left px-2 py-2
                                  font-bold border-r border-gray-200 whitespace-nowrap">Sección</th>
                   {gruposArea.map((g, i) => (
                     <th key={`${g.area}-${i}`} colSpan={g.cursos.length} title={g.area}
@@ -417,11 +417,11 @@ export function NotasFinales() {
                   <tr key={a.id_matricula} className="hover:bg-slate-50">
                     <td className="sticky left-0 z-10 bg-white hover:bg-slate-50 px-3 py-1.5
                                    border-r border-gray-200">
-                      <p className="font-bold text-gray-800 truncate max-w-[12rem]"
+                      <p className="font-bold text-gray-800 truncate max-w-[8rem] sm:max-w-[12rem]"
                          title={a.alumno}>{a.alumno}</p>
                       <p className="text-[10px] text-gray-400 font-mono">{a.dni}</p>
                     </td>
-                    <td className="sticky left-[13rem] z-10 bg-white hover:bg-slate-50 px-2 py-1.5
+                    <td className="sticky left-[9rem] sm:left-[13rem] z-10 bg-white hover:bg-slate-50 px-2 py-1.5
                                    border-r border-gray-200 text-gray-600 whitespace-nowrap">
                       {a.grado} · {a.seccion}
                       <span className="block text-[9px] text-gray-400">{a.nivel}</span>

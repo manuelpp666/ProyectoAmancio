@@ -552,10 +552,13 @@ export default function GestionFinancieraPage() {
             </div>
           )}
 
-          {/* --- TAB: ATENCIÓN DE SOLICITUDES --- */}
+          {/* --- TAB: ATENCIÓN DE SOLICITUDES ---
+              El recuadro lleva overflow-x-auto y no overflow-hidden: la tabla
+              tiene cinco columnas y en móvil quedaba recortada sin poder
+              desplazarla, al revés que las otras tablas del apartado. */}
           {tabActiva === "solicitudes" && (
-            <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-              <table className="w-full text-left border-collapse">
+            <div className="bg-white rounded-xl border shadow-sm overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[720px]">
                 <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="p-4 text-xs font-bold text-gray-500 uppercase">Fecha</th>
@@ -961,8 +964,8 @@ export default function GestionFinancieraPage() {
       {/* --- MODAL DICTAMEN SOLICITUD --- */}
       {isDictamenModalOpen && selectedSolicitud && (
         <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
-            <div className="bg-[#093E7A] px-6 py-5 flex justify-between items-start text-white">
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+            <div className="bg-[#093E7A] px-6 py-5 flex justify-between items-start text-white shrink-0">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">mark_as_unread</span></div>
                 <div>
@@ -978,7 +981,7 @@ export default function GestionFinancieraPage() {
               </button>
             </div>
 
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto min-h-0">
               <div className="mb-4 bg-blue-50/50 p-3 rounded-xl border border-blue-100">
                 <p className="text-[10px] font-black text-blue-800 uppercase mb-1">Comentario del Usuario:</p>
                 <p className="text-sm text-gray-700 italic">
@@ -1131,8 +1134,8 @@ export default function GestionFinancieraPage() {
       {/* --- MODAL EDITAR PAGO --- */}
       {isEditPagoOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
-            <div className="bg-[#093E7A] px-6 py-5 flex justify-between items-start text-white">
+          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="bg-[#093E7A] px-6 py-5 flex justify-between items-start text-white shrink-0">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">payments</span></div>
                 <div>
@@ -1142,7 +1145,7 @@ export default function GestionFinancieraPage() {
               </div>
               <button onClick={() => setIsEditPagoOpen(false)} className="hover:text-gray-300 mt-0.5"><span className="material-symbols-outlined">close</span></button>
             </div>
-            <form onSubmit={handleEditPago} className="p-6 space-y-4">
+            <form onSubmit={handleEditPago} className="p-6 space-y-4 overflow-y-auto min-h-0">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Concepto</label>
                 <input required type="text" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"

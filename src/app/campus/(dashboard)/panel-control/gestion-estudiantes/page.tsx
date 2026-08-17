@@ -522,7 +522,7 @@ export default function GestionEstudiantesPage() {
 
                                 <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden shadow-sm">
                                     <div className="overflow-x-auto">
-                                        <table className="w-full text-left border-collapse">
+                                        <table className="w-full text-left border-collapse min-w-[980px]">
                                             <thead>
                                                 <tr className="bg-[#fcfafa] border-b border-[#e5e7eb]">
                                                     <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Estudiante</th>
@@ -591,7 +591,7 @@ export default function GestionEstudiantesPage() {
                         ) : vista === "verano" ? (
                             <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden shadow-sm">
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse">
+                                    <table className="w-full text-left border-collapse min-w-[1180px]">
                                         <thead>
                                             <tr className="bg-[#fcfafa] border-b border-[#e5e7eb]">
                                                 <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Estudiante</th>
@@ -682,7 +682,7 @@ export default function GestionEstudiantesPage() {
 
                             <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden shadow-sm">
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse">
+                                    <table className="w-full text-left border-collapse min-w-[980px]">
                                     <thead>
                                         <tr className="bg-[#fcfafa] border-b border-[#e5e7eb]">
                                             <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Nombre Completo</th>
@@ -796,7 +796,7 @@ export default function GestionEstudiantesPage() {
             {/* --- MODAL DECISIÓN RENOVACIÓN (Z-70) --- */}
             {modalDecision.abierto && modalDecision.solicitud && (
                 <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-y-auto animate-in zoom-in duration-200 max-h-[90vh]">
                         <div className={`p-5 text-white flex items-center gap-3 ${modalDecision.aprobar ? "bg-green-600" : "bg-red-600"}`}>
                             <span className="material-symbols-outlined">{modalDecision.aprobar ? "task_alt" : "cancel"}</span>
                             <h3 className="font-black text-lg">
@@ -972,7 +972,7 @@ export default function GestionEstudiantesPage() {
             {/* --- MODAL 2: RECHAZO (Z-70 - ENCIMA DE TODO) --- */}
             {modalRechazo.abierto && (
                 <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-y-auto animate-in zoom-in duration-200 max-h-[90vh]">
                         <div className="p-6">
                             <h3 className="text-xl font-black text-gray-900">Rechazar Postulación</h3>
                             <p className="text-gray-500 text-sm mt-1">
@@ -1006,7 +1006,7 @@ export default function GestionEstudiantesPage() {
             {/* --- MODAL 3: RETIRO DE ESTUDIANTE (Z-70) --- */}
             {modalRetiro.abierto && modalRetiro.alumno && (
                 <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200 border border-gray-100">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-y-auto animate-in zoom-in duration-200 border border-gray-100 max-h-[90vh]">
                         <div className="p-5 text-white flex items-center gap-3 bg-red-600">
                             <span className="material-symbols-outlined text-2xl">person_remove</span>
                             <h3 className="font-black text-lg">
@@ -1054,9 +1054,9 @@ export default function GestionEstudiantesPage() {
                 {/* --- MODAL 4: REINCORPORACIÓN DE ESTUDIANTE RETIRADO (Z-70) --- */}
                 {modalReincorporar.abierto && modalReincorporar.alumno && (
                     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in duration-200 border border-gray-100">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in duration-200 border border-gray-100 flex flex-col max-h-[90vh]">
                             {/* Header */}
-                            <div className="p-5 text-white flex items-center gap-3 bg-[#093E7A]">
+                            <div className="p-5 text-white flex items-center gap-3 bg-[#093E7A] shrink-0">
                                 <span className="material-symbols-outlined text-2xl">how_to_reg</span>
                                 <div>
                                     <h3 className="font-black text-lg">
@@ -1069,7 +1069,7 @@ export default function GestionEstudiantesPage() {
                             </div>
 
                             {/* Body */}
-                            <div className="p-6 space-y-4">
+                            <div className="p-6 space-y-4 overflow-y-auto min-h-0">
                                 {/* Alert Box */}
                                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 text-xs text-blue-900 space-y-1.5 leading-relaxed">
                                     <p className="font-bold flex items-center gap-1.5 text-blue-950">

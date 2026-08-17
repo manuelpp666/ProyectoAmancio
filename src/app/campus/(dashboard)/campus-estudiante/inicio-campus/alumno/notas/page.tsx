@@ -118,7 +118,7 @@ export default function MisCalificacionesPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-8">
+    <div className="max-w-5xl mx-auto space-y-8">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b pb-6">
         <div>
           <h1 className="text-3xl font-bold text-[#701C32] mb-2">Mis Notas</h1>

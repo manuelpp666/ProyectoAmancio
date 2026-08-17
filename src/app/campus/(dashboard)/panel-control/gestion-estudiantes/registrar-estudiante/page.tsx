@@ -158,15 +158,17 @@ export default function RegistroEstudiantePage() {
             <div className="flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
 
                 {/* --- HEADER --- */}
-                <header className="h-16 border-b flex items-center gap-3 px-4 md:px-8 bg-white shrink-0">
+                {/* min-h-16 en vez de h-16: en móvil el título y su subtítulo
+                    necesitan dos líneas, y con la altura fija se recortaban. */}
+                <header className="min-h-16 border-b flex items-center gap-3 px-4 md:px-8 py-3 bg-white shrink-0">
                     <Link href="/campus/panel-control/gestion-estudiantes" className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-[#093E7A] transition-all">
                         <ArrowLeft size={22} />
                     </Link>
-                    <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[#093E7A]">person_add</span>
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-800 leading-tight">Registrar Nuevo Estudiante</h2>
-                            <p className="text-[11px] text-gray-400 leading-none">Completa los datos del estudiante y de su apoderado principal</p>
+                    <div className="flex items-center gap-2 min-w-0">
+                        <span className="material-symbols-outlined text-[#093E7A] shrink-0">person_add</span>
+                        <div className="min-w-0">
+                            <h2 className="text-lg sm:text-xl font-bold text-gray-800 leading-tight">Registrar Nuevo Estudiante</h2>
+                            <p className="text-[11px] text-gray-400 leading-tight">Completa los datos del estudiante y de su apoderado principal</p>
                         </div>
                     </div>
                 </header>

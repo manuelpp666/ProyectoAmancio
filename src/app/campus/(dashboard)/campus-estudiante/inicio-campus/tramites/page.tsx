@@ -3,7 +3,6 @@ import { useEffect, useState, useCallback } from "react";
 import { useUser } from "@/src/context/userContext";
 import { toast } from "sonner";
 import {
-  BookOpen,
   ArrowLeftRight,
   CreditCard,
   FileText
@@ -98,7 +97,7 @@ export default function Page() {
               </h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-left text-sm min-w-[720px]">
                 <thead>
                   <tr className="text-slate-400 font-bold uppercase text-[10px] tracking-widest border-b border-slate-100">
                     <th className="px-6 py-4">Fecha Venc.</th>
@@ -145,7 +144,7 @@ export default function Page() {
 
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-left text-sm min-w-[560px]">
 
                 <thead>
                   <tr className="text-slate-400 font-bold uppercase text-[10px] tracking-widest border-b border-slate-100">
@@ -153,7 +152,6 @@ export default function Page() {
                     <th className="px-6 py-4">Concepto</th>
                     <th className="px-6 py-4">Nro Operación</th>
                     <th className="px-6 py-4 text-right">Importe</th>
-                    <th className="px-6 py-4 text-center">Recibo</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -163,16 +161,11 @@ export default function Page() {
                       <td className="px-6 py-4 font-medium">{pago.concepto}</td>
                       <td className="px-6 py-4 font-mono text-xs">{pago.codigo_operacion_bcp}</td>
                       <td className="px-6 py-4 text-right font-black">S/ {Number(pago.monto_total).toFixed(2)}</td>
-                      <td className="px-6 py-4 text-center">
-                        <button className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                          <BookOpen className="text-[#093E7A] w-5 h-5" />
-                        </button>
-                      </td>
                     </tr>
                   ))}
                   {historial.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="text-center py-10 text-slate-400 italic">No hay historial de pagos disponible.</td>
+                      <td colSpan={4} className="text-center py-10 text-slate-400 italic">No hay historial de pagos disponible.</td>
                     </tr>
                   )}
                 </tbody>

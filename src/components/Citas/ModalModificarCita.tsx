@@ -1,53 +1,52 @@
 "use client";
+
 import { useState, useEffect } from "react";
-import { X, Calendar, Clock, CheckCircle, Loader2, AlertCircle } from "lucide-react";
+import { X, Calendar, Clock, CheckCircle, Loader2, User } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 import { toast } from "sonner";
 
-export function ModalModificarCita({ isOpen, onClose, onSuccess, cita }: any) {
-  const [mounted, setMounted] = useState(false);
-  const [loading, setLoading] = useState(false);
-  
-  // Estado para la nueva fecha (input datetime-local)
-  const [nuevaFecha, setNuevaFecha] = useState("");
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  cita: any;
+}
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+export function ModalModificarCita({ isOpen, onClose, onSuccess, cita }: Props) {
+  const [loading, setLoading] = useState(false);
+  const [nuevaFecha, setNuevaFecha] = useState("");
 
   // Sincronizar la fecha cuando se abre el modal con la cita seleccionada
   useEffect(() => {
     if (cita && cita.fecha_cita) {
-      // Convertimos el formato de la DB al formato que entiende el input datetime-local
       const date = new Date(cita.fecha_cita);
-      const formattedDate = date.toISOString().slice(0, 16); 
+      const formattedDate = date.toISOString().slice(0, 16);
       setNuevaFecha(formattedDate);
     }
   }, [cita, isOpen]);
 
-  if (!mounted || !isOpen || !cita) return null;
+  if (!isOpen || !cita) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!nuevaFecha) return;
     setLoading(true);
 
     try {
-      // Según tu router: PATCH /citas/{id_cita}/reprogramar?nueva_fecha=...
-      // Enviamos la fecha como query parameter tal como lo espera FastAPI
       const res = await apiFetch(
-        `/conducta/citas/${cita.id_cita}/reprogramar?nueva_fecha=${nuevaFecha}`, 
+        `/conducta/citas/${cita.id_cita}/reprogramar?nueva_fecha=${encodeURIComponent(nuevaFecha)}`,
         { method: "PATCH" }
       );
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
 
       if (res.ok) {
         toast.success("Cita reprogramada correctamente");
         onSuccess();
       } else {
-        toast.error(data.detail || "Error al reprogramar la cita");
+        toast.error(data?.detail || "Error al reprogramar la cita");
       }
-    } catch (error) {
+    } catch {
       toast.error("Error de conexión con el servidor");
     } finally {
       setLoading(false);
@@ -55,75 +54,80 @@ export function ModalModificarCita({ isOpen, onClose, onSuccess, cita }: any) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
       <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        
-        {/* MODAL HEADER */}
-        <div className="bg-amber-600 px-6 py-5 text-white flex justify-between items-start">
+        {/* CABECERA */}
+        <div className="bg-[#093E7A] px-6 py-5 text-white flex justify-between items-start shrink-0">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
               <Calendar size={24} />
             </div>
             <div>
-              <h2 className="font-black text-lg leading-tight">Reprogramar Cita</h2>
-              <p className="text-[11px] text-white/70 mt-0.5">Ajusta la fecha y hora de la atención.</p>
+              <h2 className="font-black text-lg leading-tight">Reprogramar Cita Psicológica</h2>
+              <p className="text-[11px] text-white/70 mt-0.5">Ajusta la nueva fecha y hora para la atención.</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors mt-0.5">
+          <button
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="p-2 hover:bg-white/10 rounded-full transition-colors mt-0.5"
+          >
             <X size={24} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
-          
+        <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-6">
           {/* INFORMACIÓN DE LA CITA ACTUAL */}
-          <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex items-start gap-4">
-            <div className="bg-amber-600/10 p-3 rounded-xl text-amber-700">
-              <AlertCircle size={24} />
+          <div className="bg-blue-50/60 border border-blue-100 p-4 rounded-2xl flex items-start gap-4">
+            <div className="bg-[#093E7A] text-white p-3 rounded-xl shrink-0">
+              <User size={20} />
             </div>
-            <div>
-              <p className="text-xs font-bold text-amber-800 uppercase tracking-wider">Estudiante</p>
-              <p className="text-[#2C3E50] font-bold">{cita.alumno_nombre}</p>
-              <p className="text-xs text-gray-500 mt-1">Motivo: {cita.motivo}</p>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold text-[#093E7A] uppercase tracking-wider">Estudiante</p>
+              <p className="text-gray-900 font-bold text-sm truncate">{cita.alumno_nombre}</p>
+              <p className="text-xs text-gray-600 mt-1">
+                <span className="font-semibold text-gray-700">Motivo:</span> {cita.motivo}
+              </p>
             </div>
           </div>
 
           {/* SELECCIÓN DE NUEVA FECHA */}
           <div>
-            <label className="text-xs font-black text-[#2C3E50] uppercase mb-2 block tracking-wider">
+            <label className="text-xs font-black text-gray-800 uppercase mb-2 block tracking-wider">
               Nueva Fecha y Hora
             </label>
             <div className="relative">
-              <Clock className="absolute left-3 top-3.5 text-gray-400" size={18} />
+              <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input
                 type="datetime-local"
                 required
-                className="w-full pl-10 pr-4 py-3 border-2 border-gray-100 rounded-xl outline-none focus:border-amber-600 transition-all font-medium text-[#2C3E50]"
                 value={nuevaFecha}
                 onChange={(e) => setNuevaFecha(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-800 outline-none focus:border-[#093E7A] focus:ring-2 focus:ring-[#093E7A]/15 transition-colors cursor-pointer"
               />
             </div>
-            <p className="text-[10px] text-gray-400 mt-2 px-1">
-              * El sistema verificará si el psicólogo tiene disponibilidad en el horario elegido.
+            <p className="text-[11px] text-gray-400 mt-2 px-1">
+              La cita pasará a estado REPROGRAMADA y mantendrá su registro en el expediente.
             </p>
           </div>
 
           {/* BOTONES DE ACCIÓN */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-2 border-t border-gray-100">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 font-bold text-gray-500 hover:bg-gray-100 rounded-xl transition-colors"
+              disabled={loading}
+              className="flex-1 py-3 font-bold text-gray-600 hover:bg-gray-100 rounded-xl text-xs transition-colors disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading || !nuevaFecha}
-              className="flex-[2] bg-amber-600 text-white py-3 rounded-xl font-bold hover:bg-amber-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-600/20"
+              className="flex-[2] bg-[#701C32] text-white py-3 rounded-xl font-bold text-xs hover:bg-[#5a1628] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#701C32]/20 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
             >
-              {loading ? <Loader2 className="animate-spin" size={20}/> : <CheckCircle size={20}/>}
-              Guardar Cambios
+              {loading ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} />}
+              {loading ? "Guardando..." : "Guardar Nueva Fecha"}
             </button>
           </div>
         </form>

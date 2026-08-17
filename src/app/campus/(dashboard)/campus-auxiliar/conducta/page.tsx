@@ -34,6 +34,8 @@ interface FiltrosConducta {
   anio: string;
   bimestres: number[];
   bimestre_actual: number;
+  // El año de verano es un periodo continuo, sin bimestres.
+  es_verano?: boolean;
   secciones: SeccionFiltro[];
 }
 
@@ -104,21 +106,31 @@ export default function GestionConductaAuxiliarPage() {
     nuevaNota: 20,
   });
 
-  // 1. Cargar opciones de filtros
+  // 1. Cargar opciones de filtros.
+  //
+  // Depende del año porque los periodos cambian con él: un año de verano no
+  // tiene bimestres sino un único periodo. Cargándolos solo al montar, al
+  // cambiar de año se seguían ofreciendo los cuatro bimestres del año regular.
+  // La primera vuelta va sin año (el backend elige el activo) y la segunda ya
+  // con el que devolvió.
   useEffect(() => {
     (async () => {
       try {
-        const res = await apiFetch("/conducta/filtros");
+        const res = await apiFetch(`/conducta/filtros${anio ? `?anio=${anio}` : ""}`);
         if (!res.ok) throw new Error();
         const f: FiltrosConducta = await res.json();
         setFiltros(f);
-        setAnio(f.anio || "2026");
-        setBimestre(f.bimestre_actual || 1);
+        if (!anio) setAnio(f.anio || "2026");
+        // Si el periodo elegido no existe en este año (pasar de un año regular
+        // a uno de verano), se cae al que el backend marca como actual.
+        setBimestre((prev) =>
+          f.bimestres?.includes(prev) ? prev : (f.bimestre_actual || 1)
+        );
       } catch {
         toast.error("No se pudieron cargar los filtros de conducta");
       }
     })();
-  }, []);
+  }, [anio]);
 
   // Debounce de búsqueda
   useEffect(() => {
@@ -295,7 +307,7 @@ export default function GestionConductaAuxiliarPage() {
   }, [datos]);
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* HEADER DE LA SECCIÓN */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
         <div className="flex items-center gap-3.5">
@@ -358,22 +370,25 @@ export default function GestionConductaAuxiliarPage() {
             </select>
           </div>
 
-          {/* Bimestre */}
+          {/* Periodo. Los valores los manda el backend: en un año de verano hay
+              uno solo, porque las clases son continuas y no hay bimestres. */}
           <div>
             <label className="block text-[11px] font-bold text-gray-600 mb-1">
-              Bimestre
+              {filtros?.es_verano ? "Periodo" : "Bimestre"}
             </label>
             <select
               value={bimestre}
               onChange={(e) =>
                 cambiarFiltro(() => setBimestre(Number(e.target.value)))
               }
-              className="w-full h-9 px-3 text-xs bg-gray-50 border border-gray-200 rounded-lg font-bold text-[#701C32] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#701C32]/30"
+              disabled={!!filtros?.es_verano}
+              className="w-full h-9 px-3 text-xs bg-gray-50 border border-gray-200 rounded-lg font-bold text-[#701C32] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#701C32]/30 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <option value={1}>1º Bimestre</option>
-              <option value={2}>2º Bimestre</option>
-              <option value={3}>3º Bimestre</option>
-              <option value={4}>4º Bimestre</option>
+              {(filtros?.bimestres?.length ? filtros.bimestres : [1, 2, 3, 4]).map((b) => (
+                <option key={b} value={b}>
+                  {filtros?.es_verano ? "Verano" : `${b}º Bimestre`}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -539,7 +554,7 @@ export default function GestionConductaAuxiliarPage() {
               ) : datos ? (
                 <>
                   Mostrando {datos.alumnos.length} de {datos.total} estudiantes ·{" "}
-                  <span className="text-[#701C32]">{bimestre}º Bimestre</span>
+                  <span className="text-[#701C32]">{filtros?.es_verano ? "Periodo de verano" : `${bimestre}º Bimestre`}</span>
                 </>
               ) : (
                 "Sin datos"
@@ -776,7 +791,7 @@ export default function GestionConductaAuxiliarPage() {
       {/* ========================================================= */}
       {modalConfirmacion.abierto && modalConfirmacion.alumno && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 space-y-4 animate-in fade-in zoom-in duration-150">
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-gray-100 space-y-4 animate-in fade-in zoom-in duration-150">
             {/* Header del Modal */}
             <div className="flex items-start gap-3.5">
               <div className="p-3 bg-amber-100 text-amber-700 rounded-xl shrink-0">
@@ -803,7 +818,7 @@ export default function GestionConductaAuxiliarPage() {
               <div className="flex justify-between border-b border-amber-200/50 pb-1.5">
                 <span className="font-bold text-gray-600">Periodo:</span>
                 <span className="text-gray-800">
-                  {bimestre}º Bimestre · {anio}
+                  {filtros?.es_verano ? "Verano" : `${bimestre}º Bimestre`} · {anio}
                 </span>
               </div>
               <div className="flex justify-between border-b border-amber-200/50 pb-1.5">

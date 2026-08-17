@@ -1,11 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useUser } from "@/src/context/userContext";
-import {
-
-  BookOpen
-
-} from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/src/lib/api";
 
@@ -66,14 +61,13 @@ export default function HistorialPage() {
       {/* Tabla completa */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm min-w-[560px]">
             <thead>
               <tr className="bg-slate-50/50 text-slate-400 font-bold uppercase text-[10px] tracking-widest border-b border-slate-100">
                 <th className="px-6 py-4">Fecha Pago</th>
                 <th className="px-6 py-4">Concepto</th>
                 <th className="px-6 py-4">Nro Operación</th>
                 <th className="px-6 py-4 text-right">Importe</th>
-                <th className="px-6 py-4 text-center">Recibo</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -85,13 +79,13 @@ export default function HistorialPage() {
                   <td className="px-6 py-4 font-semibold text-slate-700">{pago.concepto}</td>
                   <td className="px-6 py-4 font-mono text-xs text-slate-500">{pago.codigo_operacion_bcp}</td>
                   <td className="px-6 py-4 text-right font-black text-slate-800">S/ {Number(pago.monto_total).toFixed(2)}</td>
-                  <td className="px-6 py-4 text-center">
-                    <button className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-                      <BookOpen className="text-[#093E7A] w-5 h-5" />
-                    </button>
-                  </td>
                 </tr>
               ))}
+              {historialFiltrado.length === 0 && !isLoading && (
+                <tr>
+                  <td colSpan={4} className="text-center py-10 text-slate-400 italic">No hay historial de pagos disponible.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

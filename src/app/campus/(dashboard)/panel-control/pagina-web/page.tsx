@@ -193,10 +193,13 @@ export default function GestionWebPage() {
         <HeaderPanel />
 
         {/* BARRA SUPERIOR ESTÁNDAR */}
-        <div className="h-16 border-b bg-white flex items-center justify-between px-4 md:px-8 shrink-0">
-          <div className="flex items-center gap-2">
+        {/* min-h-16 y flex-wrap en vez de h-16: con el aviso de cambios sin
+            guardar aparecen hasta cuatro elementos en la barra, que no caben
+            en una línea en móvil ni en pantalla partida. */}
+        <div className="min-h-16 border-b bg-white flex flex-wrap items-center justify-between gap-3 px-4 md:px-8 py-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="material-symbols-outlined text-[#093E7A]">language</span>
-            <h2 className="text-xl font-bold text-gray-800">Editor Web</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800">Editor Web</h2>
             {isDirty && (
               <span className="ml-2 flex items-center gap-1.5 text-[11px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
@@ -204,12 +207,12 @@ export default function GestionWebPage() {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {isDirty && (
               <button
                 onClick={revert}
                 disabled={guardando}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-gray-100 rounded-lg font-bold text-sm hover:bg-gray-200 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-gray-100 rounded-lg font-bold text-sm hover:bg-gray-200 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               >
                 <RotateCcw size={16} /> Revertir
               </button>
@@ -217,10 +220,10 @@ export default function GestionWebPage() {
             <button
               onClick={handleSave}
               disabled={!isDirty || guardando || !!uploadingField}
-              className="flex items-center gap-2 px-5 py-2 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d59] transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#093E7A] disabled:active:scale-100"
+              className="flex items-center gap-2 px-4 sm:px-5 py-2 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d59] transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#093E7A] disabled:active:scale-100 whitespace-nowrap"
             >
               {guardando ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-              {guardando ? "Guardando..." : "Guardar Cambios"}
+              {guardando ? "Guardando..." : <>Guardar<span className="hidden sm:inline">&nbsp;Cambios</span></>}
             </button>
           </div>
         </div>
@@ -245,7 +248,7 @@ export default function GestionWebPage() {
         {/* AVISO DE CAMBIOS SIN GUARDAR AL CAMBIAR DE PESTAÑA */}
         {pestanaPendiente && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-200 overflow-y-auto max-h-[90vh]">
               <div className="flex items-start gap-4 mb-5">
                 <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
                   <AlertTriangle className="text-amber-600" size={24} />

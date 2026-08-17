@@ -38,6 +38,9 @@ export interface ResultadoReporte {
 
 export interface ReporteReciente {
   id_reporte: number;
+  id_alumno?: number;
+  id_nivel_conducta?: number;
+  id_tipo_falta?: number;
   fecha: string;
   alumno: string;
   dni: string | null;

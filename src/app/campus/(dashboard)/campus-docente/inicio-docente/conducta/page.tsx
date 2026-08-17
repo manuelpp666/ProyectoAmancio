@@ -33,6 +33,8 @@ interface FiltrosConducta {
   anio: string;
   bimestres: number[];
   bimestre_actual: number;
+  // El año de verano es un periodo continuo, sin bimestres.
+  es_verano?: boolean;
   secciones: SeccionFiltro[];
   es_tutor?: boolean;
 }
@@ -103,20 +105,36 @@ export default function GestionConductaDocentePage() {
     nuevaNota: 20,
   });
 
-  // 1. Cargar opciones de filtros y verificar si es tutor
+  // 1. Cargar opciones de filtros y verificar si es tutor.
+  //
+  // Depende del año porque los periodos y las secciones cambian con él: un año
+  // de verano no tiene bimestres sino un único periodo. Cargando los filtros
+  // solo al montar, al cambiar de año se seguían ofreciendo los cuatro
+  // bimestres del año regular. La primera vuelta va sin año (el backend elige
+  // el activo) y la segunda ya con el que devolvió.
   useEffect(() => {
     (async () => {
       setCargandoFiltros(true);
       try {
-        const res = await apiFetch("/conducta/filtros");
+        const res = await apiFetch(`/conducta/filtros${anio ? `?anio=${anio}` : ""}`);
         if (!res.ok) throw new Error();
         const f: FiltrosConducta = await res.json();
         setFiltros(f);
-        setAnio(f.anio || "2026");
-        setBimestre(f.bimestre_actual || 1);
+        if (!anio) setAnio(f.anio || "2026");
+        // Si el periodo elegido no existe en este año (pasar de un año regular
+        // a uno de verano), se cae al que el backend marca como actual.
+        setBimestre((prev) =>
+          f.bimestres?.includes(prev) ? prev : (f.bimestre_actual || 1)
+        );
 
         if (f.secciones && f.secciones.length > 0) {
-          setIdSeccion(String(f.secciones[0].id_seccion));
+          setIdSeccion((prev) =>
+            f.secciones.some((s) => String(s.id_seccion) === prev)
+              ? prev
+              : String(f.secciones[0].id_seccion)
+          );
+        } else {
+          setIdSeccion("");
         }
       } catch {
         toast.error("No se pudieron cargar los datos de tutoría");
@@ -124,7 +142,7 @@ export default function GestionConductaDocentePage() {
         setCargandoFiltros(false);
       }
     })();
-  }, []);
+  }, [anio]);
 
   // Debounce de búsqueda
   useEffect(() => {
@@ -276,7 +294,7 @@ export default function GestionConductaDocentePage() {
 
   if (cargandoFiltros) {
     return (
-      <div className="flex h-full items-center justify-center bg-[#F8FAFC]">
+      <div className="flex h-[60vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-[#701C32]" />
           <p className="text-sm font-bold text-gray-500">Cargando datos de tutoría...</p>
@@ -288,8 +306,8 @@ export default function GestionConductaDocentePage() {
   // Si el docente no es tutor de ninguna sección
   if (!filtros?.secciones || filtros.secciones.length === 0) {
     return (
-      <div className="flex-1 bg-[#F8FAFC] p-6 md:p-10 min-h-screen">
-        <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-[1600px] mx-auto space-y-6 pb-8">
+        <div className="space-y-6">
           <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
             <div className="w-12 h-12 rounded-2xl bg-[#701C32]/10 text-[#701C32] flex items-center justify-center">
               <Award size={26} />
@@ -318,25 +336,20 @@ export default function GestionConductaDocentePage() {
   const seccionActualObj = filtros.secciones.find((s) => String(s.id_seccion) === idSeccion) || filtros.secciones[0];
 
   return (
-    <div className="flex-1 bg-[#F8FAFC] p-4 md:p-8 min-h-screen overflow-y-auto">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-[1600px] mx-auto space-y-6 pb-8">
+      <div className="space-y-6">
         {/* CABECERA */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200/80 shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#701C32]/10 text-[#701C32] flex items-center justify-center shrink-0">
-              <Award size={26} />
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b pb-6">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold text-[#701C32]">Notas de Conducta</h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-[#701C32] text-white">
+                TUTORÍA
+              </span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl md:text-2xl font-black text-gray-900">Notas de Conducta</h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-[#701C32] text-white">
-                  TUTORÍA
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 mt-0.5">
-                Aula asignada: <b className="text-gray-800">{seccionActualObj?.grado} - Sección {seccionActualObj?.seccion}</b> ({seccionActualObj?.nivel})
-              </p>
-            </div>
+            <p className="text-gray-500 text-sm">
+              Aula asignada: <b className="text-gray-800">{seccionActualObj?.grado} - Sección {seccionActualObj?.seccion}</b> ({seccionActualObj?.nivel})
+            </p>
           </div>
 
           <div className="flex items-center gap-2 self-end sm:self-auto">
@@ -390,9 +403,11 @@ export default function GestionConductaDocentePage() {
         {/* FILTROS Y CONTROLES */}
         <div className="bg-white p-4 md:p-5 rounded-2xl border border-gray-200/80 shadow-sm space-y-4">
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-            {/* SELECTOR DE BIMESTRES */}
+            {/* SELECTOR DE BIMESTRES.
+                Los periodos los manda el backend: en un año de verano es uno
+                solo, porque las clases son continuas y no hay bimestres. */}
             <div className="flex items-center gap-1.5 p-1 bg-gray-100 rounded-xl overflow-x-auto">
-              {[1, 2, 3, 4].map((b) => (
+              {(filtros.bimestres?.length ? filtros.bimestres : [1, 2, 3, 4]).map((b) => (
                 <button
                   key={b}
                   onClick={() => {
@@ -405,7 +420,7 @@ export default function GestionConductaDocentePage() {
                       : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
-                  {b}° Bimestre
+                  {filtros.es_verano ? "Periodo de verano" : `${b}° Bimestre`}
                 </button>
               ))}
             </div>
@@ -456,7 +471,7 @@ export default function GestionConductaDocentePage() {
         {/* TABLA DE ALUMNOS */}
         <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[900px]">
               <thead>
                 <tr className="bg-[#fcfafa] border-b border-gray-200 text-[#617489] text-[11px] font-black uppercase tracking-wider">
                   <th className="px-5 py-3.5">#</th>
@@ -627,7 +642,7 @@ export default function GestionConductaDocentePage() {
       {/* --- MODAL DE CONFIRMACIÓN POR DISCREPANCIA --- */}
       {modalConfirmacion.abierto && modalConfirmacion.alumno && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-200 border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-in zoom-in duration-200 border border-gray-100">
             <div className="p-5 bg-amber-600 text-white flex items-center gap-3">
               <AlertTriangle className="h-6 w-6 shrink-0" />
               <h3 className="font-black text-lg">Confirmar Ajuste de Conducta</h3>
@@ -641,7 +656,7 @@ export default function GestionConductaDocentePage() {
 
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2 text-xs text-amber-900">
                 <div className="flex justify-between items-center py-1 border-b border-amber-200/60">
-                  <span>Reportes en el {bimestre}° Bimestre:</span>
+                  <span>Reportes en {filtros.es_verano ? "el periodo de verano" : `el ${bimestre}° Bimestre`}:</span>
                   <b className="text-amber-950">{modalConfirmacion.alumno.total_reportes} incidencia(s)</b>
                 </div>
                 <div className="flex justify-between items-center py-1 border-b border-amber-200/60">

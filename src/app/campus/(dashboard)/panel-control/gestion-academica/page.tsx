@@ -1063,8 +1063,8 @@ export default function GestionAcademicaPage() {
       {/* --- MODAL CREAR AÑO (NUEVO BOTÓN) --- */}
       {isCrearAnioModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div className="bg-[#093E7A] px-6 py-5 text-white flex justify-between items-start">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-[#093E7A] px-6 py-5 text-white flex justify-between items-start shrink-0">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">calendar_add_on</span></div>
                 <div>
@@ -1074,7 +1074,7 @@ export default function GestionAcademicaPage() {
               </div>
               <button onClick={() => setIsCrearAnioModalOpen(false)} className="text-white/70 hover:text-white transition-colors mt-0.5"><span className="material-symbols-outlined">close</span></button>
             </div>
-            <form onSubmit={handleCrearAnio} className="p-6 space-y-4">
+            <form onSubmit={handleCrearAnio} className="p-6 space-y-4 overflow-y-auto min-h-0">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Identificador del Año</label>
                 <input required maxLength={6} placeholder="Ej: 2026-1" className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]" onChange={(e) => setNuevoAnioData({ ...nuevoAnioData, id_anio_escolar: e.target.value })} />
@@ -1120,8 +1120,8 @@ export default function GestionAcademicaPage() {
       {/* --- MODAL EDITAR AÑO (MODIFICADO) --- */}
       {isEditarAnioModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div className="bg-[#093E7A] px-6 py-5 text-white flex justify-between items-start">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-[#093E7A] px-6 py-5 text-white flex justify-between items-start shrink-0">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">edit_calendar</span></div>
                 <div>
@@ -1131,7 +1131,7 @@ export default function GestionAcademicaPage() {
               </div>
               <button onClick={() => setIsEditarAnioModalOpen(false)} className="text-white/70 hover:text-white transition-colors mt-0.5"><span className="material-symbols-outlined">close</span></button>
             </div>
-            <form onSubmit={handleEditarAnio} className="p-6 space-y-4">
+            <form onSubmit={handleEditarAnio} className="p-6 space-y-4 overflow-y-auto min-h-0">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Tipo de Año Académico</label>
                 <select
@@ -1172,8 +1172,8 @@ export default function GestionAcademicaPage() {
       {/* --- MODAL INSCRIPCIONES --- */}
       {isInscripcionModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div className="bg-[#093E7A] px-6 py-5 text-white flex justify-between items-start">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-[#093E7A] px-6 py-5 text-white flex justify-between items-start shrink-0">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">how_to_reg</span></div>
                 <div>
@@ -1183,7 +1183,7 @@ export default function GestionAcademicaPage() {
               </div>
               <button onClick={() => setIsInscripcionModalOpen(false)} className="text-white/70 hover:text-white transition-colors mt-0.5"><span className="material-symbols-outlined">close</span></button>
             </div>
-            <form onSubmit={handleGuardarInscripcion} className="p-6 space-y-4">
+            <form onSubmit={handleGuardarInscripcion} className="p-6 space-y-4 overflow-y-auto min-h-0">
               <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 text-xs text-blue-800 mb-4">
                 <p>Las matrículas automáticas solo se procesarán si la fecha actual está dentro de este rango.</p>
               </div>
@@ -1207,8 +1207,8 @@ export default function GestionAcademicaPage() {
       {/* --- MODAL DE SECCIÓN --- */}
       {isSeccionModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-            <div className="bg-[#093E7A] px-6 py-5 text-white flex justify-between items-start">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-[#093E7A] px-6 py-5 text-white flex justify-between items-start shrink-0">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">groups</span></div>
                 <div>
@@ -1218,7 +1218,7 @@ export default function GestionAcademicaPage() {
               </div>
               <button onClick={() => setIsSeccionModalOpen(false)} className="text-white/70 hover:text-white transition-colors mt-0.5"><span className="material-symbols-outlined">close</span></button>
             </div>
-            <form onSubmit={handleGuardarSeccion} className="p-6 space-y-4">
+            <form onSubmit={handleGuardarSeccion} className="p-6 space-y-4 overflow-y-auto min-h-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre</label>

@@ -2,7 +2,7 @@ import { Landmark, Clock, FileText } from "lucide-react";
 
 export default function Page() {
   return (
-    <div className="bg-[#F3F4F6] text-slate-800 min-h-screen p-8">
+    <div className="text-slate-800">
       <div className="max-w-4xl mx-auto space-y-8">
         
         {/* Encabezado */}

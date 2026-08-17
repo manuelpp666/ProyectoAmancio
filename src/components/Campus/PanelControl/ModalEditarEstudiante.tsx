@@ -583,7 +583,7 @@ export function ModalEditarEstudiante({ alumno, onClose, onSaved }: Props) {
       {/* CONFIRMACIÓN DE BAJA (encima del modal) */}
       {confirmarBaja && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div role="alertdialog" aria-modal="true" className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 modal-in">
+          <div role="alertdialog" aria-modal="true" className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 modal-in overflow-y-auto max-h-[90vh]">
             <h3 className="text-lg font-black text-gray-900">Quitar familiar</h3>
             <p className="text-gray-600 text-sm mt-2 leading-relaxed">
               ¿Seguro que desea quitar a <b>{confirmarBaja.nombre}</b> de {alumno.nombres} {alumno.apellidos}?

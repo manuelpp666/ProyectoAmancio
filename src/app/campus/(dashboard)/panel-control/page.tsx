@@ -181,11 +181,11 @@ export default function DashboardPage() {
       <div className="space-y-8 w-full">
 
         {/* SALUDO */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-[#701C32] to-[#922a44] rounded-2xl p-8 shadow-lg shadow-[#701C32]/10">
+        <div className="relative overflow-hidden bg-gradient-to-r from-[#701C32] to-[#922a44] rounded-2xl p-5 sm:p-8 shadow-lg shadow-[#701C32]/10">
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
             <div>
               <p className="text-white/70 text-sm font-bold uppercase tracking-widest mb-1">{fechaLarga()}</p>
-              <h3 className="text-white text-3xl font-black">
+              <h3 className="text-white text-2xl sm:text-3xl font-black">
                 {saludo()}, {nombre || username || "Administrador"} 👋
               </h3>
               <p className="text-white/80 mt-2">
@@ -309,7 +309,7 @@ export default function DashboardPage() {
                       const lleno = pct >= 90;
                       return (
                         <div key={o.id_seccion} className="flex items-center gap-3">
-                          <span className="text-xs font-bold text-gray-600 w-32 shrink-0 truncate">
+                          <span className="text-xs font-bold text-gray-600 w-24 sm:w-32 shrink-0 truncate">
                             {o.grado} {o.seccion}
                             <span className="text-gray-300 ml-1">
                               {o.nivel === "PRIMARIA" ? "P" : "S"}
@@ -345,11 +345,11 @@ export default function DashboardPage() {
                     { l: "Reportes (7 días)", v: datos.conducta.reportes_semana, d: "Incidencias registradas", c: "text-slate-600", b: "bg-slate-100", i: ClipboardList },
                     { l: "Citas esta semana", v: datos.psicologia.citas_semana, d: "Agenda de psicología", c: "text-violet-600", b: "bg-violet-50", i: HeartPulse },
                   ].map((e) => (
-                    <div key={e.l} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                    <div key={e.l} className="bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-sm">
                       <div className={`p-2.5 rounded-xl ${e.b} ${e.c} w-fit mb-3`}>
                         {React.createElement(e.i, { size: 20 })}
                       </div>
-                      <p className="text-3xl font-black text-gray-900">{e.v}</p>
+                      <p className="text-2xl sm:text-3xl font-black text-gray-900">{e.v}</p>
                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">{e.l}</p>
                       <p className="text-xs text-gray-400 mt-1">{e.d}</p>
                     </div>

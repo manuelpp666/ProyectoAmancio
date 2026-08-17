@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 import { ModalRegistrarReporte } from "@/src/components/Campus/CampusAuxiliar/ModalRegistrarReporte";
+import { ModalEditarReporte } from "@/src/components/Campus/CampusAuxiliar/ModalEditarReporte";
+import { ModalEliminarReporte } from "@/src/components/Campus/CampusAuxiliar/ModalEliminarReporte";
 import { ItemReporte } from "@/src/components/Campus/CampusAuxiliar/ItemReporte";
 import { ReporteReciente, RespuestaReportes, ResultadoReporte } from "@/src/interfaces/conducta";
 
@@ -32,6 +34,8 @@ export default function ReportesAuxiliarPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [reporteEditar, setReporteEditar] = useState<ReporteReciente | null>(null);
+  const [reporteEliminar, setReporteEliminar] = useState<ReporteReciente | null>(null);
   const [ultimoRegistro, setUltimoRegistro] = useState<ResultadoReporte | null>(null);
 
   /* La escala de puntos la define el backend (behavior/constants.py) y viaja en
@@ -68,12 +72,30 @@ export default function ReportesAuxiliarPage() {
   const handleReporteRegistrado = (resultado: ResultadoReporte) => {
     setIsModalOpen(false);
     setUltimoRegistro(resultado);
-    toast.success("Reporte registrado correctamente");
+    toast.success("Reporte registrado y nota de conducta actualizada");
     if (resultado.requiere_cambio_ie) {
       toast.error("Falta muy grave: según el reglamento amerita cambio de I.E. Informe a dirección.");
     } else if (resultado.estado_color === "Rojo") {
       toast.warning("El alumno quedó en estado crítico. Considere derivarlo a psicología.");
     }
+    setLoading(true);
+    fetchReportes();
+  };
+
+  const handleReporteActualizado = (resultado: ResultadoReporte) => {
+    setReporteEditar(null);
+    setUltimoRegistro(resultado);
+    toast.success(`Reporte actualizado. Nota de conducta recalculada a ${resultado.puntaje_actual} pts`);
+    if (resultado.requiere_cambio_ie) {
+      toast.error("Falta muy grave: según el reglamento amerita cambio de I.E. Informe a dirección.");
+    }
+    setLoading(true);
+    fetchReportes();
+  };
+
+  const handleReporteEliminado = () => {
+    setReporteEliminar(null);
+    toast.success("Reporte eliminado y nota de conducta recalculada correctamente");
     setLoading(true);
     fetchReportes();
   };
@@ -88,7 +110,7 @@ export default function ReportesAuxiliarPage() {
             <FileWarning size={28} /> Reportes y Partes
           </h2>
           <p className="text-gray-600 text-sm mt-1">
-            Registre faltas al Reglamento Interno y revise los últimos reportes colocados.
+            Registre, edite o elimine faltas al Reglamento Interno. La nota de conducta del bimestre se recalcula automáticamente.
           </p>
         </div>
         <button
@@ -140,7 +162,12 @@ export default function ReportesAuxiliarPage() {
               </div>
               <ul className="divide-y divide-gray-50">
                 {reportes.map((r) => (
-                  <ItemReporte key={r.id_reporte} reporte={r} />
+                  <ItemReporte
+                    key={r.id_reporte}
+                    reporte={r}
+                    onEditar={(rep) => setReporteEditar(rep)}
+                    onEliminar={(rep) => setReporteEliminar(rep)}
+                  />
                 ))}
               </ul>
               {total > reportes.length && (
@@ -160,17 +187,17 @@ export default function ReportesAuxiliarPage() {
         {/* PANEL LATERAL */}
         <div className="space-y-6">
 
-          {/* RESULTADO DEL ÚLTIMO REGISTRO */}
+          {/* RESULTADO DEL ÚLTIMO REGISTRO / ACTUALIZACIÓN */}
           {ultimoRegistro && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 surface-in" aria-live="polite">
               <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2 mb-4">
-                <CheckCircle2 size={13} className="text-emerald-600" aria-hidden="true" /> Reporte registrado
+                <CheckCircle2 size={13} className="text-emerald-600" aria-hidden="true" /> Estado de conducta
               </h3>
               <p className="font-bold text-gray-800">{ultimoRegistro.alumno}</p>
               <p className="text-sm text-gray-600 mt-0.5">{ultimoRegistro.falta}</p>
               <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Puntaje actual</p>
+                  <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Puntaje del bimestre</p>
                   <p className={`text-2xl font-black tabular-nums ${SEMAFORO[ultimoRegistro.estado_color].clase}`}>
                     {ultimoRegistro.puntaje_actual}
                     <span className="text-sm font-bold text-gray-400"> / {escala.maximo}</span>
@@ -249,6 +276,20 @@ export default function ReportesAuxiliarPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleReporteRegistrado}
+      />
+
+      <ModalEditarReporte
+        isOpen={!!reporteEditar}
+        reporte={reporteEditar}
+        onClose={() => setReporteEditar(null)}
+        onSuccess={handleReporteActualizado}
+      />
+
+      <ModalEliminarReporte
+        isOpen={!!reporteEliminar}
+        reporte={reporteEliminar}
+        onClose={() => setReporteEliminar(null)}
+        onSuccess={handleReporteEliminado}
       />
     </div>
   );

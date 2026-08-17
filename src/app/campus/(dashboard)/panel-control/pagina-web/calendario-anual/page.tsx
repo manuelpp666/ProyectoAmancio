@@ -95,13 +95,16 @@ export default function CalendarioPage() {
         <HeaderPanel />
 
         {/* BARRA SUPERIOR ESTÁNDAR */}
-        <div className="h-16 border-b bg-white flex items-center justify-between px-4 md:px-8 shrink-0 gap-4">
-          <div className="flex items-center gap-4">
+        {/* min-h-16 y flex-wrap en vez de h-16: el título, el selector de año,
+            el buscador y el botón no caben en una línea en móvil ni en pantalla
+            partida. El buscador crece con el hueco disponible. */}
+        <div className="min-h-16 border-b bg-white flex flex-wrap items-center justify-between px-4 md:px-8 py-3 shrink-0 gap-3">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[#093E7A]">calendar_month</span>
-              <h2 className="text-xl font-bold text-gray-800">Calendario Anual</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-800">Calendario Anual</h2>
             </div>
-            <div className="h-6 w-px bg-gray-200 mx-2"></div>
+            <div className="hidden sm:block h-6 w-px bg-gray-200 mx-2"></div>
             <AnioSelector
               value={anioSeleccionado}
               onChange={setAnioSeleccionado}
@@ -109,18 +112,20 @@ export default function CalendarioPage() {
               loading={loadingAnios}
             />
           </div>
-          <div className="flex items-center gap-3">
+          {/* w-full en móvil, por el mismo motivo que en Gestión de Noticias:
+              compartiendo fila con el título, al buscador no le queda ancho. */}
+          <div className="flex w-full sm:w-auto items-center gap-3 min-w-0">
             <input
               type="text"
               placeholder="Buscar evento..."
-              className="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#093E7A]/20 outline-none"
+              className="flex-1 sm:flex-none min-w-0 sm:w-48 px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#093E7A]/20 outline-none"
               onChange={(e) => setFiltro(e.target.value)}
             />
             <button
               onClick={() => { setEventoActivo(null); setIsModalOpen(true); }}
-              className="flex items-center gap-2 px-5 py-2 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-colors"
+              className="flex items-center gap-2 px-4 sm:px-5 py-2 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-colors shrink-0 whitespace-nowrap"
             >
-              <Plus size={18} /> Agregar Evento
+              <Plus size={18} /> <span className="hidden sm:inline">Agregar Evento</span><span className="sm:hidden">Evento</span>
             </button>
           </div>
         </div>
@@ -131,7 +136,7 @@ export default function CalendarioPage() {
             {/* TABLA DE EVENTOS */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full text-left border-collapse min-w-[720px]">
                   <thead>
                     <tr className="border-b border-gray-50">
                       <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">Evento / Actividad</th>
@@ -188,8 +193,8 @@ export default function CalendarioPage() {
       {/* MODAL DE CREACIÓN/EDICIÓN */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
-            <div className="bg-[#093E7A] px-6 py-5 flex justify-between items-start text-white">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-[#093E7A] px-6 py-5 flex justify-between items-start text-white shrink-0">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0"><span className="material-symbols-outlined">event</span></div>
                 <div>
@@ -199,7 +204,7 @@ export default function CalendarioPage() {
               </div>
               <button onClick={() => setIsModalOpen(false)} className="hover:text-gray-300 mt-0.5"><span className="material-symbols-outlined">close</span></button>
             </div>
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto min-h-0">
               <EventForm
                 evento={eventoActivo}
                 // IMPORTANTE: Pasar el año seleccionado al formulario para que se guarde correctamente
