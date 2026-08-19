@@ -7,8 +7,8 @@ import { apiFetch } from "@/src/lib/api";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
 import {
-  LayoutDashboard, Users, UserPlus, Loader2,
-  AlertTriangle, ClipboardList, CalendarCheck, HeartPulse, ArrowRight,
+  LayoutDashboard, Users, Loader2,
+  AlertTriangle, ClipboardList, CalendarCheck, HeartPulse,
   Clock, XCircle, CheckCircle2, FileCheck, School, ShieldAlert,
 } from "lucide-react";
 
@@ -72,11 +72,8 @@ export default function DashboardPage() {
 
   const [nombre, setNombre] = useState("");
   const [datos, setDatos] = useState<Resumen | null>(null);
-  const [postulantes, setPostulantes] = useState(0);
   const [cargando, setCargando] = useState(true);
 
-  const puedeFinanzas = tienePermiso(permisos, "tramites_finanzas");
-  const puedeEstudiantes = tienePermiso(permisos, "gestion_estudiantes");
   const puedeAcademico = tienePermiso(permisos, "academico");
 
   useEffect(() => {
@@ -93,18 +90,14 @@ export default function DashboardPage() {
     if (!anio) return;
     setCargando(true);
     try {
-      const [resumen, post] = await Promise.all([
-        apiFetch(`/gestion/dashboard-admin?anio=${anio}`),
-        puedeEstudiantes ? apiFetch("/alumnos/solicitudes-pendientes") : Promise.resolve(null),
-      ]);
+      const resumen = await apiFetch(`/gestion/dashboard-admin?anio=${anio}`);
       if (resumen.ok) setDatos(await resumen.json());
-      if (post?.ok) setPostulantes((await post.json()).length);
     } catch (e) {
       console.error("Error cargando el resumen:", e);
     } finally {
       setCargando(false);
     }
-  }, [anio, puedeEstudiantes]);
+  }, [anio]);
 
   useEffect(() => {
     if (role?.toUpperCase() === "ADMIN") cargar();
@@ -122,56 +115,6 @@ export default function DashboardPage() {
   const a = datos?.asistencia_hoy;
 
   const marcadosHoy = a ? a.presentes + a.tardanzas + a.faltas + a.justificados : 0;
-  const seccionesPendientes = a ? a.secciones_total - a.secciones_registradas : 0;
-
-  // Avisos que exigen una acción concreta. Solo aparecen si hay algo que hacer.
-  const avisos = [
-    {
-      id: "postulantes",
-      mostrar: puedeEstudiantes && postulantes > 0,
-      icono: UserPlus,
-      valor: postulantes,
-      texto: postulantes === 1 ? "postulante por revisar" : "postulantes por revisar",
-      color: "text-orange-700", fondo: "bg-orange-50", borde: "border-orange-200",
-      ruta: "/campus/panel-control/gestion-estudiantes",
-    },
-    {
-      id: "tramites",
-      mostrar: puedeFinanzas && (datos?.tramites.pendientes ?? 0) > 0,
-      icono: ClipboardList,
-      valor: datos?.tramites.pendientes ?? 0,
-      texto: "trámites esperando respuesta",
-      color: "text-blue-700", fondo: "bg-blue-50", borde: "border-blue-200",
-      ruta: "/campus/panel-control/tramites/configuracion",
-    },
-    {
-      id: "asistencia",
-      mostrar: seccionesPendientes > 0 && (a?.secciones_total ?? 0) > 0,
-      icono: CalendarCheck,
-      valor: seccionesPendientes,
-      texto: seccionesPendientes === 1 ? "aula sin pasar lista hoy" : "aulas sin pasar lista hoy",
-      color: "text-amber-700", fondo: "bg-amber-50", borde: "border-amber-200",
-      ruta: "/campus/panel-control/gestion-academica",
-    },
-    {
-      id: "conducta",
-      mostrar: (datos?.conducta.en_critico ?? 0) > 0,
-      icono: ShieldAlert,
-      valor: datos?.conducta.en_critico ?? 0,
-      texto: "alumnos en conducta crítica",
-      color: "text-red-700", fondo: "bg-red-50", borde: "border-red-200",
-      ruta: "/campus/panel-control/gestion-estudiantes",
-    },
-    {
-      id: "citas",
-      mostrar: (datos?.psicologia.citas_hoy ?? 0) > 0,
-      icono: HeartPulse,
-      valor: datos?.psicologia.citas_hoy ?? 0,
-      texto: "citas de psicología hoy",
-      color: "text-violet-700", fondo: "bg-violet-50", borde: "border-violet-200",
-      ruta: "/campus/panel-control/gestion-estudiantes",
-    },
-  ].filter((x) => x.mostrar);
 
   return (
     // Sin fondo ni padding propios: esta ruta ya recibe el padding y el fondo
@@ -210,32 +153,6 @@ export default function DashboardPage() {
           </div>
         ) : (
           <>
-            {/* REQUIERE TU ATENCIÓN */}
-            {avisos.length > 0 && (
-              <section>
-                <h3 className="text-lg font-black text-gray-900 mb-4 flex items-center gap-2">
-                  <AlertTriangle size={18} className="text-amber-500" />
-                  Requiere tu atención
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {avisos.map((av) => (
-                    <Link key={av.id} href={av.ruta} className="group">
-                      <div className={`${av.fondo} ${av.borde} border rounded-2xl p-5 flex items-center gap-4 hover:shadow-md transition-all`}>
-                        <div className={`p-3 rounded-xl bg-white/70 ${av.color} shrink-0`}>
-                          {React.createElement(av.icono, { size: 22 })}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className={`text-2xl font-black ${av.color} leading-none`}>{av.valor}</p>
-                          <p className="text-xs font-bold text-gray-600 mt-1">{av.texto}</p>
-                        </div>
-                        <ArrowRight size={16} className={`${av.color} opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all shrink-0`} />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            )}
-
             {/* Aquí iba la situación económica (recaudación, deuda vencida y
                 los alumnos más morosos). Se retiró del dashboard por ser
                 información sensible: vive en Trámites y Finanzas, donde el

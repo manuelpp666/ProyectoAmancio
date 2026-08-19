@@ -11,6 +11,7 @@ import { HeaderCampus as Header } from "@/src/components/Campus/HeaderCampus";
 import { AsidePsicologo as SidebarPsicologo } from "@/src/components/Campus/CampusPsicologo/AsidePsicologo";
 import { AsideAuxiliar as SidebarAuxiliar } from "@/src/components/Campus/CampusAuxiliar/AsideAuxiliar";
 import { GuardiaPrimerIngreso } from "@/src/components/Campus/GuardiaPrimerIngreso";
+import { SincronizarPermisos } from "@/src/components/Campus/SincronizarPermisos";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { role, loading } = useUser();
@@ -83,6 +84,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           correo de contacto, y en ese caso la manda a completarlo. Vale para
           los cinco roles y no pinta nada. */}
       <GuardiaPrimerIngreso />
+
+      {/* Vuelve a preguntar al servidor por los permisos de la sesión al entrar,
+          al cambiar de apartado y al volver a la pestaña. Sin esto, un cambio de
+          permisos no se veía hasta cerrar la pestaña y volver a entrar. Tampoco
+          pinta nada. */}
+      <SincronizarPermisos />
 
       {/* Fondo oscuro del menú plegado. Vive solo aquí, para los cinco roles:
           el Aside del panel de administración dibujaba otro igual encima y las

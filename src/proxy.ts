@@ -9,9 +9,26 @@ import type { NextRequest } from 'next/server';
 // le toca, pero NO es la que protege los datos. De eso se encarga el backend,
 // que valida el rol en cada endpoint contra el token firmado.
 export function proxy(request: NextRequest) {
-  const token = request.cookies.get('authToken')?.value;
   const role = request.cookies.get('userRole')?.value;
   const { pathname } = request.nextUrl;
+
+  // Qué se usa para saber si hay sesión, y por qué NO es `authToken`.
+  //
+  // `authToken` la emite la API, que vive en api.amanciovarona.com. Una cookie
+  // sin atributo Domain es "host-only": el navegador solo la devuelve a ese
+  // mismo host. Este código, en cambio, se ejecuta en el servidor de Next.js,
+  // que es amanciovarona.com. Ahí `authToken` NUNCA llega.
+  //
+  // El efecto era un bucle silencioso: el login respondía 200 y guardaba su
+  // cookie, el navegador iba a /campus/panel-control, aquí se leía `authToken`
+  // como ausente y se devolvía al usuario a /campus. En pantalla parecía que el
+  // botón de iniciar sesión no hacía nada.
+  //
+  // `userRole` sí sirve: la escribe el navegador en ESTE dominio al entrar y se
+  // borra al salir. Y sigue valiendo `authToken` para cuando la web y la API
+  // comparten dominio, donde sí es visible.
+  const sesion = request.cookies.get('authToken')?.value ?? role;
+  const token = sesion;
 
   // 1. CASO: No hay token (Sesión expirada o Logout)
   if (!token) {

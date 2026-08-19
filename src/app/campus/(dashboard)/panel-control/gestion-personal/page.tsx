@@ -10,6 +10,7 @@ import { TipoPersonal } from "@/src/interfaces/personal";
 import { apiFetch, mensajeDeError } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
 import { usePermisos } from "@/src/hooks/usePermisos";
+import { useUser } from "@/src/context/userContext";
 import {
   CATALOGO_PERMISOS, NodoPermiso, Permisos,
   normalizar, establecer, estadoCasilla, contarCasillas, permisosCompletos, apagar,
@@ -55,6 +56,9 @@ const PESTANAS_PERSONAL: { id: TipoPersonal; label: string; icon: any }[] = [
 
 export default function GestionPersonalPage() {
   const { tienePermiso, loading: loadingPermisos } = usePermisos();
+  // Para reconocer si el administrador se está editando a sí mismo y refrescar
+  // su propio menú al instante, sin esperar a la siguiente navegación.
+  const { id_usuario: idUsuarioSesion, refrescarPermisos } = useUser();
   const [activeTab, setActiveTab] = useState<TipoPersonal>("admin");
   const [personal, setPersonal] = useState<Personal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -160,6 +164,9 @@ export default function GestionPersonalPage() {
   };
   const handleSavePermisos = async (nuevosPermisos: any) => {
     if (!selectedUser) return;
+    // Se guarda antes de la petición: el modal se cierra y `selectedUser` se
+    // vacía, así que después ya no se sabría a quién se editó.
+    const esUnoMismo = selectedUser.id_usuario === idUsuarioSesion;
     try {
       const res = await apiFetch(`/personal/admin/${selectedUser.id}/permisos`, {
         method: "PATCH",
@@ -171,6 +178,11 @@ export default function GestionPersonalPage() {
         toast.success("Permisos actualizados con éxito");
         setIsPermisosModalOpen(false);
         fetchPersonal(activeTab);
+        // Editarse a uno mismo no cambiaba el propio menú hasta cerrar sesión:
+        // los permisos de la sesión son una copia que solo se rellenaba al
+        // entrar. Al resto de administradores se les actualizan en su siguiente
+        // navegación (ver components/Campus/SincronizarPermisos.tsx).
+        if (esUnoMismo) refrescarPermisos();
       } else {
         toast.error("Error al actualizar permisos");
       }
