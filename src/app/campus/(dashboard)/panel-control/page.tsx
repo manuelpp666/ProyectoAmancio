@@ -50,6 +50,8 @@ const tienePermiso = (permisos: unknown, ruta: string): boolean => {
 interface Aula {
   id_seccion: number; nivel: string; grado: string; seccion: string;
   matriculados: number; vacantes: number;
+  /** Si el aula ya registró la asistencia de hoy. */
+  paso_lista?: boolean;
 }
 interface Resumen {
   asistencia_hoy: {
@@ -213,10 +215,20 @@ export default function DashboardPage() {
                   <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
                     <School size={18} className="text-[#701C32]" /> Ocupación de aulas
                   </h3>
-                  <Link href="/campus/panel-control/gestion-academica"
-                        className="text-xs font-bold text-[#093E7A] hover:underline">
-                    Gestionar aulas
-                  </Link>
+                  <div className="flex items-center gap-4">
+                    <span className="hidden sm:flex items-center gap-3 text-[11px] font-bold text-gray-400">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" /> pasó lista
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-red-500" /> falta pasar
+                      </span>
+                    </span>
+                    <Link href="/campus/panel-control/gestion-academica"
+                          className="text-xs font-bold text-[#093E7A] hover:underline">
+                      Gestionar aulas
+                    </Link>
+                  </div>
                 </div>
 
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
@@ -226,6 +238,18 @@ export default function DashboardPage() {
                       const lleno = pct >= 90;
                       return (
                         <div key={o.id_seccion} className="flex items-center gap-3">
+                          {/* Verde: ya pasó lista hoy. Rojo: todavía no.
+                              El title explica el color a quien no lo deduzca,
+                              y el aria-label lo dice en voz alta para quien
+                              use lector de pantalla: un color a secas no es
+                              información accesible. */}
+                          <span
+                            title={o.paso_lista ? "Ya pasó lista hoy" : "Todavía no pasa lista hoy"}
+                            aria-label={o.paso_lista ? "Ya pasó lista hoy" : "Todavía no pasa lista hoy"}
+                            className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                              o.paso_lista ? "bg-emerald-500" : "bg-red-500"
+                            }`}
+                          />
                           <span className="text-xs font-bold text-gray-600 w-24 sm:w-32 shrink-0 truncate">
                             {o.grado} {o.seccion}
                             <span className="text-gray-300 ml-1">

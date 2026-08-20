@@ -41,8 +41,6 @@ export default function AsignacionEstudiantesPage() {
   //Estados de modal de confirmacion
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingAsignacion, setPendingAsignacion] = useState<{ alumno: AlumnoMatriculado, seccionId: number, seccionNombre: string } | null>(null);
-  // Matrículas que YA tenían sección al cargar (las "asignadas desde antes")
-  const [asignadosOriginalmente, setAsignadosOriginalmente] = useState<Set<number>>(new Set());
 
   // 1. CARGA INICIAL
   useEffect(() => {
@@ -112,14 +110,6 @@ export default function AsignacionEstudiantesPage() {
             condicion: m.condicion
           }));
         setAlumnos(alumnosMapeados);
-        // Guardamos qué matrículas ya venían con sección desde el servidor
-        setAsignadosOriginalmente(
-          new Set(
-            alumnosMapeados
-              .filter((a: AlumnoMatriculado) => a.id_seccion !== null && a.id_seccion !== undefined)
-              .map((a: AlumnoMatriculado) => a.id_matricula)
-          )
-        );
       }
     } catch (error) {
       console.error(error);
@@ -167,11 +157,14 @@ export default function AsignacionEstudiantesPage() {
     return hoy >= inicio;
   }, [anioActualObj]);
 
-  // Un alumno está bloqueado si el año ya comenzó y ya estaba asignado desde antes
-  const estaBloqueado = useCallback(
-    (alumno: AlumnoMatriculado) => anioYaComenzo && asignadosOriginalmente.has(alumno.id_matricula),
-    [anioYaComenzo, asignadosOriginalmente]
-  );
+  // Antes había aquí un bloqueo: con el año ya empezado, quien ya tuviera
+  // sección no podía moverse ni desasignarse. Se retiró a petición del colegio.
+  // En la práctica sí hacen falta cambios a mitad de año —un traslado de aula,
+  // una sección que se reequilibra, una matrícula mal puesta— y corregirlo
+  // por base de datos era peor que permitirlo desde el panel.
+  //
+  // Lo que sí se conserva es el aviso de confirmación al asignar con el año en
+  // curso: no impide nada, solo evita el arrastre accidental.
 
   const nivelesVisibles = niveles.filter(n => {
     if (!anioActualObj) return false;
@@ -186,10 +179,6 @@ export default function AsignacionEstudiantesPage() {
   // --- DRAG & DROP ---
 
   const handleDragStart = (alumno: AlumnoMatriculado) => {
-    if (estaBloqueado(alumno)) {
-      toast.error("El año académico ya comenzó: este alumno ya está asignado y no puede moverse ni desasignarse.");
-      return;
-    }
     setDraggedStudent(alumno);
   };
 
@@ -201,12 +190,6 @@ export default function AsignacionEstudiantesPage() {
   const intentarAsignar = (alumno: AlumnoMatriculado, seccionId: number) => {
     if (!seccionesEditando[seccionId]) {
       toast.warning("Habilita la edición ('Editar Selección') para modificar esta sección.");
-      return;
-    }
-
-    // Defensa: un alumno bloqueado nunca debería llegar aquí
-    if (estaBloqueado(alumno)) {
-      toast.error("El año académico ya comenzó: no puedes mover a un alumno ya asignado.");
       return;
     }
 
@@ -254,10 +237,6 @@ export default function AsignacionEstudiantesPage() {
 
   // Núcleo de desasignación, reutilizado por arrastre y toque
   const intentarDesasignar = (alumno: AlumnoMatriculado) => {
-    if (estaBloqueado(alumno)) {
-      toast.error("No puedes desasignar a este alumno: el año académico ya comenzó y ya estaba asignado.");
-      return;
-    }
     if (alumno.id_seccion !== null && alumno.id_seccion !== undefined && !seccionesEditando[alumno.id_seccion]) {
       toast.warning("La sección de origen está bloqueada.");
       return;
@@ -280,10 +259,6 @@ export default function AsignacionEstudiantesPage() {
 
   // Toque (móvil): selecciona/deselecciona un estudiante para asignarlo
   const seleccionarAlumno = (alumno: AlumnoMatriculado) => {
-    if (estaBloqueado(alumno)) {
-      toast.error("Este alumno ya está asignado y el año comenzó: no se puede mover.");
-      return;
-    }
     setAlumnoSeleccionado(prev =>
       prev?.id_matricula === alumno.id_matricula ? null : alumno
     );
@@ -380,11 +355,11 @@ export default function AsignacionEstudiantesPage() {
                   </span>
                 )}
 
-                {/* INDICADOR DE AÑO EN CURSO (bloqueo de movimientos) */}
+                {/* El año en curso ya no limita nada: avisa, no bloquea. */}
                 {anioYaComenzo && (
                   <span className="ml-1 flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-1 rounded border border-amber-200 text-[10px] font-bold uppercase tracking-wide">
-                    <span className="material-symbols-outlined text-[12px]">lock</span>
-                    Año en curso · solo asignación
+                    <span className="material-symbols-outlined text-[12px]">event_available</span>
+                    Año en curso
                   </span>
                 )}
               </div>
@@ -560,12 +535,12 @@ export default function AsignacionEstudiantesPage() {
                           </div>
                           {anioYaComenzo && (
                             <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded text-[10px] text-amber-700 flex items-center gap-2">
-                              <span className="material-symbols-outlined text-sm">lock</span>
-                              El año ya comenzó: puedes asignar nuevos alumnos, pero los ya asignados (🔒) no se pueden mover ni desasignar.
+                              <span className="material-symbols-outlined text-sm">info</span>
+                              El año ya comenzó: al mover a un alumno se lleva consigo sus notas, asistencia y conducta.
                             </div>
                           )}
                           {/* Botón táctil: asignar el alumno seleccionado a esta sección */}
-                          {alumnoSeleccionado && estaEditando && !estaBloqueado(alumnoSeleccionado) && vacantesRestantes > 0 && (
+                          {alumnoSeleccionado && estaEditando && vacantesRestantes > 0 && (
                             <button
                               type="button"
                               onClick={() => handleTapSeccion(seccion.id_seccion || 0)}
@@ -585,22 +560,16 @@ export default function AsignacionEstudiantesPage() {
                               </div>
                             ) : (
                               <div className="space-y-1">
-                                {alumnosEnSeccion.map(a => {
-                                  const bloqueado = estaBloqueado(a);
-                                  return (
+                                {alumnosEnSeccion.map(a => (
                                   <div key={a.id_matricula}
-                                    draggable={estaEditando && !bloqueado}
+                                    draggable={estaEditando}
                                     onDragStart={() => handleDragStart(a)}
-                                    title={bloqueado ? "Alumno asignado antes del inicio de clases: no se puede mover ni desasignar" : undefined}
-                                    className={`text-xs p-2 rounded border truncate flex justify-between items-center gap-2 ${bloqueado
-                                      ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
-                                      : estaEditando ? 'bg-gray-50 border-gray-100 cursor-grab' : 'bg-gray-50 border-gray-100'
+                                    className={`text-xs p-2 rounded border truncate flex justify-between items-center gap-2 ${
+                                      estaEditando ? 'bg-gray-50 border-gray-100 cursor-grab' : 'bg-gray-50 border-gray-100'
                                       }`}
                                   >
                                     <span className="truncate">{a.nombres} {a.apellidos}</span>
-                                    {bloqueado ? (
-                                      <span className="material-symbols-outlined text-[14px] text-gray-400 shrink-0">lock</span>
-                                    ) : estaEditando ? (
+                                    {estaEditando ? (
                                       <button
                                         type="button"
                                         onClick={() => intentarDesasignar(a)}
@@ -611,8 +580,7 @@ export default function AsignacionEstudiantesPage() {
                                       </button>
                                     ) : null}
                                   </div>
-                                  );
-                                })}
+                                ))}
                               </div>
                             )}
                           </div>
@@ -674,8 +642,8 @@ export default function AsignacionEstudiantesPage() {
             ejecutarAsignacion(pendingAsignacion.alumno, pendingAsignacion.seccionId);
           }
         }}
-        title="Asignación con el año en curso"
-        message={`El año académico ya comenzó. Vas a asignar a ${pendingAsignacion?.alumno.nombres} ${pendingAsignacion?.alumno.apellidos} a la sección "${pendingAsignacion?.seccionNombre}". Después de confirmar, este alumno NO podrá moverse a otra sección ni desasignarse. ¿Deseas continuar?`}
+        title="Cambio con el año en curso"
+        message={`El año académico ya comenzó. Vas a asignar a ${pendingAsignacion?.alumno.nombres} ${pendingAsignacion?.alumno.apellidos} a la sección "${pendingAsignacion?.seccionNombre}". Se llevará consigo sus notas, su asistencia y su conducta. Podrás volver a moverlo cuando quieras. ¿Deseas continuar?`}
         confirmText="Sí, asignar a esta sección"
         type="warning"
       />
