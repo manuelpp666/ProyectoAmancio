@@ -22,6 +22,7 @@ import {
 import { apiFetch } from "@/src/lib/api";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { Nivel, Grado, Seccion } from "@/src/interfaces/academic";
+import { fechaLocalISO } from "@/src/lib/fechas";
 
 type Estado = "P" | "T" | "F" | "J";
 
@@ -55,7 +56,9 @@ export default function AsistenciaAuxiliarPage() {
   const [tabActiva, setTabActiva] = useState<"toma" | "reporte">("toma");
 
   // Estado común para filtros
-  const [fechaAsistencia, setFechaAsistencia] = useState(new Date().toISOString().split("T")[0]);
+  // fechaLocalISO y no toISOString(): este ultimo pasa por UTC y, de 7 de la
+  // tarde en adelante, la lista se guardaba con la fecha de manana.
+  const [fechaAsistencia, setFechaAsistencia] = useState(fechaLocalISO());
   const [niveles, setNiveles] = useState<Nivel[]>([]);
   const [grados, setGrados] = useState<Grado[]>([]);
   const [secciones, setSecciones] = useState<Seccion[]>([]);

@@ -76,6 +76,9 @@ export default function DashboardPage() {
   const [datos, setDatos] = useState<Resumen | null>(null);
   const [cargando, setCargando] = useState(true);
 
+  // Solo decide si se enseña el atajo a gestionar aulas, no si se ve la
+  // tarjeta: mirar la ocupación es leer el estado del colegio, y eso lo
+  // necesita cualquier administrador. Ver no es gestionar.
   const puedeAcademico = tienePermiso(permisos, "academico");
 
   useEffect(() => {
@@ -209,7 +212,7 @@ export default function DashboardPage() {
             )}
 
             {/* OCUPACIÓN DE AULAS */}
-            {puedeAcademico && datos && datos.ocupacion.length > 0 && (
+            {datos && datos.ocupacion.length > 0 && (
               <section>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
@@ -224,10 +227,14 @@ export default function DashboardPage() {
                         <span className="w-2 h-2 rounded-full bg-red-500" /> falta pasar
                       </span>
                     </span>
-                    <Link href="/campus/panel-control/gestion-academica"
-                          className="text-xs font-bold text-[#093E7A] hover:underline">
-                      Gestionar aulas
-                    </Link>
+                    {/* El atajo sí depende del permiso: lleva a una pantalla
+                        que este administrador quizá no tenga abierta. */}
+                    {puedeAcademico && (
+                      <Link href="/campus/panel-control/gestion-academica"
+                            className="text-xs font-bold text-[#093E7A] hover:underline">
+                        Gestionar aulas
+                      </Link>
+                    )}
                   </div>
                 </div>
 

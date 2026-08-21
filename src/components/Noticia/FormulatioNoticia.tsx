@@ -12,7 +12,7 @@ import { Noticia, NoticiaCreate } from "@/src/interfaces/noticia";
 import { useForm } from "@/src/hooks/useForm";
 import ImagenesUpload, { ImagenElegida } from "@/src/components/utils/ImagenesUpload";
 import { uploadToCloudinary } from "@/src/components/utils/cloudinary";
-import { getYouTubeID, imagenesDeNoticia, MAXIMO_IMAGENES } from "@/src/components/utils/youtube";
+import { getYouTubeID, imagenesDeNoticia } from "@/src/components/utils/youtube";
 import { toast } from 'sonner';
 
 interface NoticiaFormProps {
@@ -25,6 +25,9 @@ export function NoticiaForm({ initialData, onSubmit, loading }: NoticiaFormProps
     // 1. Estado local para archivos y carga de imagen
     const [imagenes, setImagenes] = useState<ImagenElegida[]>([]);
     const [isuploading, setIsUploading] = useState(false);
+    // Cuántas fotos llevamos subidas de cuántas. Con galerías largas la espera
+    // se hace eterna y sin esto parece que el botón se ha quedado colgado.
+    const [progreso, setProgreso] = useState({ hechas: 0, total: 0 });
     // Al publicar una noticia nueva hay que vaciar el selector de imágenes, que
     // guarda su propio estado. Cambiar su `key` lo monta de cero.
     const [reinicio, setReinicio] = useState(0);
@@ -91,23 +94,8 @@ export function NoticiaForm({ initialData, onSubmit, loading }: NoticiaFormProps
             if (tipoContenido === "video") {
                 urlFinal = videoUrl;
             } else {
-                // Se suben EN ORDEN, una detrás de otra, no en paralelo: así la
-                // lista final queda igual que lo que se ve en el formulario. Las
-                // que ya estaban en la noticia se reutilizan sin volver a subir.
-                const subidas: string[] = [];
-                for (const img of imagenes) {
-                    if (img.url) {
-                        subidas.push(img.url);
-                        continue;
-                    }
-                    if (!img.file) continue;
-                    const url = await uploadToCloudinary(img.file);
-                    if (!url) throw new Error("Error al subir una de las imágenes");
-                    subidas.push(url);
-                }
-                if (!subidas.length) throw new Error("No se pudo subir ninguna imagen");
-                galeria = subidas;
-                urlFinal = subidas[0];
+                galeria = await subirGaleria(imagenes, setProgreso);
+                urlFinal = galeria[0];
             }
 
             const noticiaPayload: NoticiaCreate = {
@@ -133,6 +121,7 @@ export function NoticiaForm({ initialData, onSubmit, loading }: NoticiaFormProps
             toast.error(error.message || "Error al procesar la noticia");
         } finally {
             setIsUploading(false);
+            setProgreso({ hechas: 0, total: 0 });
         }
     };
 
@@ -220,7 +209,6 @@ export function NoticiaForm({ initialData, onSubmit, loading }: NoticiaFormProps
                                             <ImagenesUpload
                                                 key={reinicio}
                                                 label="Imágenes del Artículo"
-                                                maximo={MAXIMO_IMAGENES}
                                                 initialImages={imagenesIniciales}
                                                 onChange={setImagenes}
                                             />
@@ -253,7 +241,11 @@ export function NoticiaForm({ initialData, onSubmit, loading }: NoticiaFormProps
                     className="flex items-center gap-3 px-8 py-4 bg-[#093E7A] text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-[#062d59] disabled:opacity-50 transition-all"
                 >
                     <Send size={20} />
-                    {loading || isuploading ? "Procesando..." : (initialData ? "Actualizar Noticia" : "Publicar Noticia")}
+                    {isuploading && progreso.total > 1
+                        ? `Subiendo ${progreso.hechas} de ${progreso.total}...`
+                        : loading || isuploading
+                            ? "Procesando..."
+                            : (initialData ? "Actualizar Noticia" : "Publicar Noticia")}
                 </button>
             </footer>
 
@@ -264,6 +256,61 @@ export function NoticiaForm({ initialData, onSubmit, loading }: NoticiaFormProps
             `}</style>
         </main>
     );
+}
+
+/**
+ * Sube a Cloudinary las fotos nuevas y devuelve TODAS las URLs en el mismo
+ * orden en que se ven en el formulario. Las que ya estaban en la noticia se
+ * reutilizan sin volver a subir.
+ *
+ * Van de varias en varias, no de una en una: con una galería larga, en serie
+ * se hacía interminable. El orden no depende de cuál termine antes, porque
+ * cada resultado se guarda en su propio hueco. El tope de simultáneas está
+ * para no saturar la conexión del colegio ni el límite de Cloudinary.
+ */
+const A_LA_VEZ = 4;
+
+async function subirGaleria(
+    imagenes: ImagenElegida[],
+    avisar: (p: { hechas: number; total: number }) => void,
+): Promise<string[]> {
+    const pendientes = imagenes
+        .map((img, i) => ({ img, i }))
+        .filter(({ img }) => !img.url && img.file);
+
+    const urls: (string | null)[] = imagenes.map((img) => img.url);
+    let hechas = 0;
+    avisar({ hechas: 0, total: pendientes.length });
+
+    let siguiente = 0;
+    const obrero = async () => {
+        while (siguiente < pendientes.length) {
+            const { img, i } = pendientes[siguiente++];
+            const url = await uploadToCloudinary(img.file as File);
+            if (!url) {
+                throw new Error(
+                    `No se pudo subir la imagen ${i + 1} de ${imagenes.length}. ` +
+                    `Revisa tu conexión y vuelve a intentarlo.`
+                );
+            }
+            urls[i] = url;
+            avisar({ hechas: ++hechas, total: pendientes.length });
+        }
+    };
+
+    // allSettled y no all: si fallan dos a la vez, `all` solo asoma el primer
+    // error y el segundo queda como rechazo sin recoger, que en la consola del
+    // navegador aparece como un fallo suelto sin explicación. Así se recogen
+    // todos y se cuenta el primero, que es el único que hace falta.
+    const tandas = await Promise.allSettled(
+        Array.from({ length: Math.min(A_LA_VEZ, pendientes.length) }, obrero)
+    );
+    const roto = tandas.find((t) => t.status === "rejected");
+    if (roto) throw (roto as PromiseRejectedResult).reason;
+
+    const limpias = urls.filter((u): u is string => Boolean(u));
+    if (!limpias.length) throw new Error("No se pudo subir ninguna imagen");
+    return limpias;
 }
 
 // Botón del editor extraído

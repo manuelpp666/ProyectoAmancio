@@ -90,10 +90,7 @@ export default function DetalleNoticiaPage() {
                 </div>
 
                 <div className="max-w-4xl mx-auto px-4">
-                    {/* Visual principal: el video, o la galería de la noticia.
-                        Las imágenes usan object-cover y llenan su recuadro entero,
-                        sin franjas a los lados. A cambio, una foto muy vertical se
-                        recorta por arriba y por abajo: conviene subirlas apaisadas. */}
+                    {/* Visual principal: el video, o la galería de la noticia. */}
                     {noticia.categoria === "video" && videoId ? (
                         <div className="mb-10 md:mb-12 rounded-3xl overflow-hidden shadow-2xl">
                             <div className="aspect-video w-full">
@@ -107,35 +104,36 @@ export default function DetalleNoticiaPage() {
                             </div>
                         </div>
                     ) : (
-                        <div className="mb-10 md:mb-12 space-y-4">
-                            {/* La primera manda: el recuadro se adapta al tamaño real de la imagen */}
-                            <div className="rounded-3xl overflow-hidden shadow-2xl bg-slate-100 w-full">
-                                <img
-                                    src={galeria[0] || "/placeholder-news.svg"}
-                                    alt={noticia.titulo}
-                                    className="w-full h-auto object-cover block"
-                                />
-                            </div>
-                            {/* El resto, en el mismo orden en que se subieron. */}
-                            {galeria.length > 1 && (
-                                <div className={`grid gap-4 ${
-                                    galeria.length === 2 ? "grid-cols-1 md:grid-cols-2"
-                                        : galeria.length === 3 ? "grid-cols-2"
-                                            : "grid-cols-2 md:grid-cols-3"}`}>
-                                    {galeria.slice(1).map((url, i) => (
-                                        <div key={url + i}
-                                             className="rounded-2xl overflow-hidden shadow-lg bg-slate-100 w-full">
-                                            <img
-                                                src={url}
-                                                alt={`${noticia.titulo} — imagen ${i + 2}`}
-                                                loading="lazy"
-                                                decoding="async"
-                                                className="w-full h-auto object-cover block"
-                                            />
-                                        </div>
-                                    ))}
+                        <div className="mb-10 md:mb-12 space-y-5">
+                            {/* Todas las fotos se pintan igual: el mismo ancho, el
+                                mismo recuadro y la misma proporción, de la primera a
+                                la última. Antes la portada iba a lo ancho y el resto
+                                en una rejilla de dos o tres columnas, así que de la
+                                segunda en adelante se veían a la mitad de tamaño.
+
+                                El recuadro es 16:9 con object-cover: es lo único que
+                                garantiza que todas midan lo mismo aunque las fotos
+                                vengan de cámaras distintas. A cambio, una foto muy
+                                vertical se recorta por arriba y por abajo: conviene
+                                subirlas apaisadas. */}
+                            {(galeria.length ? galeria : ["/placeholder-news.svg"]).map((url, i) => (
+                                <div key={`${url}-${i}`}
+                                     className="rounded-3xl overflow-hidden shadow-2xl bg-slate-100 w-full aspect-[16/9]">
+                                    <img
+                                        src={url}
+                                        alt={i === 0 ? noticia.titulo
+                                                     : `${noticia.titulo} — imagen ${i + 1}`}
+                                        /* La portada entra con la página; las demás,
+                                           solo si el lector baja hasta ellas. Con
+                                           galerías largas es la diferencia entre
+                                           abrir la noticia al momento o esperar. */
+                                        loading={i === 0 ? "eager" : "lazy"}
+                                        decoding={i === 0 ? "sync" : "async"}
+                                        fetchPriority={i === 0 ? "high" : "low"}
+                                        className="w-full h-full object-cover block"
+                                    />
                                 </div>
-                            )}
+                            ))}
                         </div>
                     )}
 

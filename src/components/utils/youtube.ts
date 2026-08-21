@@ -32,9 +32,6 @@ export const getNoticiaImagen = (noticia: {
   return noticia.imagen_portada_url || "/placeholder-news.svg";
 };
 
-/** Cuántas imágenes admite una noticia. El backend recorta a este mismo número. */
-export const MAXIMO_IMAGENES = 4;
-
 /**
  * Las imágenes de una noticia, en orden, sea cual sea su antigüedad.
  *
@@ -42,6 +39,9 @@ export const MAXIMO_IMAGENES = 4;
  * tienen `imagen_portada_url`, y se devuelven como una lista de una para que
  * el resto del código no tenga que distinguir los dos casos. Las de video no
  * tienen galería: ahí la portada es la URL de YouTube, no una imagen.
+ *
+ * No hay tope de fotos. El único límite lo pone el backend por el tamaño de
+ * la columna donde se guardan, y avisa con un mensaje claro si se llegara.
  */
 export const imagenesDeNoticia = (noticia?: {
   categoria?: string;
@@ -50,6 +50,6 @@ export const imagenesDeNoticia = (noticia?: {
 } | null): string[] => {
   if (!noticia || noticia.categoria === "video") return [];
   const galeria = (noticia.imagenes ?? []).filter(Boolean);
-  if (galeria.length) return galeria.slice(0, MAXIMO_IMAGENES);
+  if (galeria.length) return galeria;
   return noticia.imagen_portada_url ? [noticia.imagen_portada_url] : [];
 };

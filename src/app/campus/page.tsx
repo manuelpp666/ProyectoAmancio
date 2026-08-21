@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@/src/context/userContext";
 import Link from "next/link";
 import { User, Lock, GraduationCap, Loader2, AlertCircle } from "lucide-react";
+import SolicitudAcceso from "@/src/components/auth/SolicitudAcceso";
 
 // Imagen de fondo por defecto del panel visual del login
 const DEFAULT_LOGIN_BG =
@@ -25,6 +26,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState(""); // 3. Estado para la contraseña
   const [error, setError] = useState<string | null>(null); // 4. Estado para errores visuales
   const [bgImagen, setBgImagen] = useState<string>(DEFAULT_LOGIN_BG); // Fondo configurable
+  // Se llega aquí de dos maneras muy distintas: entrando a trabajar, o porque
+  // la sesión se acabó a media tarea. Sin distinguirlas, lo segundo parece que
+  // el campus se hubiera cerrado solo.
+  //
+  // Se lee de window y no con `useSearchParams`, que obligaría a envolver toda
+  // la página en <Suspense> para que `next build` no fallara.
+  const [porCaducidad, setPorCaducidad] = useState(false);
+
+  useEffect(() => {
+    setPorCaducidad(
+      new URLSearchParams(window.location.search).get("sesion") === "caducada"
+    );
+  }, []);
 
   // Carga la imagen de fondo configurada desde Contenido Web (sección pública)
   useEffect(() => {
@@ -137,6 +151,22 @@ export default function LoginPage() {
             <p className="text-slate-500 text-sm mt-1">Acceso al Campus Virtual</p>
           </div>
 
+          {/* La sesión se acabó mientras trabajaba: no es un error suyo, así que
+              se avisa en ámbar y no en rojo, y solo mientras no haya un error
+              de credenciales que contar. */}
+          {porCaducidad && !error && (
+            <div
+              role="status"
+              className="mb-6 p-4 bg-amber-50 border-l-4 border-amber-500 text-amber-800 flex items-center gap-3 rounded-md"
+            >
+              <AlertCircle size={20} />
+              <p className="text-sm font-medium">
+                Tu sesión se cerró por inactividad. Vuelve a entrar para seguir
+                donde estabas.
+              </p>
+            </div>
+          )}
+
           {/* Alerta de error de validación */}
           {error && (
             <div
@@ -199,8 +229,16 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-xs text-slate-400 mt-8">
-            ¿Olvidaste tu contraseña? Contacta a la administración del colegio.
+          {/* La vía de vuelta para quien no consigue entrar. Antes aquí había
+              una frase gris que le mandaba a "contactar con la administración"
+              sin decirle cómo, y los avisos acababan llegando por WhatsApp al
+              que le pillara. `dniSugerido` aprovecha lo que ya escribió arriba
+              para no hacérselo teclear dos veces. */}
+          <SolicitudAcceso dniSugerido={username} />
+
+          <p className="text-center text-xs text-slate-400 mt-4">
+            ¿Olvidaste tu contraseña? Escríbenos desde ahí o acércate a la
+            administración del colegio.
           </p>
         </div>
       </section>

@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Loader2, AlertCircle, Download, CalendarX } from "lucide-react";
 import { useUser } from "@/src/context/userContext";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import { TablaHorario } from "@/src/components/Horario/TablaHorario";
 import { useHorario } from "@/src/hooks/useHorario";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
+import { generarPDFHorario } from "@/src/lib/pdfHorario";
 
 export default function HorarioAlumnoPage() {
 
@@ -16,73 +17,49 @@ export default function HorarioAlumnoPage() {
     listaAnios: anios,
     loadingAnios
   } = useAnioAcademico();
-  const { id_usuario, loading: userLoading } = useUser();
+  const { id_usuario, username, loading: userLoading } = useUser();
   const [descargando, setDescargando] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
 
   // Usamos el hook para obtener el horario automáticamente
   const { data: horario, bloques: bloquesHorario, loading: horarioLoading, error } = useHorario(Number(id_usuario), anioSeleccionado);
 
   const tieneHorario = Array.isArray(horario) && horario.length > 0;
 
-  // Descarga el horario en PDF capturando la tabla tal como se ve en pantalla
+  /**
+   * Descarga el horario en PDF.
+   *
+   * Lo dibuja el mismo generador que usa el panel para las secciones, en vez
+   * de fotografiar la tabla de la pantalla con html2canvas. La captura salía
+   * borrosa, se encogía hasta lo ilegible cuando el horario tenía muchas
+   * horas y arrastraba media librería extra a la descarga de esta página.
+   */
   const descargarPDF = async () => {
-    const element = contentRef.current;
-    if (!element || !tieneHorario) {
+    if (!tieneHorario) {
       toast.error("No hay horario para descargar");
       return;
     }
     setDescargando(true);
     try {
-      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
-        import("html2canvas-pro"),
-        import("jspdf")
-      ]);
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
-        width: element.scrollWidth,
-        height: element.scrollHeight,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
+      const { nombreArchivo, filas } = generarPDFHorario({
+        bloques: bloquesHorario,
+        asignaciones: horario.map((h) => ({
+          dia_semana: h.dia_semana,
+          hora_inicio: h.hora_inicio,
+          curso_nombre: h.curso_nombre,
+          docente_nombre: h.docente_nombre,
+        })),
+        anio: anioSeleccionado,
+        titulo: "MI HORARIO",
+        subtitulo: username
+          ? `Campus del estudiante · ${username} · ${anioSeleccionado}`
+          : `Campus del estudiante · ${anioSeleccionado}`,
       });
 
-      const imgData = canvas.toDataURL("image/jpeg", 0.92);
-      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-
-      // Cabecera institucional
-      pdf.setFillColor(112, 28, 50); // #701C32
-      pdf.rect(0, 0, pageW, 20, "F");
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(14);
-      pdf.text(`HORARIO ESCOLAR ${anioSeleccionado}`, 10, 9);
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(9);
-      pdf.text("I.E. Amancio Varona — Campus Virtual del Estudiante", 10, 15);
-      pdf.text(`Generado el ${new Date().toLocaleDateString("es-PE")}`, pageW - 10, 15, { align: "right" });
-
-      // Imagen del horario ajustada a la página
-      const margin = 10;
-      const top = 26;
-      const maxW = pageW - margin * 2;
-      const maxH = pageH - top - margin;
-      let imgW = maxW;
-      let imgH = (canvas.height * imgW) / canvas.width;
-      if (imgH > maxH) {
-        imgH = maxH;
-        imgW = (canvas.width * imgH) / canvas.height;
+      if (filas === 0) {
+        toast.warning("Todavía no tienes clases asignadas en el horario");
+        return;
       }
-      pdf.addImage(imgData, "JPEG", (pageW - imgW) / 2, top, imgW, imgH);
-
-      pdf.save(`Horario_${anioSeleccionado}.pdf`);
-      toast.success("Horario descargado correctamente");
+      toast.success(`Descargado ${nombreArchivo}`);
     } catch (e) {
       console.error(e);
       toast.error("No se pudo generar el PDF del horario");
@@ -140,9 +117,7 @@ export default function HorarioAlumnoPage() {
       ) : tieneHorario ? (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
-            <div ref={contentRef} className="bg-white">
-              <TablaHorario horario={horario} bloques={bloquesHorario} />
-            </div>
+            <TablaHorario horario={horario} bloques={bloquesHorario} />
           </div>
         </div>
       ) : !error ? (

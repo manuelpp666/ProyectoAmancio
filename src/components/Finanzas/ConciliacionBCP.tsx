@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { apiFetch, mensajeDeError } from "@/src/lib/api";
+import { CambiosManuales } from "@/src/components/Finanzas/CambiosManuales";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -81,6 +82,10 @@ interface Resumen {
     fecha_carga: string | null; aplicados: number; sin_coincidencia: number;
   } | null;
   sincronizacion_crep?: SincronizacionCREP | null;
+  /** Cambios hechos a mano que todavía no se han dado por enviados al
+   *  banco. Va aparte de `sincronizacion_crep`: aquello compara dos fotos
+   *  y esto es el parte de quién tocó qué. */
+  ajustes_manuales_pendientes?: number;
 }
 
 interface Lote {
@@ -176,6 +181,9 @@ export function ConciliacionBCP() {
   const [modalConfirmarIncorporacion, setModalConfirmarIncorporacion] = useState(false);
   const [verDetalleCambios, setVerDetalleCambios] = useState(false);
   const [incorporando, setIncorporando] = useState(false);
+  // Se incrementa al incorporar: la tabla de cambios manuales lo mira para
+  // volver a preguntar, porque los suyos acaban de pasar a «ya enviados».
+  const [tokenCambios, setTokenCambios] = useState(0);
 
   const ejecutarIncorporacion = async () => {
     setIncorporando(true);
@@ -188,9 +196,13 @@ export function ConciliacionBCP() {
         throw new Error(err?.detail || "No se pudieron incorporar los cambios al CREP");
       }
       const data = await res.json();
-      toast.success(data.message || "Cambios incorporados exitosamente al CREP oficial");
+      const manuales = data.ajustes_manuales_incorporados ?? 0;
+      toast.success(
+        (data.message || "Cambios incorporados exitosamente al CREP oficial")
+        + (manuales ? ` · ${manuales} cambio(s) manual(es) marcado(s) como enviados` : ""));
       setModalConfirmarIncorporacion(false);
       setVerDetalleCambios(false);
+      setTokenCambios((n) => n + 1);
       cargar();
     } catch (error: any) {
       toast.error(error.message || "Error al incorporar cambios");
@@ -408,6 +420,18 @@ export function ConciliacionBCP() {
   // si se acaba de aplicar en esta misma pantalla, se refleja al recargar.
   const yaHecha = resumen?.importacion_inicial ?? null;
 
+  // Dos formas distintas de contar lo mismo, y ninguna sirve sola:
+  //   · `cambiosSnapshot` compara el último CREP oficial con la base de hoy.
+  //     Ve altas, bajas e importes, pero NO ve un cobro en caja: al mirar solo
+  //     el resultado final, una cuota cobrada a mano le parece una baja normal
+  //     y la omite a propósito.
+  //   · `cambiosManuales` son los apuntes de quién tocó qué, uno por acción.
+  // El sello tiene que ofrecerse si cualquiera de los dos tiene algo, o el
+  // «Sin enviar» del paso 4 se quedaría sin botón que lo quite.
+  const cambiosSnapshot = resumen?.sincronizacion_crep?.total_cambios_pendientes ?? 0;
+  const cambiosManuales = resumen?.ajustes_manuales_pendientes ?? 0;
+  const haySelloPendiente = cambiosSnapshot > 0 || cambiosManuales > 0;
+
   if (cargando) {
     return <div className="py-20 text-center text-gray-400 animate-pulse font-bold">
       Cargando la conciliación…
@@ -567,8 +591,14 @@ export function ConciliacionBCP() {
         )}
       </Bloque>
 
-      {/* ------------------------------------------- 4. generar el CREP */}
-      <Bloque numero={4} titulo="Generar y sincronizar archivo para el BCP"
+      {/* -------------------------------------- 4. cambios hechos a mano */}
+      <Bloque numero={4} titulo="Cambios manuales en las cuotas"
+              descripcion="Los importes que se han modificado a mano y los cobros registrados en caja, con lo que cada uno le hace al archivo del banco.">
+        <CambiosManuales recargar={tokenCambios} />
+      </Bloque>
+
+      {/* ------------------------------------------- 5. generar el CREP */}
+      <Bloque numero={5} titulo="Generar y sincronizar archivo para el BCP"
               descripcion="Gestiona las altas, bajas por retiros de alumnos y cambios en cuotas para emitir el archivo CREP oficial que espera el banco.">
         
         {/* Banner de Estado del CREP y Fecha de Última Generación */}
@@ -594,10 +624,10 @@ export function ConciliacionBCP() {
             </div>
           </div>
           <div>
-            {(resumen?.sincronizacion_crep?.total_cambios_pendientes ?? 0) > 0 ? (
+            {haySelloPendiente ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 text-amber-800 text-xs font-bold rounded-full border border-amber-200 shadow-sm">
                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                {resumen?.sincronizacion_crep?.total_cambios_pendientes} cambio(s) pendiente(s) de incorporar
+                {Math.max(cambiosSnapshot, cambiosManuales)} cambio(s) pendiente(s) de incorporar
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-800 text-xs font-bold rounded-full border border-green-200 shadow-sm">
@@ -608,8 +638,20 @@ export function ConciliacionBCP() {
           </div>
         </div>
 
+        {/* Los cambios hechos a mano cuentan aparte: la comparación de arriba
+            solo ve el resultado final, así que una cuota editada tres veces y
+            devuelta a su importe original no aparecería en ella. */}
+        {(resumen?.ajustes_manuales_pendientes ?? 0) > 0 && (
+          <p className="text-xs text-gray-500 mb-4 flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[16px] text-gray-400">edit_note</span>
+            Además hay {resumen?.ajustes_manuales_pendientes} cambio(s) manual(es)
+            sin marcar como enviados; se detallan en el paso 4 y se sellan al
+            incorporar aquí.
+          </p>
+        )}
+
         {/* Panel de Cambios Pendientes de Incorporar */}
-        {(resumen?.sincronizacion_crep?.total_cambios_pendientes ?? 0) > 0 ? (
+        {haySelloPendiente ? (
           <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 mb-4 space-y-3">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
@@ -618,17 +660,24 @@ export function ConciliacionBCP() {
                   Cambios del sistema pendientes de incorporar al CREP
                 </h4>
                 <p className="text-xs text-amber-800 mt-0.5">
-                  Hay {resumen?.sincronizacion_crep?.bajas.length || 0} baja(s) por retiros o eliminaciones y {resumen?.sincronizacion_crep?.altas.length || 0} alta(s) nuevas detectadas desde la última generación.
+                  {cambiosSnapshot > 0 && (
+                    <>Hay {resumen?.sincronizacion_crep?.bajas.length || 0} baja(s) por retiros o eliminaciones y {resumen?.sincronizacion_crep?.altas.length || 0} alta(s) nuevas detectadas desde la última generación. </>
+                  )}
+                  {cambiosManuales > 0 && (
+                    <>{cambiosSnapshot > 0 ? "Además hay" : "Hay"} {cambiosManuales} cambio(s) hecho(s) a mano sin marcar como enviados (paso 4).</>
+                  )}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setVerDetalleCambios(!verDetalleCambios)}
-                  className="px-3 py-1.5 border border-amber-300 text-amber-900 bg-white hover:bg-amber-100 rounded-lg text-xs font-bold transition-all"
-                >
-                  {verDetalleCambios ? "Ocultar detalle" : "Ver lista de cambios"}
-                </button>
+                {cambiosSnapshot > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setVerDetalleCambios(!verDetalleCambios)}
+                    className="px-3 py-1.5 border border-amber-300 text-amber-900 bg-white hover:bg-amber-100 rounded-lg text-xs font-bold transition-all"
+                  >
+                    {verDetalleCambios ? "Ocultar detalle" : "Ver lista de cambios"}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setModalConfirmarIncorporacion(true)}
@@ -722,8 +771,8 @@ export function ConciliacionBCP() {
         </p>
       </Bloque>
 
-      {/* ------------------------------------------ 5. reporte de deudores */}
-      <Bloque numero={5} titulo="Lista de deudores"
+      {/* ------------------------------------------ 6. reporte de deudores */}
+      <Bloque numero={6} titulo="Lista de deudores"
               descripcion="Quién debe, cuánto y desde cuándo. Es el reporte que antes se sacaba a mano del Excel de macros.">
         <button type="button" onClick={() => descargar("/finance/crep/deudores.xlsx")}
                 className="px-4 py-2.5 bg-[#701C32] text-white rounded-lg font-bold text-sm hover:bg-[#5a1628] flex items-center gap-2">
@@ -1086,6 +1135,7 @@ export function ConciliacionBCP() {
                   <li><b>{resumen?.sincronizacion_crep?.bajas.length || 0} cuotas</b> dadas de baja por retiros de alumnos o eliminaciones.</li>
                   <li><b>{resumen?.sincronizacion_crep?.altas.length || 0} cuotas nuevas</b> generadas en el sistema.</li>
                   <li><b>{resumen?.sincronizacion_crep?.modificaciones.length || 0} cuotas modificadas</b> en importe o mora.</li>
+                  <li><b>{cambiosManuales} cambio(s) hecho(s) a mano</b> que quedarán marcados como enviados.</li>
                 </ul>
               </div>
             </div>

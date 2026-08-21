@@ -1,5 +1,6 @@
 "use client";
 import { usePermisos } from "@/src/hooks/usePermisos";
+import { sesionCaducada } from "@/src/lib/api";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -21,9 +22,15 @@ export const RoleGuard = ({ children, modulo, subModulo, subSubModulo }: Props) 
 
   useEffect(() => {
     // Solo actuamos cuando loading es false
-    if (!loading && !permitido) {
-      router.push("/prohibido");
-    }
+    if (loading || permitido) return;
+    // Quedarse sin permisos y perder la sesión se parecen desde aquí: en los
+    // dos casos no hay nada guardado que consultar. Pero no son lo mismo, y
+    // mandar a /prohibido a quien simplemente ha estado una hora sin tocar
+    // nada le dice que no tiene acceso a algo que sí es suyo. Cuando la sesión
+    // ha caducado, la capa de red ya está llevándolo al login: aquí no se
+    // estorba.
+    if (sesionCaducada()) return;
+    router.push("/prohibido");
   }, [loading, permitido, router]);
 
   if (loading) return <div>Cargando...</div>;

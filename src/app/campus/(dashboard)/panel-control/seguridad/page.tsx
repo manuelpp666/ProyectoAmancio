@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { ShieldCheck, Loader2, Save, KeyRound, AlertCircle, Info, Mail } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 import { RegistroAccesos } from "@/src/components/Campus/PanelControl/RegistroAccesos";
+import { SolicitudesAcceso } from "@/src/components/Campus/PanelControl/SolicitudesAcceso";
 import { toast } from "sonner";
 
 const SECCION = "seguridad";
@@ -237,6 +238,11 @@ export default function SeguridadPage() {
                 {guardando ? "Guardando..." : "Guardar cambios"}
               </button>
             </div>
+
+            {/* Los avisos de quien no consigue entrar. Van antes del registro
+                porque son trabajo que espera a alguien: si hay una pendiente,
+                hay una persona esperando que la llamen. */}
+            <SolicitudesAcceso />
 
             {/* Quién ha entrado y desde dónde. Va al final porque se consulta
                 cuando hay una sospecha, no cada vez que se abre la pantalla. */}

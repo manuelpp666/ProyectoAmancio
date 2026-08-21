@@ -27,16 +27,38 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
   });
 
   if (response.status === 401) {
-    sessionStorage.clear();
-    // Borramos la cookie de rol (la que sí podemos ver)
-    document.cookie = "userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax";
-    if (typeof window !== "undefined") {
-      window.location.href = "/campus";
-    }
+    cerrarPorSesionCaducada();
   }
 
   return response;
 };
+
+/**
+ * La sesión dura 60 minutos (ACCESS_TOKEN_EXPIRE_MINUTES en el backend). Al
+ * pasarse, TODAS las llamadas de la pantalla fallan a la vez: la conciliación
+ * del BCP, por ejemplo, lanza siete u ocho.
+ *
+ * Antes cada una sacaba su propio aviso rojo con su mensaje técnico y justo
+ * después se redirigía al login, así que el usuario veía una ráfaga de errores
+ * que se esfumaban sin poder leerlos y sin entender por qué. El aviso va ahora
+ * en la pantalla de acceso, que es donde sí se queda quieto.
+ *
+ * El cerrojo evita que la segunda y la tercera respuesta 401 vuelvan a lanzar
+ * la redirección mientras la primera ya está saliendo.
+ */
+let cerrando = false;
+
+const cerrarPorSesionCaducada = () => {
+  if (typeof window === "undefined" || cerrando) return;
+  cerrando = true;
+  sessionStorage.clear();
+  // Borramos la cookie de rol (la que sí podemos ver)
+  document.cookie = "userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax";
+  window.location.href = "/campus?sesion=caducada";
+};
+
+/** Si ya se dio la sesión por caducada, para no seguir avisando de nada más. */
+export const sesionCaducada = () => cerrando;
 
 /**
  * Texto legible del error que devolvió la API.
@@ -50,6 +72,12 @@ export const mensajeDeError = async (
   res: Response,
   porDefecto: string
 ): Promise<string> => {
+  // Un 401 nunca es culpa de lo que el usuario estaba haciendo: es la sesión,
+  // que se acabó. Devolver aquí el motivo de verdad evita que la pantalla
+  // culpe a la operación («No se pudo cargar el estado») cuando el problema
+  // es otro y la solución es volver a entrar.
+  if (res.status === 401) return "Tu sesión ha caducado. Vuelve a iniciar sesión.";
+
   try {
     const cuerpo = await res.json();
     const detalle = cuerpo?.detail;

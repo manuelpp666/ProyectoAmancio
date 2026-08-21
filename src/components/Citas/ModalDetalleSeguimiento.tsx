@@ -18,6 +18,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
+import { aFechaLocalISO } from "@/src/lib/fechas";
 
 interface Props {
   isOpen: boolean;
@@ -68,7 +69,7 @@ export function ModalDetalleSeguimiento({ isOpen, onClose, idAlumno, nombreAlumn
 
     if (filtroFecha) {
       items = items.filter((h: any) => {
-        const f = new Date(h.fecha_reporte).toISOString().split("T")[0];
+        const f = aFechaLocalISO(h.fecha_reporte);
         return f === filtroFecha;
       });
     }
@@ -89,7 +90,7 @@ export function ModalDetalleSeguimiento({ isOpen, onClose, idAlumno, nombreAlumn
 
     if (filtroFecha) {
       items = items.filter((c: any) => {
-        const f = new Date(c.fecha_cita).toISOString().split("T")[0];
+        const f = aFechaLocalISO(c.fecha_cita);
         return f === filtroFecha;
       });
     }

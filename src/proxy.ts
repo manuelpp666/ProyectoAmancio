@@ -34,7 +34,12 @@ export function proxy(request: NextRequest) {
   if (!token) {
     // Si intenta entrar a cualquier ruta de /campus que NO sea el login exacto
     if (pathname.startsWith('/campus') && pathname !== '/campus') {
-      const response = NextResponse.redirect(new URL('/campus', request.url));
+      // Estaba dentro y ya no hay sesión: eso es que se le acabó el tiempo. Se
+      // marca para que el login lo diga en vez de aparecer sin explicación.
+      // (Al cerrar sesión a propósito se va directo a /campus, que no entra
+      // por esta rama.)
+      const response = NextResponse.redirect(
+        new URL('/campus?sesion=caducada', request.url));
       // LIMPIEZA: Si no hay token, borramos el rol por si quedó "huérfano"
       response.cookies.delete('userRole');
       return response;
@@ -43,7 +48,11 @@ export function proxy(request: NextRequest) {
   }
 
   // 2. CASO: Hay token e intenta ir al Login (Evitar que vuelva a loguearse)
-  if (pathname === '/campus') {
+  //
+  // Hace falta saber el rol, no solo que haya un token: sin rol se caía al
+  // destino por defecto (el de alumno) y desde ahí al 403. Sin rol no hay a
+  // dónde mandarlo, así que lo suyo es dejarle ver el login.
+  if (pathname === '/campus' && role) {
     let dest = '/campus/campus-estudiante/inicio-campus'; // Default
     
     if (role === 'ADMIN') dest = '/campus/panel-control';
@@ -52,6 +61,29 @@ export function proxy(request: NextRequest) {
     if (role === 'PSICOLOGO') dest = '/campus/campus-psicologo';
     
     return NextResponse.redirect(new URL(dest, request.url));
+  }
+
+  // 2 bis. CASO: hay rastro de sesión pero no sabemos de quién.
+  //
+  // Pasa siempre que la sesión caduca: `authToken` sigue puesta (el navegador
+  // no sabe leer si el token de dentro venció; eso lo dice el backend al
+  // usarlo), mientras que `userRole` ya la ha borrado la capa de red al recibir
+  // el primer 401. Sin este corte se seguía a las comprobaciones de abajo, que
+  // comparan un rol inexistente contra el que pide la ruta y siempre fallan:
+  // al administrador se le echaba a /prohibido con un «no tienes los permisos
+  // necesarios», cuando lo único que había pasado es que se le acabó la hora.
+  //
+  // Se limita a las rutas del campus: en local la web y la API comparten
+  // `localhost` —las cookies no distinguen el puerto—, así que `authToken` sí
+  // se ve aquí, y sin este límite una cookie caducada echaría del sitio público
+  // a quien solo quería leer una noticia.
+  if (!role && pathname.startsWith('/campus') && pathname !== '/campus') {
+    const response = NextResponse.redirect(
+      new URL('/campus?sesion=caducada', request.url));
+    // Se retira también la cookie del token: es la que hacía creer que la
+    // sesión seguía viva y la que provocaba este rebote.
+    response.cookies.delete('authToken');
+    return response;
   }
 
   // 3. CASO: Protección de Rutas por Rol (Evitar que un Alumno entre a Admin)
