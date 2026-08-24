@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Calendar, Clock, CheckCircle, Loader2, User } from "lucide-react";
+import { X, Calendar, CheckCircle, Loader2, User } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 import { toast } from "sonner";
+import { SelectorFechaHora } from "@/src/components/utils/SelectorHora";
 
 interface Props {
   isOpen: boolean;
@@ -96,16 +97,12 @@ export function ModalModificarCita({ isOpen, onClose, onSuccess, cita }: Props) 
             <label className="text-xs font-black text-gray-800 uppercase mb-2 block tracking-wider">
               Nueva Fecha y Hora
             </label>
-            <div className="relative">
-              <Clock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-              <input
-                type="datetime-local"
-                required
-                value={nuevaFecha}
-                onChange={(e) => setNuevaFecha(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-800 outline-none focus:border-[#093E7A] focus:ring-2 focus:ring-[#093E7A]/15 transition-colors cursor-pointer"
-              />
-            </div>
+            <SelectorFechaHora
+              required
+              etiqueta="Nueva fecha y hora de la cita"
+              value={nuevaFecha}
+              onChange={setNuevaFecha}
+            />
             <p className="text-[11px] text-gray-400 mt-2 px-1">
               La cita pasará a estado REPROGRAMADA y mantendrá su registro en el expediente.
             </p>

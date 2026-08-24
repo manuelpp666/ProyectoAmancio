@@ -141,7 +141,9 @@ export default function GestionFinancieraPage() {
     alcance: "TODOS" as "TODOS" | "GRADOS",
     grados_seleccionados: [] as number[],
     periodo_academico: "REGULAR" as "REGULAR" | "VERANO" | "AMBOS",
-    dias_vencimiento: 15 as CampoNumero
+    dias_vencimiento: 15 as CampoNumero,
+    // Los trámites nuevos no exigen nada mientras no se marque la casilla.
+    requiere_pagos_al_dia: false
   });
   const [respuestaAdmin, setRespuestaAdmin] = useState("");
 
@@ -260,7 +262,8 @@ export default function GestionFinancieraPage() {
   const openNew = () => {
     setFormData({
       nombre: "", costo: 0, requisitos: "", alcance: "TODOS", grados_seleccionados: [],
-      periodo_academico: "REGULAR", dias_vencimiento: 15
+      periodo_academico: "REGULAR", dias_vencimiento: 15,
+      requiere_pagos_al_dia: false
     });
     setIsEditing(false);
     setIsModalOpen(true);
@@ -274,7 +277,10 @@ export default function GestionFinancieraPage() {
       alcance: t.alcance,
       grados_seleccionados: t.grados_permitidos ? t.grados_permitidos.split(",").map(Number) : [],
       periodo_academico: t.periodo_academico,
-      dias_vencimiento: t.dias_vencimiento ?? 15
+      dias_vencimiento: t.dias_vencimiento ?? 15,
+      // Un trámite guardado antes de existir esta casilla no la trae: sin el
+      // ?? false llegaría undefined y React lo trataría como no controlado.
+      requiere_pagos_al_dia: t.requiere_pagos_al_dia ?? false
     });
     setCurrentId(t.id_tipo_tramite);
     setIsEditing(true);
@@ -951,6 +957,26 @@ export default function GestionFinancieraPage() {
                   placeholder="Ej: - DNI Copia..." value={formData.requisitos} onChange={e => setFormData({ ...formData, requisitos: e.target.value })}
                 />
               </div>
+
+              {/* CONDICIÓN DE PENSIONES AL DÍA */}
+              <label className="flex items-start gap-3 bg-amber-50/60 border border-amber-100 p-4 rounded-lg cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={formData.requiere_pagos_al_dia}
+                  onChange={e => setFormData({ ...formData, requiere_pagos_al_dia: e.target.checked })}
+                  className="accent-[#093E7A] size-4 mt-0.5 shrink-0"
+                />
+                <span>
+                  <span className="block text-xs font-bold text-gray-700 uppercase">
+                    Exige tener las pensiones al día
+                  </span>
+                  <span className="block text-[11px] text-gray-500 mt-1 leading-snug">
+                    El alumno con cuotas vencidas verá el aviso y <strong>no podrá
+                    solicitarlo</strong> hasta regularizar. Cuentan solo las cuotas que ya
+                    pasaron de fecha, no las que aún no vencen.
+                  </span>
+                </span>
+              </label>
 
               <div className="pt-4 flex gap-3">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-2.5 bg-gray-100 text-gray-500 font-bold rounded-lg text-sm hover:bg-gray-200 transition-colors">Cancelar</button>

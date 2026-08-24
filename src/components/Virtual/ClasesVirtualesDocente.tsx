@@ -4,6 +4,7 @@ import { Video, Plus, Trash2, ExternalLink, Save, Calendar, Loader2, FolderOpen,
 import { toast } from "sonner";
 import { apiFetch } from "@/src/lib/api";
 import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
+import { SelectorFechaHora } from "@/src/components/utils/SelectorHora";
 
 interface ClaseVirtual {
   id_clase_virtual: number;
@@ -151,13 +152,13 @@ export default function ClasesVirtualesDocente({ idCarga }: { idCarga: number | 
           <h4 className="text-xs font-black uppercase tracking-wide">Nueva clase virtual</h4>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 md:col-span-2">
             <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Fecha y hora</label>
-            <input
-              type="datetime-local"
+            <SelectorFechaHora
+              tam="sm"
+              etiqueta="Fecha y hora de la clase"
               value={fecha}
-              onChange={(e) => setFecha(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#701C32]/20 focus:border-[#701C32] outline-none"
+              onChange={setFecha}
             />
           </div>
           <div className="space-y-1.5">

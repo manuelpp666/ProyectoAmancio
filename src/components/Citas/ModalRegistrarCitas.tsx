@@ -4,6 +4,7 @@ import { X, Search, User, Users, Calendar, FileText, CheckCircle, Loader2 } from
 import { apiFetch } from "@/src/lib/api";
 import { nombreAlumno } from "@/src/lib/alumno";
 import { toast } from "sonner";
+import { SelectorFechaHora } from "@/src/components/utils/SelectorHora";
 
 const FORM_INICIAL = {
   id_alumno: "",
@@ -180,14 +181,13 @@ export function ModalRegistrarCita({ isOpen, onClose, onSuccess, alumnoInicial, 
                 ))}
               </select>
             </div>
-            <div>
+            <div className="md:col-span-2">
               <label className="text-xs font-black text-[#2C3E50] uppercase mb-2 block tracking-wider">Fecha y Hora</label>
-              <input
-                type="datetime-local"
-                value={formData.fecha_cita}
+              <SelectorFechaHora
                 required
-                className="w-full p-3 border-2 border-gray-100 rounded-xl outline-none focus:border-[#701C32]"
-                onChange={(e) => setFormData({...formData, fecha_cita: e.target.value})}
+                etiqueta="Fecha y hora de la cita"
+                value={formData.fecha_cita}
+                onChange={(v) => setFormData({...formData, fecha_cita: v})}
               />
             </div>
           </div>

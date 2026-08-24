@@ -14,6 +14,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { apiFetch, mensajeDeError } from "@/src/lib/api";
+import { SelectorHora } from "@/src/components/utils/SelectorHora";
 import {
   AmbitoHorario,
   ConfiguracionHorario,
@@ -334,25 +335,23 @@ export function ModalConfiguracionHorario({ isOpen, onClose, onGuardado }: Props
                       className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#093E7A]/20"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3">
                     <div>
                       <label className="block text-xs font-bold text-gray-500 mb-1">Empieza</label>
-                      <input
-                        type="time"
+                      <SelectorHora
                         required
+                        etiqueta="La jornada empieza"
                         value={horaInicio}
-                        onChange={(e) => setHoraInicio(e.target.value)}
-                        className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#093E7A]/20"
+                        onChange={setHoraInicio}
                       />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-500 mb-1">Termina</label>
-                      <input
-                        type="time"
+                      <SelectorHora
                         required
+                        etiqueta="La jornada termina"
                         value={horaFin}
-                        onChange={(e) => setHoraFin(e.target.value)}
-                        className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#093E7A]/20"
+                        onChange={setHoraFin}
                       />
                     </div>
                   </div>
@@ -399,7 +398,7 @@ export function ModalConfiguracionHorario({ isOpen, onClose, onGuardado }: Props
                   </div>
 
                   <form onSubmit={agregarReceso} className="grid grid-cols-12 gap-2 items-end pt-1">
-                    <div className="col-span-5">
+                    <div className="col-span-12">
                       <label className="block text-[11px] font-bold text-gray-500 mb-1">Nombre</label>
                       <input
                         type="text"
@@ -409,17 +408,17 @@ export function ModalConfiguracionHorario({ isOpen, onClose, onGuardado }: Props
                         className="w-full p-2 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#093E7A]/20"
                       />
                     </div>
-                    <div className="col-span-4">
+                    <div className="col-span-8">
                       <label className="block text-[11px] font-bold text-gray-500 mb-1">Empieza</label>
-                      <input
-                        type="time"
+                      <SelectorHora
                         required
+                        tam="sm"
+                        etiqueta="El receso empieza"
                         value={recesoInicio}
-                        onChange={(e) => setRecesoInicio(e.target.value)}
-                        className="w-full p-2 text-sm bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-[#093E7A]/20"
+                        onChange={setRecesoInicio}
                       />
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-4">
                       <label className="block text-[11px] font-bold text-gray-500 mb-1">Min</label>
                       <input
                         type="number"

@@ -181,7 +181,7 @@ export default function ResumenCitasPage() {
         <Info className="text-blue-500 flex-shrink-0" size={20} />
         <p className="text-xs text-blue-700 leading-relaxed">
           Las citas son programadas por el área de Psicología del colegio. Si necesitas conversar con un
-          psicólogo, puedes escribirle directamente desde el apartado de <Link href="/campus/campus-estudiante/inicio-campus/mensajeria" className="font-bold underline">Mensajería</Link>.
+          psicólogo, puedes escribirle directamente desde el apartado de <Link href="/campus/campus-estudiante/inicio-campus/mensajeria?con=psicologo" className="font-bold underline">Mensajería</Link>.
         </p>
       </div>
     </div>

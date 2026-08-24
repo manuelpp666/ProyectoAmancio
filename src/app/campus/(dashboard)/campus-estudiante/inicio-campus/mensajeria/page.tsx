@@ -1,4 +1,6 @@
 "use client";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useUser } from "@/src/context/userContext";
 import { useChat } from "@/src/hooks/useChat";
 import ListaContactos from "@/src/components/Chat/ListaContactos";
@@ -9,10 +11,40 @@ export default function MensajeriaPage() {
   const { id_usuario, loading } = useUser();
   const chat = useChat(id_usuario ? Number(id_usuario) : null, loading);
 
-  if (loading) return (
+  // Se puede llegar aquí desde «Citas psicológicas» con ?con=psicologo, para
+  // hablar con el área de psicología. En ese caso la conversación se abre sola
+  // en vez de dejar al alumno delante de la lista buscando a quién escribir.
+  //
+  // Se lee de window y no con `useSearchParams`, que obligaría a envolver la
+  // página en <Suspense> para que `next build` no fallara. Es la misma forma
+  // que se usa en el resto del campus.
+  const [abriendo, setAbriendo] = useState(false);
+  const yaIntentado = useRef(false);
+
+  useEffect(() => {
+    if (!chat.listaCargada || yaIntentado.current) return;
+    const con = new URLSearchParams(window.location.search).get("con");
+    if (con?.toLowerCase() !== "psicologo") return;
+
+    yaIntentado.current = true;
+    setAbriendo(true);
+    chat.abrirChatConRol("PSICOLOGO")
+      .then((abierto) => {
+        if (!abierto) {
+          toast.error("No hay ningún psicólogo disponible para conversar. Acércate a la oficina de Psicología.");
+        }
+      })
+      .finally(() => setAbriendo(false));
+    // Solo depende de que la lista esté lista; `yaIntentado` impide repetirlo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chat.listaCargada]);
+
+  if (loading || abriendo) return (
     <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
       <Loader2 className="animate-spin text-[#701C32]" size={48} />
-      <p className="text-gray-500 font-medium">Cargando...</p>
+      <p className="text-gray-500 font-medium">
+        {abriendo ? "Abriendo tu conversación con Psicología..." : "Cargando..."}
+      </p>
     </div>
   );
 

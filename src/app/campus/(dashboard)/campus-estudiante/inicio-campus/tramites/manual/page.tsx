@@ -11,11 +11,11 @@ export default function Page() {
           <p className="text-slate-600">Estimado padre de familia, cumpla con sus obligaciones financieras siguiendo los canales oficiales de la I.E. Amancio Varona.</p>
         </div>
 
-        {/* Sección A - Pago BCP */}
+        {/* Pago de pensiones por el BCP */}
         <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="bg-[#093E7A] p-5 flex items-center gap-3">
             <Landmark className="text-white w-6 h-6" />
-            <h3 className="text-white font-bold text-xl uppercase">A. Pago de Pensiones (BCP)</h3>
+            <h3 className="text-white font-bold text-xl uppercase">Pago de Pensiones (BCP)</h3>
           </div>
           <div className="p-6 space-y-6">
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
@@ -26,21 +26,21 @@ export default function Page() {
             <div className="grid md:grid-cols-2 gap-4">
               <div className="p-4 border rounded-lg">
                 <p className="font-bold text-sm mb-2">Vía Agente BCP</p>
-                <p className="text-xs text-slate-600">Indique el servicio: <strong>Corporación educativa NEGOCIOS E INVERSIONES SERQUEN SAC</strong>. Brinde el DNI del menor y el monto a pagar.</p>
+                <p className="text-xs text-slate-600">Indique el servicio: <strong>Montehermozo SAC</strong>. Brinde el DNI del menor y el monto a pagar.</p>
               </div>
               <div className="p-4 border rounded-lg">
                 <p className="font-bold text-sm mb-2">Vía Banca Móvil BCP</p>
-                <p className="text-xs text-slate-600">En "Pagos de servicios", busque: <strong>Corporación educativa Montehermozo SAC</strong>. Ingrese el DNI del menor.</p>
+                <p className="text-xs text-slate-600">En «Pagos de servicios», busque: <strong>Montehermozo SAC</strong>. Ingrese el DNI del menor.</p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Sección B - Trámites en Secretaría */}
+        {/* Atención presencial en secretaría */}
         <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="bg-[#701C32] p-5 flex items-center gap-3">
             <FileText className="text-white w-6 h-6" />
-            <h3 className="text-white font-bold text-xl uppercase">B. Atención en Secretaría</h3>
+            <h3 className="text-white font-bold text-xl uppercase">Atención en Secretaría</h3>
           </div>
           <div className="p-6">
             <p className="text-slate-700 mb-4">Para permisos, justificaciones de inasistencias o trámites administrativos, la atención es estrictamente <strong>presencial</strong>.</p>
@@ -48,7 +48,7 @@ export default function Page() {
               <Clock className="text-[#701C32] w-6 h-6" />
               <div>
                 <p className="font-bold">Horario de atención</p>
-                <p className="text-sm text-slate-600">Acuda al plantel en los horarios de jornada escolar establecidos según el Nivel .</p>
+                <p className="text-sm text-slate-600">De 7:30 a. m. a 1:00 p. m. y de 3:00 p. m. a 6:30 p. m.</p>
               </div>
             </div>
             <p className="text-xs text-slate-500 mt-4 italic">* Recuerde traer su DNI y los documentos probatorios necesarios para cualquier solicitud.</p>

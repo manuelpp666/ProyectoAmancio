@@ -30,6 +30,14 @@ import { urlWebSocket } from "@/src/lib/websocket";
  * dos veces.
  */
 
+/** Lo que devuelve /virtual/chat/contactos: gente a la que se puede escribir. */
+interface ContactoBuscado {
+  id_usuario: number;
+  nombre: string;
+  dni: string;
+  rol: string;
+}
+
 /** Cada cuánto se pregunta por mensajes nuevos de la conversación abierta. */
 const MS_SONDEO_MENSAJES = 4000;
 /** Cada cuánto se refresca la lista de conversaciones (chats nuevos, orden). */
@@ -45,6 +53,11 @@ export function useChat(miUsuarioId: number | null, userLoading: boolean) {
   const [query, setQuery] = useState("");
   const [resultadosBusqueda, setResultadosBusqueda] = useState<any[]>([]);
   const [estaBuscando, setEstaBuscando] = useState(false);
+  // Avisa de que la lista de conversaciones ya vino del servidor. Quien quiera
+  // abrir un chat automáticamente debe esperar a esto: si lo hace antes, la
+  // lista está vacía y crearía una entrada repetida de una conversación que sí
+  // existía.
+  const [listaCargada, setListaCargada] = useState(false);
 
   const socketRef = useRef<WebSocket | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -168,7 +181,7 @@ export function useChat(miUsuarioId: number | null, userLoading: boolean) {
   // 1. Lista de conversaciones al entrar
   useEffect(() => {
     if (userLoading || !miUsuarioId) return;
-    cargarConversaciones();
+    cargarConversaciones().finally(() => setListaCargada(true));
   }, [miUsuarioId, userLoading, cargarConversaciones]);
 
   // 2. Historial completo al abrir un chat
@@ -364,6 +377,42 @@ export function useChat(miUsuarioId: number | null, userLoading: boolean) {
     } catch { toast.error("No se pudo iniciar la conversación"); }
   };
 
+  /**
+   * Abre la conversación con alguien de un rol concreto, sin que el usuario
+   * tenga que buscarlo en la lista.
+   *
+   * Lo usa el enlace de «Citas psicológicas», que manda al alumno a la
+   * mensajería para hablar con el psicólogo: antes lo dejaba en la pantalla
+   * vacía y tenía que dar con él por su cuenta.
+   *
+   * Si ya hay una conversación con esa persona se abre esa, para no partir el
+   * historial en dos.
+   */
+  const abrirChatConRol = useCallback(async (rol: string): Promise<boolean> => {
+    if (!miUsuarioId) return false;
+
+    const yaHablada = contactosRef.current.find((c) => c.rol === rol);
+    if (yaHablada) { setChatActivoID(yaHablada.id); return true; }
+
+    try {
+      // Sin `query` devuelve todos los contactos que este usuario puede escribir.
+      const res = await apiFetch(`/virtual/chat/contactos/${miUsuarioId}`);
+      if (!res.ok) return false;
+      const data = await res.json();
+      const lista: ContactoBuscado[] = Array.isArray(data) ? data : [];
+      const persona = lista.find((c) => c.rol === rol);
+      if (!persona) return false;
+      await seleccionarContacto(persona);
+      return true;
+    } catch (err) {
+      console.error("No se pudo abrir el chat por rol:", err);
+      return false;
+    }
+    // `seleccionarContacto` se declara más abajo y no cambia entre renders de
+    // forma relevante; incluirla obligaría a envolverla también en useCallback.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [miUsuarioId]);
+
   const handleEnviar = async () => {
     const texto = textoMensaje.trim();
     if (!texto || !chatActivoID) return;
@@ -421,6 +470,8 @@ export function useChat(miUsuarioId: number | null, userLoading: boolean) {
     scrollRef,
     handleEnviar,
     seleccionarContacto,
+    abrirChatConRol,
+    listaCargada,
     contactoActual: contactos.find(c => c.id === chatActivoID)
   };
 }

@@ -4,6 +4,7 @@ import { X, Save, AlertCircle, Loader2, FileUp, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/src/lib/api";
 import { CampoNumero, leerNumero, aNumero } from "@/src/components/utils/numero";
+import { SelectorFechaHora } from "@/src/components/utils/SelectorHora";
 
 const NOMBRES_BIMESTRE = ["I Bimestre", "II Bimestre", "III Bimestre", "IV Bimestre"];
 
@@ -225,12 +226,12 @@ export default function ModalCrearTarea({ idCarga, bimestre, tareaExistente, pes
               </label>
 
               {tieneFecha && (
-                <input
-                  type="datetime-local"
+                <SelectorFechaHora
                   required
+                  etiqueta="Fecha y hora límite"
+                  className="mt-3"
                   value={formData.fecha_entrega}
-                  className="mt-3 w-full border border-gray-200 rounded-xl px-4 py-2.5 outline-none focus:border-[#701C32] bg-white"
-                  onChange={(e) => setFormData({ ...formData, fecha_entrega: e.target.value })}
+                  onChange={(v) => setFormData({ ...formData, fecha_entrega: v })}
                 />
               )}
             </div>

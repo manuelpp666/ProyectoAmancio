@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Evento } from '@/src/interfaces/evento';
 import { toast } from "sonner";
 import { apiFetch } from "@/src/lib/api";
+import { TIPOS_DE_EVENTO, colorDeTipo, COLOR_POR_DEFECTO } from "@/src/components/utils/eventos";
 
 // Agregamos defaultAnio a las props
 interface EventFormProps {
@@ -21,7 +22,8 @@ export default function EventForm({ evento, defaultAnio, onClose, onSuccess }: E
         fecha_fin: evento?.fecha_fin?.split('T')[0] || "",
         tipo_evento: evento?.tipo_evento || "",
         descripcion: evento?.descripcion || "",
-        color: evento?.color || "#093E7A"
+        // Al editar se respeta el color guardado; al crear, el que le toca al tipo.
+        color: evento?.color || colorDeTipo(evento?.tipo_evento)
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -115,16 +117,17 @@ export default function EventForm({ evento, defaultAnio, onClose, onSuccess }: E
                 <select
                     className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A] outline-none"
                     value={formData.tipo_evento}
-                    onChange={e => setFormData({ ...formData, tipo_evento: e.target.value })}
+                    onChange={e => {
+                        const tipo = e.target.value;
+                        // El color va pegado al tipo: al cambiarlo se repinta solo,
+                        // que es lo que mantiene coherente la leyenda del calendario.
+                        setFormData({ ...formData, tipo_evento: tipo, color: colorDeTipo(tipo) });
+                    }}
                 >
                     <option value="">-- Selecciona... --</option>
-                    <option value="Inicio de Clases">Inicio de Clases</option>
-                    <option value="Festividades">Festividades</option>
-                    <option value="Ceremonia">Ceremonia</option>
-                    <option value="Feriado">Feriado</option>
-                    <option value="Actividad">Actividad</option>
-                    <option value="Actividad Escolar">Actividad Escolar</option>
-                    <option value="Vacaciones">Vacaciones</option>
+                    {TIPOS_DE_EVENTO.map(tipo => (
+                        <option key={tipo} value={tipo}>{tipo}</option>
+                    ))}
                 </select>
             </div>
 
@@ -139,14 +142,37 @@ export default function EventForm({ evento, defaultAnio, onClose, onSuccess }: E
                 />
             </div>
 
-            <div className="flex items-center justify-between p-2 bg-gray-50 rounded-xl">
-                <label className="text-sm font-medium text-gray-600">Color de etiqueta:</label>
-                <input
-                    type="color"
-                    className="w-10 h-10 rounded-lg cursor-pointer border-none bg-transparent"
-                    value={formData.color}
-                    onChange={e => setFormData({ ...formData, color: e.target.value })}
-                />
+            <div className="flex items-center justify-between gap-3 p-2 pl-3 bg-gray-50 rounded-xl">
+                <div className="min-w-0">
+                    <label className="text-sm font-medium text-gray-600">Color de etiqueta</label>
+                    <p className="text-[10px] text-gray-400">
+                        {formData.tipo_evento
+                            ? `Predeterminado de «${formData.tipo_evento}». Puedes cambiarlo.`
+                            : "Elige un tipo de evento y se pintará solo."}
+                    </p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                    {/* El selector de color devuelve el hex en minúsculas, así que se
+                        comparan en minúsculas o el botón saldría sin haber cambiado nada. */}
+                    {formData.tipo_evento &&
+                        formData.color?.toLowerCase() !== colorDeTipo(formData.tipo_evento).toLowerCase() && (
+                        <button
+                            type="button"
+                            title="Volver al color del tipo de evento"
+                            onClick={() => setFormData({ ...formData, color: colorDeTipo(formData.tipo_evento) })}
+                            className="text-[10px] font-black uppercase text-gray-400 hover:text-[#093E7A] px-1.5"
+                        >
+                            Restablecer
+                        </button>
+                    )}
+                    <input
+                        type="color"
+                        aria-label="Color de etiqueta"
+                        className="w-10 h-10 rounded-lg cursor-pointer border-none bg-transparent"
+                        value={formData.color || COLOR_POR_DEFECTO}
+                        onChange={e => setFormData({ ...formData, color: e.target.value })}
+                    />
+                </div>
             </div>
 
             <div className="flex gap-3 pt-4">

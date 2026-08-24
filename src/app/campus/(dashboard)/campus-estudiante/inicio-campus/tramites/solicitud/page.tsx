@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useUser } from "@/src/context/userContext";
 import { toast } from "sonner";
-import { FileText, Plus, Clock, CheckCircle, XCircle, AlertCircle, Loader2, X, Paperclip } from "lucide-react";
+import { FileText, Plus, Clock, CheckCircle, XCircle, AlertCircle, AlertTriangle, Loader2, X, Paperclip } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 
 
@@ -16,6 +16,14 @@ export default function SolicitudesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [idAlumno, setIdAlumno] = useState<number | null>(null);
+  // Cuotas ya vencidas del alumno. `null` = todavía no se sabe (o no se pudo
+  // consultar): en ese caso no se avisa de nada, porque acusar a alguien de
+  // deber sin haberlo comprobado es peor que no decir nada.
+  const [deuda, setDeuda] = useState<{
+    al_dia: boolean;
+    cuotas_vencidas: number;
+    monto_vencido: number;
+  } | null>(null);
   const [formData, setFormData] = useState({
     id_tipo_tramite: "",
     comentario_usuario: ""
@@ -37,6 +45,19 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
       setIsLoading(false);
     }
   }, []);
+  /** Cuántas cuotas le han vencido, para poder avisarle antes de solicitar. */
+  const fetchDeuda = useCallback(async (alumnoId: number) => {
+    try {
+      const res = await apiFetch(`/finance/alumnos/${alumnoId}/deuda-vencida`);
+      if (!res.ok) return;              // se queda en null: no se avisa
+      const data = await res.json();
+      if (typeof data?.al_dia === "boolean") setDeuda(data);
+    } catch {
+      // Sin conexión no se molesta al alumno con un error: lo que venía a
+      // hacer —pedir un trámite— sigue funcionando igual.
+    }
+  }, []);
+
   const fetchAlumnoData = useCallback(async () => {
     try {
       const res = await apiFetch(`/alumnos/alumnos/usuario/${id_usuario}`);
@@ -44,12 +65,13 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
         const data = await res.json();
         setIdAlumno(data.id_alumno); // Guardamos el ID real del alumno (ej: 5)
         fetchSolicitudes(data.id_alumno); // Cargamos sus trámites usando ese ID
+        fetchDeuda(data.id_alumno);
       }
     } catch (e) {
       console.error("Error al obtener datos de alumno");
       setIsLoading(false);
     }
-  }, [id_usuario, fetchSolicitudes]);
+  }, [id_usuario, fetchSolicitudes, fetchDeuda]);
 
 
 
@@ -70,9 +92,33 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
     }
   }, [id_usuario, fetchAlumnoData, fetchTiposTramite]);
 
+  // El trámite que hay elegido ahora mismo en el formulario. Antes se buscaba
+  // con un `find` repetido en cada sitio donde hacía falta.
+  const tramiteElegido = tiposTramite.find(
+    (t) => t.id_tipo_tramite.toString() === formData.id_tipo_tramite
+  );
+
+  // Solo se bloquea con las tres cosas claras: el trámite lo exige, se pudo
+  // consultar la deuda y hay cuotas vencidas. Si la consulta falló, `deuda` es
+  // null y aquí no se bloquea: de eso ya se encarga el backend, que es quien
+  // manda. Impedir por una consulta que no respondió dejaría al alumno sin
+  // poder pedir nada sin saber por qué.
+  const bloqueadoPorDeuda = Boolean(
+    tramiteElegido?.requiere_pagos_al_dia && deuda && !deuda.al_dia
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!idAlumno) return toast.error("Error: No se identificó el perfil");
+
+    // Con pensiones vencidas este trámite no se puede pedir. El backend lo
+    // rechaza igualmente; esto es para no mandar la petición y el archivo
+    // adjunto sabiendo que va a fallar.
+    if (bloqueadoPorDeuda) {
+      return toast.error(
+        "Este trámite exige tener las pensiones al día. Regulariza tu deuda para poder solicitarlo."
+      );
+    }
 
     // Validación opcional: Si el trámite es gratuito (costo 0), exigir archivo
     const tramiteSeleccionado = tiposTramite.find(t => t.id_tipo_tramite.toString() === formData.id_tipo_tramite);
@@ -106,7 +152,19 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
         setSelectedFile(null);
         fetchSolicitudes(idAlumno);
       } else {
-        toast.error("Error al crear la solicitud");
+        // El backend explica por qué (pensiones vencidas, trámite inexistente…).
+        // Con un «error al crear» genérico el alumno no sabe qué hacer.
+        let motivo = "Error al crear la solicitud";
+        try {
+          const cuerpo = await res.json();
+          if (cuerpo?.detail) motivo = String(cuerpo.detail);
+        } catch {
+          /* la respuesta no traía JSON: se queda el mensaje genérico */
+        }
+        toast.error(motivo, { duration: 9000 });
+        // Si el rechazo fue por deuda, se refresca: puede que haya pagado en
+        // otro momento y la pantalla esté enseñando datos viejos.
+        if (res.status === 409 && idAlumno) fetchDeuda(idAlumno);
       }
     } catch (e) {
       toast.error("Error de conexión");
@@ -238,10 +296,39 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
                   {tiposTramite.map((t) => (
                     <option key={t.id_tipo_tramite} value={t.id_tipo_tramite}>
                       {t.nombre} {t.costo > 0 ? `(S/ ${Number(t.costo).toFixed(2)})` : "— GRATUITO"}
+                      {t.requiere_pagos_al_dia ? " · requiere estar al día" : ""}
                     </option>
                   ))}
                 </select>
               </div>
+
+              {/* AVISO DE PENSIONES ATRASADAS
+                  Solo si el trámite elegido lo exige Y consta que hay cuotas
+                  vencidas. Si la consulta de deuda falló, `deuda` es null y
+                  aquí no se enseña nada. */}
+              {tramiteElegido?.requiere_pagos_al_dia && deuda && !deuda.al_dia && (
+                <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <AlertTriangle className="text-amber-600 shrink-0" size={18} />
+                  <div>
+                    <p className="text-xs font-black text-amber-900 uppercase">
+                      No tienes las pensiones al día
+                    </p>
+                    <p className="text-sm text-amber-800 mt-1">
+                      Este trámite pide estar al día y figuras con{" "}
+                      <strong>
+                        {deuda.cuotas_vencidas} cuota
+                        {deuda.cuotas_vencidas === 1 ? "" : "s"} vencida
+                        {deuda.cuotas_vencidas === 1 ? "" : "s"}
+                      </strong>{" "}
+                      por <strong>S/ {deuda.monto_vencido.toFixed(2)}</strong>.
+                    </p>
+                    <p className="text-[11px] text-amber-700 mt-2 leading-snug">
+                      No puedes solicitar este trámite hasta que regularices. Revisa el
+                      detalle en «Estado de cuenta».
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* INFO DINÁMICA DEL TRÁMITE SELECCIONADO */}
               {formData.id_tipo_tramite && (
@@ -322,10 +409,15 @@ const [selectedFile, setSelectedFile] = useState<File | null>(null);
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="flex-1 py-3 bg-[#701C32] text-white font-bold text-sm rounded-xl hover:bg-[#5a1628] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  disabled={isSubmitting || bloqueadoPorDeuda}
+                  title={bloqueadoPorDeuda
+                    ? "Este trámite exige tener las pensiones al día"
+                    : undefined}
+                  className="flex-1 py-3 bg-[#701C32] text-white font-bold text-sm rounded-xl hover:bg-[#5a1628] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#701C32]"
                 >
-                  {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : "Enviar Solicitud"}
+                  {isSubmitting
+                    ? <Loader2 className="animate-spin" size={18} />
+                    : bloqueadoPorDeuda ? "Pensiones pendientes" : "Enviar Solicitud"}
                 </button>
               </div>
             </form>

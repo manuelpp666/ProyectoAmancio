@@ -5,6 +5,7 @@ import {
   Home,
   Calendar,
   Users,
+  Gauge,
   MessageSquare,
   X
 } from "lucide-react";
@@ -58,6 +59,14 @@ export function AsidePsicologo({ isOpen, onClose }: { isOpen: boolean; onClose: 
           className={claseLink(esActivo(`${BASE}/estudiantes`))}
         >
           <Users size={20} /> Seguimiento Alumnos
+        </Link>
+
+        <Link
+          href={`${BASE}/estado-conducta`}
+          onClick={onClose}
+          className={claseLink(esActivo(`${BASE}/estado-conducta`))}
+        >
+          <Gauge size={20} /> Estado de Conducta
         </Link>
 
         <Link

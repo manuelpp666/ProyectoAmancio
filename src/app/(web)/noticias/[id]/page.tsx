@@ -105,20 +105,17 @@ export default function DetalleNoticiaPage() {
                         </div>
                     ) : (
                         <div className="mb-10 md:mb-12 space-y-5">
-                            {/* Todas las fotos se pintan igual: el mismo ancho, el
-                                mismo recuadro y la misma proporción, de la primera a
-                                la última. Antes la portada iba a lo ancho y el resto
+                            {/* Todas las fotos van a lo ancho, de la primera a la
+                                última. Antes la portada iba a lo ancho y el resto
                                 en una rejilla de dos o tres columnas, así que de la
                                 segunda en adelante se veían a la mitad de tamaño.
 
-                                El recuadro es 16:9 con object-cover: es lo único que
-                                garantiza que todas midan lo mismo aunque las fotos
-                                vengan de cámaras distintas. A cambio, una foto muy
-                                vertical se recorta por arriba y por abajo: conviene
-                                subirlas apaisadas. */}
+                                El recuadro no impone proporción: toma el alto que le
+                                dé cada foto. Así se ve entera, sin recortar, venga
+                                apaisada, cuadrada o vertical. */}
                             {(galeria.length ? galeria : ["/placeholder-news.svg"]).map((url, i) => (
                                 <div key={`${url}-${i}`}
-                                     className="rounded-3xl overflow-hidden shadow-2xl bg-slate-100 w-full aspect-[16/9]">
+                                     className="rounded-3xl overflow-hidden shadow-2xl bg-slate-100 w-full">
                                     <img
                                         src={url}
                                         alt={i === 0 ? noticia.titulo
@@ -130,7 +127,7 @@ export default function DetalleNoticiaPage() {
                                         loading={i === 0 ? "eager" : "lazy"}
                                         decoding={i === 0 ? "sync" : "async"}
                                         fetchPriority={i === 0 ? "high" : "low"}
-                                        className="w-full h-full object-cover block"
+                                        className="w-full h-auto block"
                                     />
                                 </div>
                             ))}

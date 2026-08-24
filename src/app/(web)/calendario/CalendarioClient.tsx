@@ -3,6 +3,7 @@ import { useState, useMemo } from "react";
 import { parseFechaLocal, formatearFechaCorta } from "@/src/components/utils/fecha";
 import { Evento } from "@/src/interfaces/evento";
 import type { ConfigItem } from "@/src/hooks/useConfiguracion";
+import { colorDeEvento } from "@/src/components/utils/eventos";
 
 const MESES = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -19,16 +20,6 @@ function anosDeEvento(ev: Evento): number[] {
     return anos;
 }
 
-// Fecha (1er día del mes) del primer evento de un año dado; sirve para
-// aterrizar el calendario en un mes que sí tenga eventos.
-function primerMesConEvento(eventos: Evento[], anio: number): Date | null {
-    const delAnio = eventos
-        .map(ev => parseFechaLocal(ev.fecha_inicio))
-        .filter((d): d is Date => !!d && d.getFullYear() === anio)
-        .sort((a, b) => a.getTime() - b.getTime());
-    return delAnio.length ? new Date(anio, delAnio[0].getMonth(), 1) : null;
-}
-
 export default function CalendarioClient({
     eventos,
     config,
@@ -39,18 +30,11 @@ export default function CalendarioClient({
     const getVal = (clave: string, defecto: string) =>
         config.find(i => i.clave === clave)?.valor?.trim() || defecto;
 
-    // Estado inicial: aterriza en un año que tenga eventos (el actual si los
-    // tiene; si no, el más reciente con eventos; si no hay, el mes actual).
+    // Se abre en el mes de hoy. Antes saltaba al primer mes con eventos, y en
+    // agosto te recibía marzo sin que nadie hubiera tocado nada.
     const [viewDate, setViewDate] = useState<Date>(() => {
         const hoy = new Date();
-        const anios = new Set<number>();
-        eventos.forEach(ev => anosDeEvento(ev).forEach(y => anios.add(y)));
-        if (anios.size === 0) return hoy;
-        if (anios.has(hoy.getFullYear())) {
-            return primerMesConEvento(eventos, hoy.getFullYear()) || hoy;
-        }
-        const maxY = Math.max(...anios);
-        return primerMesConEvento(eventos, maxY) || new Date(maxY, 0, 1);
+        return new Date(hoy.getFullYear(), hoy.getMonth(), 1);
     });
 
     const year = viewDate.getFullYear();
@@ -76,9 +60,9 @@ export default function CalendarioClient({
         return Array.from(s).sort((a, b) => b - a);
     }, [eventos, year]);
 
-    const cambiarAnio = (anio: number) => {
-        setViewDate(primerMesConEvento(eventos, anio) || new Date(anio, 0, 1));
-    };
+    // Cambiar de año deja el mismo mes: si estabas en agosto de 2026 y eliges
+    // 2025, sales en agosto de 2025.
+    const cambiarAnio = (anio: number) => setViewDate(new Date(anio, month, 1));
 
     // Eventos que caen dentro del año en vista
     const eventosDelAnio = useMemo(
@@ -98,22 +82,40 @@ export default function CalendarioClient({
         return eventosDelAnio.filter(ev => eventoEnDia(ev, dayDate));
     };
 
-    const leyenda = useMemo(() => {
-        const tipos = Array.from(new Set(eventosDelAnio.map(e => e.tipo_evento).filter(Boolean)));
-        return tipos.map(tipo => ({
-            nombre: tipo as string,
-            color: eventosDelAnio.find(e => e.tipo_evento === tipo)?.color || "#093E7A"
-        }));
-    }, [eventosDelAnio]);
+    // Lista lateral: solo el mes que está en pantalla, ordenado por fecha. Entra
+    // también el evento que empieza en otro mes pero se solapa con este.
+    const eventosDelMes = useMemo(() => {
+        const primerDia = new Date(year, month, 1);
+        const ultimoDia = new Date(year, month + 1, 0);
+        return eventosDelAnio
+            .filter(ev => {
+                const inicio = parseFechaLocal(ev.fecha_inicio);
+                if (!inicio) return false;
+                const fin = parseFechaLocal(ev.fecha_fin) || inicio;
+                return inicio <= ultimoDia && fin >= primerDia;
+            })
+            .sort((a, b) => {
+                const da = parseFechaLocal(a.fecha_inicio)?.getTime() || 0;
+                const db = parseFechaLocal(b.fecha_inicio)?.getTime() || 0;
+                return da - db;
+            });
+    }, [eventosDelAnio, year, month]);
 
-    // Lista lateral: todos los eventos del año elegido, ordenados por fecha
-    const eventosOrdenados = useMemo(() => {
-        return [...eventosDelAnio].sort((a, b) => {
-            const da = parseFechaLocal(a.fecha_inicio)?.getTime() || 0;
-            const db = parseFechaLocal(b.fecha_inicio)?.getTime() || 0;
-            return da - db;
-        });
-    }, [eventosDelAnio]);
+    // La leyenda describe lo que hay en pantalla: los tipos del mes en vista,
+    // con el color exacto con el que se pintan sus puntos. Se agrupa por
+    // tipo+color para que nunca diga un color distinto al del calendario, y los
+    // eventos sin tipo tampoco se quedan fuera (antes se caían del filtro y
+    // aparecía un punto sin nada que lo explicara).
+    const leyenda = useMemo(() => {
+        const vistos = new Map<string, { nombre: string; color: string }>();
+        for (const ev of eventosDelMes) {
+            const color = colorDeEvento(ev);
+            const nombre = ev.tipo_evento?.trim() || "Otros";
+            const clave = `${nombre}|${color}`;
+            if (!vistos.has(clave)) vistos.set(clave, { nombre, color });
+        }
+        return Array.from(vistos.values());
+    }, [eventosDelMes]);
 
     const calendarDays: (number | null)[] = [
         ...Array.from({ length: firstDayOfMonth }, () => null),
@@ -178,7 +180,7 @@ export default function CalendarioClient({
                                                     <span className={`text-xs sm:text-sm font-bold ${isToday(day) ? "text-[#701C32]" : "text-slate-500"}`}>{day}</span>
                                                     <div className="mt-1 flex flex-wrap gap-1">
                                                         {evs.slice(0, 4).map(ev => (
-                                                            <div key={ev.id_evento} title={ev.titulo} className="w-2 h-2 rounded-full" style={{ backgroundColor: ev.color || '#ccc' }} />
+                                                            <div key={ev.id_evento} title={ev.titulo} className="w-2 h-2 rounded-full" style={{ backgroundColor: colorDeEvento(ev) }} />
                                                         ))}
                                                     </div>
                                                 </>
@@ -205,15 +207,15 @@ export default function CalendarioClient({
                     {/* Sidebar de Eventos del año seleccionado */}
                     <div className="space-y-6">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-xl font-black text-[#701C32]">Eventos {year}</h3>
-                            {eventosOrdenados.length > 0 && (
+                            <h3 className="text-xl font-black text-[#701C32]">Eventos de {MESES[month]}</h3>
+                            {eventosDelMes.length > 0 && (
                                 <span className="text-[11px] font-bold text-[#093E7A] bg-[#093E7A]/10 px-3 py-1 rounded-full">
-                                    {eventosOrdenados.length}
+                                    {eventosDelMes.length}
                                 </span>
                             )}
                         </div>
                         <div className="space-y-4 lg:max-h-[600px] lg:overflow-y-auto custom-scrollbar lg:pr-1">
-                            {eventosOrdenados.map(ev => {
+                            {eventosDelMes.map(ev => {
                                 const inicio = parseFechaLocal(ev.fecha_inicio);
                                 const pasado = inicio ? inicio < today : false;
                                 return (
@@ -223,7 +225,7 @@ export default function CalendarioClient({
                                         className={`w-full text-left bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all ${pasado ? "opacity-60" : ""}`}
                                     >
                                         <div className="flex items-center space-x-3 mb-2">
-                                            <div className="w-11 h-11 rounded-lg flex flex-col items-center justify-center text-white shrink-0" style={{ backgroundColor: ev.color || '#093E7A' }}>
+                                            <div className="w-11 h-11 rounded-lg flex flex-col items-center justify-center text-white shrink-0" style={{ backgroundColor: colorDeEvento(ev) }}>
                                                 <span className="text-sm font-black leading-none">{inicio?.getDate()}</span>
                                                 <span className="text-[8px] font-bold uppercase">{MESES[inicio?.getMonth() ?? 0].slice(0, 3)}</span>
                                             </div>
@@ -236,9 +238,9 @@ export default function CalendarioClient({
                                     </button>
                                 );
                             })}
-                            {eventosOrdenados.length === 0 && (
+                            {eventosDelMes.length === 0 && (
                                 <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 text-center">
-                                    <p className="text-sm text-slate-400 font-medium italic">No hay eventos registrados para {year}.</p>
+                                    <p className="text-sm text-slate-400 font-medium italic">No hay eventos en {MESES[month]} de {year}.</p>
                                 </div>
                             )}
                         </div>
