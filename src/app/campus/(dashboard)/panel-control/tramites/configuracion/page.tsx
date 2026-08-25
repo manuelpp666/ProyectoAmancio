@@ -797,7 +797,21 @@ export default function GestionFinancieraPage() {
                       const hoy = new Date();
                       hoy.setHours(0, 0, 0, 0);
                       const fechaVenc = p.fecha_vencimiento ? new Date(p.fecha_vencimiento) : null;
-                      const estaVencido = p.estado === "PENDIENTE" && fechaVenc && fechaVenc < hoy;
+
+                      // Una cuota vencida puede llegar de dos formas: con el
+                      // estado VENCIDO ya guardado —así entraron las 580 de la
+                      // carga inicial, que marcó como VENCIDO todo lo que ya
+                      // había pasado de fecha— o todavía en PENDIENTE con la
+                      // fecha pasada. Antes aquí solo se miraba la segunda, así
+                      // que las guardadas como VENCIDO salían en amarillo, sin
+                      // aviso y, sobre todo, sin botón para cobrarlas.
+                      const estaVencido = p.estado === "VENCIDO" ||
+                        Boolean(p.estado === "PENDIENTE" && fechaVenc && fechaVenc < hoy);
+
+                      // Que la cuota esté vencida no impide cobrarla: es
+                      // justamente la que viene a pagar el que llega tarde a
+                      // caja. Solo se deja de cobrar lo ya pagado o anulado.
+                      const sePuedeCobrar = p.estado === "PENDIENTE" || p.estado === "VENCIDO";
 
                       return (
                         <tr key={p.id_pago} className={`transition-colors ${estaVencido ? "bg-red-50/30 hover:bg-red-50/50" : "hover:bg-gray-50"}`}>
@@ -841,10 +855,10 @@ export default function GestionFinancieraPage() {
 
                           <td className="p-4">
                             <div className="flex items-center justify-end gap-1">
-                              {p.estado === "PENDIENTE" && (
+                              {sePuedeCobrar && (
                                 <button
                                   onClick={() => prepararConfirmacionManual(p.id_pago)}
-                                  title="Confirmar pago"
+                                  title={estaVencido ? "Cobrar cuota vencida" : "Confirmar pago"}
                                   className={`p-1.5 rounded-lg transition-colors ${estaVencido ? 'text-red-500 hover:text-red-700 hover:bg-red-50' : 'text-green-500 hover:text-green-700 hover:bg-green-50'}`}
                                 >
                                   <span className="material-symbols-outlined text-sm">{estaVencido ? 'priority_high' : 'check_circle'}</span>
@@ -1200,6 +1214,7 @@ export default function GestionFinancieraPage() {
                   <select className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#093E7A]"
                     value={editPagoData.estado} onChange={e => setEditPagoData({ ...editPagoData, estado: e.target.value })}>
                     <option value="PENDIENTE">PENDIENTE</option>
+                    <option value="VENCIDO">VENCIDO</option>
                     <option value="PAGADO">PAGADO</option>
                     <option value="ANULADO">ANULADO</option>
                   </select>
