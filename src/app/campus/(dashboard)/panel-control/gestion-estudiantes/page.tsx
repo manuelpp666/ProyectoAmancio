@@ -9,6 +9,7 @@ import { RoleGuard } from '@/src/components/auth/RoleGuard';
 import { ModalEditarEstudiante } from "@/src/components/Campus/PanelControl/ModalEditarEstudiante";
 import { usePermisos } from "@/src/hooks/usePermisos";
 import { NotasFinales } from "@/src/components/Campus/PanelControl/NotasFinales";
+import { CatalogoFaltas } from "@/src/components/Campus/PanelControl/CatalogoFaltas";
 
 // Pestañas del apartado. Los `id` coinciden con el catálogo de permisos.
 const PESTANAS_ESTUDIANTES = [
@@ -17,6 +18,7 @@ const PESTANAS_ESTUDIANTES = [
     { id: "renovaciones", label: "Renovaciones de Matrícula", icon: "autorenew" },
     { id: "verano", label: "Inscripciones de Verano", icon: "wb_sunny" },
     { id: "notas", label: "Notas Finales", icon: "grading" },
+    { id: "faltas", label: "Catálogo de Faltas", icon: "gavel" },
 ] as const;
 
 /**
@@ -98,7 +100,9 @@ export default function GestionEstudiantesPage() {
     const [alumnos, setAlumnos] = useState<AlumnoBase[]>([]);
     const [loading, setLoading] = useState(true);
     // Vista actual: "estudiantes" | "postulantes" | "renovaciones" | "verano" | "notas"
-    const [vista, setVista] = useState<"estudiantes" | "postulantes" | "renovaciones" | "verano" | "notas">("estudiantes");
+    // El tipo sale de PESTANAS_ESTUDIANTES: así, al añadir una pestaña arriba,
+    // no hay que acordarse de repetir su id también aquí.
+    const [vista, setVista] = useState<(typeof PESTANAS_ESTUDIANTES)[number]["id"]>("estudiantes");
     const { tienePermiso, loading: loadingPermisos } = usePermisos();
 
     // Si la pestaña abierta no está permitida, se abre la primera que sí lo esté
@@ -440,21 +444,10 @@ export default function GestionEstudiantesPage() {
             <div className="flex h-full overflow-hidden">
                 <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
 
-                    {/* HEADER CON TABS */}
+                    {/* HEADER CON TABS
+                        Sin título: la pestaña marcada ya dice dónde está uno, y
+                        el menú lateral dice en qué apartado. */}
                     <div className="bg-white border-b px-4 md:px-8 shrink-0">
-                        <div className="h-16 flex items-center">
-                            <div className="flex items-center gap-2">
-                                <span className="material-symbols-outlined text-[#093E7A]">school</span>
-                                <h2 className="text-xl font-bold text-gray-800">
-                                    {vista === "postulantes" ? "Solicitudes de Admisión"
-                                        : vista === "renovaciones" ? "Renovaciones de Matrícula"
-                                            : vista === "verano" ? "Inscripciones de Verano"
-                                            : vista === "notas" ? "Notas Finales"
-                                            : "Gestión de Estudiantes"}
-                                </h2>
-                            </div>
-                        </div>
-
                         {/* PESTAÑAS: solo las permitidas para este administrador */}
                         <div className="barra-pestanas gap-x-5 md:gap-x-6">
                             {PESTANAS_ESTUDIANTES.filter((t) => tienePermiso("gestion_estudiantes", t.id)).map((tab) => (
@@ -478,7 +471,7 @@ export default function GestionEstudiantesPage() {
                         {/* Barra de búsqueda + registro dedicado.
                             "notas" queda fuera: esa pestaña trae sus propios
                             filtros, y el buscador de arriba no la afecta. */}
-                        {vista !== "renovaciones" && vista !== "verano" && vista !== "notas" && (
+                        {vista !== "renovaciones" && vista !== "verano" && vista !== "notas" && vista !== "faltas" && (
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
                                 <div className="relative w-full sm:max-w-md">
                                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -588,6 +581,8 @@ export default function GestionEstudiantesPage() {
                             <div className="-m-4 md:-m-8">
                                 <NotasFinales />
                             </div>
+                        ) : vista === "faltas" ? (
+                            <CatalogoFaltas />
                         ) : vista === "verano" ? (
                             <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden shadow-sm">
                                 <div className="overflow-x-auto">

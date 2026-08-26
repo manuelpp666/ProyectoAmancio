@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 import { NivelConCursos, Area } from "@/src/interfaces/academic";
 import { apiFetch } from "@/src/lib/api";
 import { toast } from "sonner";
@@ -312,7 +311,6 @@ export default function GestionCursosPage() {
 
       <div className="flex h-full overflow-hidden">
         <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
-          <HeaderPanel />
 
           {/* Sub-Header Dinámico */}
           {/* min-h-16 y flex-wrap en vez de h-16: en móvil y en pantalla

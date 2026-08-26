@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 import { toast } from "sonner";
 import { Nivel, Grado, Seccion } from "@/src/interfaces/academic";
 import { AlumnoMatriculado } from "@/src/interfaces/matricula";
@@ -325,7 +324,6 @@ export default function AsignacionEstudiantesPage() {
       <div className="flex min-h-full lg:h-full lg:overflow-hidden">
         <div className="flex-1 flex flex-col lg:overflow-hidden bg-[#F8FAFC] min-w-0">
 
-          <HeaderPanel />
 
           <div className="min-h-16 border-b bg-white flex flex-wrap items-center justify-between gap-y-2 px-4 md:px-8 py-2 md:py-0 shrink-0">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">

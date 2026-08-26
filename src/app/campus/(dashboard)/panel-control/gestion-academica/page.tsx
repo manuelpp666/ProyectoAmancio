@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { Nivel, Seccion, AnioEscolar, Grado, Bimestre } from "@/src/interfaces/academic";
 import GradoCard from "@/src/components/Academic/GradoCard";
-import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 import { toast } from "sonner";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
@@ -512,7 +511,6 @@ export default function GestionAcademicaPage() {
       <div className="flex h-full overflow-hidden">
         <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
 
-          <HeaderPanel />
 
           {/* BARRA SUPERIOR */}
           <div className="min-h-16 border-b bg-white flex flex-wrap items-center justify-between gap-y-3 px-4 md:px-8 py-3">

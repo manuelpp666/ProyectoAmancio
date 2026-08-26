@@ -1,5 +1,4 @@
 "use client";
-import HeaderPanel from "@/src/components/Campus/PanelControl/Header";
 import Link from "next/link";
 import { NoticiaResponse } from "@/src/interfaces/noticia";
 import { NoticiaRow } from "@/src/components/Noticia/TablaNoticia";
@@ -66,7 +65,6 @@ export default function GestionContenidoPage() {
         <div className="flex-1 flex flex-col overflow-hidden">
 
           {/* Header/Tabs Section */}
-          <HeaderPanel />
 
           {/* BARRA SUPERIOR ESTÁNDAR */}
           {/* min-h-16 y flex-wrap en vez de h-16: el buscador de 256px fijos y

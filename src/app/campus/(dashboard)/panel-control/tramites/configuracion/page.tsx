@@ -461,15 +461,10 @@ export default function GestionFinancieraPage() {
           desplazarse. */}
       <div className="flex-1 flex flex-col min-w-0">
 
-        {/* HEADER CON TABS */}
+        {/* HEADER CON TABS
+            Sin título: la pestaña marcada ya dice dónde está uno, y el menú
+            lateral dice en qué apartado. */}
         <div className="bg-white border-b px-4 md:px-8 shrink-0">
-          <div className="h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#093E7A]">payments</span>
-              <h2 className="text-xl font-bold text-gray-800">Gestión Financiera</h2>
-            </div>
-          </div>
-
           <div className="barra-pestanas gap-x-5 md:gap-x-6">
             {PESTANAS_FINANZAS.filter(t => tienePermiso("tramites_finanzas", t.permiso)).map(t => (
               <button

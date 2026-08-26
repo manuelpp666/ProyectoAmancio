@@ -248,15 +248,10 @@ export default function GestionPersonalPage() {
     <div className="flex h-full overflow-hidden">
       <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
 
-        {/* HEADER CON TABS */}
+        {/* HEADER CON TABS
+            Sin título: la pestaña marcada ya dice dónde está uno, y el menú
+            lateral dice en qué apartado. */}
         <div className="bg-white border-b px-4 md:px-8 shrink-0">
-          <div className="h-16 flex items-center">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#093E7A]">groups</span>
-              <h2 className="text-xl font-bold text-gray-800">Gestión de Personal</h2>
-            </div>
-          </div>
-
           {/* TABS: solo las que el administrador tenga permitidas */}
           <div className="barra-pestanas gap-x-5 md:gap-x-6">
             {PESTANAS_PERSONAL.filter((t) => tienePermiso("gestion_personal", t.id)).map((t) => (

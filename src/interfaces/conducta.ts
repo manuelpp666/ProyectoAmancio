@@ -57,3 +57,36 @@ export interface RespuestaReportes {
   total: number;
   items: ReporteReciente[];
 }
+
+/**
+ * Un reporte que se borró. Es una foto de cómo estaba el reporte ese día
+ * (alumno, falta y puntos incluidos), no una referencia: el catálogo de faltas
+ * se puede editar después y el historial tiene que seguir diciendo la verdad.
+ */
+export interface ReporteEliminado {
+  id_eliminado: number;
+  id_reporte: number;
+  id_alumno: number | null;
+  alumno: string;
+  dni: string | null;
+  falta: string;
+  tipo_falta: string | null;
+  puntos: number;
+  medida: string | null;
+  cambio_ie: boolean;
+  descripcion: string | null;
+  /** Fecha del reporte original. */
+  fecha: string;
+  motivo: string;
+  eliminado_por: string;
+  rol_elimina: string | null;
+  fecha_eliminacion: string;
+}
+
+/** Respuesta de GET /conducta/reportes/eliminados. */
+export interface RespuestaReportesEliminados {
+  total: number;
+  items: ReporteEliminado[];
+  /** false mientras la tabla del historial no exista en el servidor. */
+  disponible?: boolean;
+}

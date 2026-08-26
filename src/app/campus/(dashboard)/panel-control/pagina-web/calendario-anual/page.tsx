@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import HeaderPanel from "@/src/components/Campus/PanelControl/Header";
 import { Plus, ChevronRight, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import EventForm from '@/src/components/Evento/EventForm';
@@ -92,7 +91,6 @@ export default function CalendarioPage() {
     <RoleGuard modulo="contenido_web" subModulo="calendario">
     <div className="flex h-full overflow-hidden bg-[#F8FAFC] antialiased">
       <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
-        <HeaderPanel />
 
         {/* BARRA SUPERIOR ESTÁNDAR */}
         {/* min-h-16 y flex-wrap en vez de h-16: el título, el selector de año,

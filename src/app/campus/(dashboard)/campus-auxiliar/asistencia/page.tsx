@@ -576,7 +576,20 @@ export default function AsistenciaAuxiliarPage() {
                                       onClick={() => setEstado(m.id_matricula, e.valor)}
                                       aria-pressed={activo}
                                       title={e.nombre}
-                                      className={`flex items-center justify-center gap-1 w-[58px] py-1.5 rounded-lg text-xs font-black transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] ${
+                                      // `relative` no mueve nada, pero hace falta.
+                                      //
+                                      // Dentro va un <span class="sr-only"> con el
+                                      // nombre del estado, para que un lector de
+                                      // pantalla diga "Presente" y no "P". `sr-only`
+                                      // lo pone en position:absolute, y un absolute
+                                      // sin ancestro posicionado se cuelga del
+                                      // documento entero, no del contenedor con
+                                      // scroll de la tabla. Resultado: los spans de
+                                      // las últimas columnas quedaban a 868px en una
+                                      // ventana de 785 y toda la página se podía
+                                      // arrastrar a la derecha hacia un vacío.
+                                      // Con esto el span se ancla al botón.
+                                      className={`relative flex items-center justify-center gap-1 w-[58px] py-1.5 rounded-lg text-xs font-black transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] ${
                                         activo ? `${e.activo} shadow-sm` : "text-gray-500 hover:bg-white hover:text-gray-700"
                                       }`}
                                     >

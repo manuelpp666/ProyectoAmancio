@@ -28,6 +28,7 @@ export const CATALOGO_PERMISOS: NodoPermiso[] = [
       { id: "renovaciones", label: "Renovaciones de Matrícula" },
       { id: "verano", label: "Inscripciones de Verano" },
       { id: "notas", label: "Notas Finales" },
+      { id: "faltas", label: "Catálogo de Faltas" },
     ],
   },
 
@@ -72,8 +73,10 @@ export const CATALOGO_PERMISOS: NodoPermiso[] = [
     hijos: [
       {
         id: "info_general",
-        label: "Información General",
-        // Las secciones editables dentro de la pestaña de información general
+        // La clave se queda como está: es la que está guardada en la base de
+        // cada administrador. Solo cambia el nombre que se lee.
+        label: "Editor Web",
+        // Las secciones editables dentro del editor web
         hijos: [
           { id: "inicio", label: "Inicio" },
           { id: "login", label: "Inicio de Sesión" },

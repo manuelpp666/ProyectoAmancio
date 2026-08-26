@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
 import { Seccion, Curso } from "@/src/interfaces/academic";
@@ -340,7 +339,6 @@ export default function AsignacionDocentesPage() {
     <RoleGuard modulo="academico" subModulo="docentes">
       <div className="flex h-full overflow-hidden bg-[#F8FAFC]">
         <div className="flex-1 flex flex-col overflow-hidden">
-          <HeaderPanel />
 
           <div className="flex-1 overflow-y-auto p-4 md:p-8">
             {/* TABS SUPERIORES */}

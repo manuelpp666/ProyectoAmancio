@@ -6,7 +6,6 @@ import ImageUpload from '@/src/components/utils/ImageUpload';
 import MediaUpload from '@/src/components/utils/MediaUpload';
 import { uploadToCloudinary, uploadMediaToCloudinary } from "@/src/components/utils/cloudinary";
 import * as LucideIcons from "lucide-react";
-import HeaderPanel from '@/src/components/Campus/PanelControl/Header';
 import { Save, Home, Users, Footprints, Loader2, GraduationCap, CalendarDays, Newspaper, ClipboardList, RotateCcw, AlertTriangle, LogIn } from 'lucide-react';
 import { toast } from "sonner";
 import { apiFetch } from "@/src/lib/api";
@@ -190,7 +189,6 @@ export default function GestionWebPage() {
     
     <div className="flex h-full overflow-hidden">
       <div className="flex-1 flex flex-col overflow-hidden bg-[#F8FAFC]">
-        <HeaderPanel />
 
         {/* BARRA SUPERIOR ESTÁNDAR */}
         {/* min-h-16 y flex-wrap en vez de h-16: con el aviso de cambios sin

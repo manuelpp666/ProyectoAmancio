@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import HeaderPanel from "@/src/components/Campus/PanelControl/NavbarGestionAcademica";
 import { useReactToPrint } from "react-to-print";
 import { toast } from "sonner";
 import {
@@ -369,7 +368,6 @@ export default function ConstructorHorariosPage() {
       <div className="flex h-full overflow-hidden bg-[#F8FAFC]">
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="no-print">
-            <HeaderPanel />
           </div>
 
           {/* min-h-16 y flex-wrap en vez de h-16: aquí conviven el título, el
