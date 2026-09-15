@@ -11,7 +11,7 @@ import {
 import { Noticia, NoticiaCreate } from "@/src/interfaces/noticia";
 import { useForm } from "@/src/hooks/useForm";
 import ImagenesUpload, { ImagenElegida } from "@/src/components/utils/ImagenesUpload";
-import { uploadToCloudinary } from "@/src/components/utils/cloudinary";
+import { subirImagen, mensajeDeSubida } from "@/src/components/utils/subidas";
 import { getYouTubeID, imagenesDeNoticia } from "@/src/components/utils/youtube";
 import { toast } from 'sonner';
 
@@ -286,11 +286,13 @@ async function subirGaleria(
     const obrero = async () => {
         while (siguiente < pendientes.length) {
             const { img, i } = pendientes[siguiente++];
-            const url = await uploadToCloudinary(img.file as File);
-            if (!url) {
+            let url: string;
+            try {
+                url = await subirImagen(img.file as File);
+            } catch (err) {
                 throw new Error(
-                    `No se pudo subir la imagen ${i + 1} de ${imagenes.length}. ` +
-                    `Revisa tu conexión y vuelve a intentarlo.`
+                    `No se pudo subir la imagen ${i + 1} de ${imagenes.length}: ` +
+                    mensajeDeSubida(err, "revisa tu conexión y vuelve a intentarlo.")
                 );
             }
             urls[i] = url;

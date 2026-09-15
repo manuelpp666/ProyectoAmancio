@@ -17,7 +17,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
-import { uploadToCloudinary } from "@/src/components/utils/cloudinary";
+import { subirImagen, mensajeDeSubida, ACEPTA_IMAGEN, LIMITE_IMAGEN_MB } from "@/src/components/utils/subidas";
 import { toast } from "sonner";
 
 export default function MisDatos() {
@@ -97,14 +97,14 @@ export default function MisDatos() {
   const handleFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("La imagen es muy pesada (máximo 2MB)");
+    if (file.size > LIMITE_IMAGEN_MB * 1024 * 1024) {
+      toast.error(`La imagen es muy pesada (máximo ${LIMITE_IMAGEN_MB} MB)`);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
     setSubiendoFoto(true);
     try {
-      const url = await uploadToCloudinary(file);
-      if (!url) throw new Error();
+      const url = await subirImagen(file);
       const res = await apiFetch(`/perfil/admin/${username}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -116,8 +116,8 @@ export default function MisDatos() {
         prev ? { ...prev, datos: { ...prev.datos, url_perfil: url } } : prev
       );
       toast.success("Foto de perfil actualizada");
-    } catch {
-      toast.error("No se pudo actualizar la foto");
+    } catch (err) {
+      toast.error(mensajeDeSubida(err, "No se pudo actualizar la foto"));
     } finally {
       setSubiendoFoto(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -324,7 +324,7 @@ export default function MisDatos() {
                       <input
                         type="file"
                         ref={fileInputRef}
-                        accept="image/*"
+                        accept={ACEPTA_IMAGEN}
                         className="hidden"
                         onChange={handleFoto}
                       />

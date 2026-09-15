@@ -15,7 +15,7 @@ import { DocenteCreate, Docente } from "@/src/interfaces/docente";
 import FormInput from '@/src/components/utils/Inputs';
 import { useForm } from '@/src/hooks/useForm';
 import ImageUpload from "@/src/components/utils/ImageUpload";
-import { uploadToCloudinary } from "@/src/components/utils/cloudinary";
+import { subirImagen, mensajeDeSubida } from "@/src/components/utils/subidas";
 import { toast } from "sonner";
 
 interface DocenteFormProps {
@@ -65,10 +65,9 @@ export function DocenteForm({ initialData, onSubmit, loading }: DocenteFormProps
 
       // 2. Si hay una foto nueva seleccionada, la subimos (Igual que en noticias)
       if (portada) {
-        const urlSubida = await uploadToCloudinary(portada);
-        if (urlSubida) {
-          urlFinal = urlSubida;
-        }
+        // Antes, si la foto no subía, se registraba al docente sin ella y sin
+        // avisar. Ahora el error llega al catch con su motivo y no se envía nada.
+        urlFinal = await subirImagen(portada);
       }
 
       // 3. Construimos el objeto final combinando el formData + la URL de la imagen
@@ -81,7 +80,7 @@ export function DocenteForm({ initialData, onSubmit, loading }: DocenteFormProps
       await onSubmit(docentePayload);
 
     } catch (error) {
-      toast.error("Error al procesar el registro del docente");
+      toast.error(mensajeDeSubida(error, "Error al procesar el registro del docente"));
     } finally {
       setIsUploading(false);
     }
@@ -110,7 +109,7 @@ export function DocenteForm({ initialData, onSubmit, loading }: DocenteFormProps
                 onImageChange={(file) => setPortada(file)}
               />
               <p className="text-[9px] text-gray-400 text-center font-bold uppercase leading-relaxed tracking-widest">
-                JPG o PNG<br />Máximo 2MB
+                JPG, PNG o WEBP<br />Máximo 10MB
               </p>
             </div>
 

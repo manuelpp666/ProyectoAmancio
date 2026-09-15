@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { Camera, X, Film } from "lucide-react";
+import { ACEPTA_MEDIA, LIMITE_IMAGEN_MB, LIMITE_VIDEO_MB } from "@/src/components/utils/subidas";
 import { esVideo } from "@/src/components/utils/media";
 
 interface MediaUploadProps {
@@ -18,8 +19,8 @@ export default function MediaUpload({
   label,
   onMediaChange,
   initialMedia,
-  maxImageMB = 2,
-  maxVideoMB = 20,
+  maxImageMB = LIMITE_IMAGEN_MB,
+  maxVideoMB = LIMITE_VIDEO_MB,
 }: MediaUploadProps) {
   const [preview, setPreview] = useState<string | null>(initialMedia || null);
   const [tipoVideo, setTipoVideo] = useState<boolean>(esVideo(initialMedia));
@@ -116,7 +117,7 @@ export default function MediaUpload({
           type="file"
           ref={fileInputRef}
           onChange={handleFileChange}
-          accept="image/*,video/*"
+          accept={ACEPTA_MEDIA}
           className="hidden"
         />
       </div>

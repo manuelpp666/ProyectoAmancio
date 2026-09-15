@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useConfiguracion } from '@/src/hooks/useConfiguracion';
 import ImageUpload from '@/src/components/utils/ImageUpload';
 import MediaUpload from '@/src/components/utils/MediaUpload';
-import { uploadToCloudinary, uploadMediaToCloudinary } from "@/src/components/utils/cloudinary";
+import { subirImagen, subirMedia, mensajeDeSubida, LIMITE_VIDEO_MB } from "@/src/components/utils/subidas";
 import * as LucideIcons from "lucide-react";
 import { Save, Home, Users, Footprints, Loader2, GraduationCap, CalendarDays, Newspaper, ClipboardList, RotateCcw, AlertTriangle, LogIn } from 'lucide-react';
 import { toast } from "sonner";
@@ -305,21 +305,17 @@ export default function GestionWebPage() {
                   <div className="relative">
                     <MediaUpload
                       label={campo.label}
-                      maxVideoMB={80}
+                      maxVideoMB={LIMITE_VIDEO_MB}
                       initialMedia={getVal(campo.clave)}
                       onMediaChange={async (file) => {
                         if (file) {
                           setUploadingField(campo.clave);
                           try {
-                            const url = await uploadMediaToCloudinary(file);
-                            if (url) {
-                              updateField(campo.clave, url);
-                              toast.success("Archivo listo para guardar");
-                            } else {
-                              toast.error("No se pudo subir el archivo");
-                            }
-                          } catch {
-                            toast.error("Error al subir el archivo");
+                            const url = await subirMedia(file);
+                            updateField(campo.clave, url);
+                            toast.success("Archivo listo para guardar");
+                          } catch (err) {
+                            toast.error(mensajeDeSubida(err, "No se pudo subir el archivo"));
                           } finally {
                             setUploadingField(null);
                           }
@@ -330,7 +326,8 @@ export default function GestionWebPage() {
                     />
                     <p className="mt-3 text-xs text-gray-400">
                       Puedes subir una imagen o un video corto. El video se reproduce en bucle,
-                      silenciado y sin controles, como fondo animado.
+                      silenciado y sin controles, como fondo animado. Súbelo en MP4, sin audio y
+                      de hasta {LIMITE_VIDEO_MB} MB: cuanto menos pese, antes carga el inicio.
                     </p>
                     {uploadingField === campo.clave && (
                       <div className="absolute inset-0 bg-white/60 flex items-center justify-center rounded-3xl backdrop-blur-[2px]">
@@ -347,13 +344,11 @@ export default function GestionWebPage() {
                         if (file) {
                           setUploadingField(campo.clave);
                           try {
-                            const url = await uploadToCloudinary(file);
-                            if (url) {
-                              updateField(campo.clave, url);
-                              toast.success("Imagen lista para guardar");
-                            }
+                            const url = await subirImagen(file);
+                            updateField(campo.clave, url);
+                            toast.success("Imagen lista para guardar");
                           } catch (err) {
-                            toast.error("Error al subir imagen");
+                            toast.error(mensajeDeSubida(err, "No se pudo subir la imagen"));
                           } finally {
                             setUploadingField(null);
                           }
@@ -555,15 +550,11 @@ function EditorListaDinamica({ data, onChange, tipo, onUploadingChange }: { data
                     if (file) {
                       cambiarSubiendo(1);
                       try {
-                        const url = await uploadToCloudinary(file);
-                        if (url) {
-                          actualizar(i, 'imagen', url);
-                          toast.success("Imagen lista para guardar");
-                        } else {
-                          toast.error("No se pudo subir la imagen");
-                        }
-                      } catch {
-                        toast.error("Error al subir imagen");
+                        const url = await subirImagen(file);
+                        actualizar(i, 'imagen', url);
+                        toast.success("Imagen lista para guardar");
+                      } catch (err) {
+                        toast.error(mensajeDeSubida(err, "No se pudo subir la imagen"));
                       } finally {
                         cambiarSubiendo(-1);
                       }

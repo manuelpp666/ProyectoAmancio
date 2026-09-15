@@ -29,8 +29,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
 
   images: {
-    // Las imágenes del colegio se alojan en Cloudinary. Declararlo permite que
-    // next/image las optimice en lugar de rechazarlas por ser de otro dominio.
+    // Las imágenes nuevas se guardan en el backend (/media). Cloudinary se
+    // mantiene por las URLs antiguas que aún queden en la base: declararlo
+    // permite que next/image las optimice en vez de rechazarlas.
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com" },
     ],

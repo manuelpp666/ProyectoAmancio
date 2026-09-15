@@ -22,7 +22,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useConfiguracion } from "@/src/hooks/useConfiguracion";
 import { formatearFechaLarga } from "@/src/components/utils/fecha";
-import { uploadMediaToCloudinary } from "@/src/components/utils/cloudinary";
+import { subirDocumentoAdmision, mensajeDeSubida, ACEPTA_DOCUMENTO, LIMITE_DOCUMENTO_MB } from "@/src/components/utils/subidas";
 
 const DOCS_ADMISION = [
   { campo: "doc_dni_menor", label: "Copia simple del DNI del menor" },
@@ -165,18 +165,21 @@ export default function AdmisionPage() {
   const [subiendoDoc, setSubiendoDoc] = useState<Record<string, boolean>>({});
   const handleDocUpload = async (campo: string, file?: File | null) => {
     if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("El archivo no debe superar los 10 MB.");
+    if (file.size > LIMITE_DOCUMENTO_MB * 1024 * 1024) {
+      toast.error(`El archivo no debe superar los ${LIMITE_DOCUMENTO_MB} MB.`);
       return;
     }
     setSubiendoDoc(prev => ({ ...prev, [campo]: true }));
-    const url = await uploadMediaToCloudinary(file);
-    setSubiendoDoc(prev => ({ ...prev, [campo]: false }));
-    if (url) {
+    try {
+      const url = await subirDocumentoAdmision(file);
       setAlumno(campo, url);
       toast.success("Documento subido correctamente");
-    } else {
-      toast.error("No se pudo subir el documento. Intenta de nuevo.");
+    } catch (err) {
+      toast.error(mensajeDeSubida(err, "No se pudo subir el documento. Intenta de nuevo."));
+    } finally {
+      // En finally: antes, si la subida fallaba, el campo se quedaba
+      // "Subiendo..." para siempre y bloqueaba el envío del formulario.
+      setSubiendoDoc(prev => ({ ...prev, [campo]: false }));
     }
   };
 
@@ -493,7 +496,7 @@ export default function AdmisionPage() {
                       }`}>
                         <input
                           type="file"
-                          accept="image/*,application/pdf"
+                          accept={ACEPTA_DOCUMENTO}
                           className="hidden"
                           disabled={cargando}
                           onChange={(e) => handleDocUpload(doc.campo, e.target.files?.[0])}

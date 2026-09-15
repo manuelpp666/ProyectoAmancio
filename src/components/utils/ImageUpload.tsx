@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { Camera, X } from "lucide-react";
+import { ACEPTA_IMAGEN, LIMITE_IMAGEN_MB } from "@/src/components/utils/subidas";
 
 interface ImageUploadProps {
   label: string;
@@ -24,8 +25,11 @@ export default function ImageUpload({ label, onImageChange, initialImage }: Imag
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert("El archivo es muy pesado (máximo 2MB)");
+      // El servidor comprime la imagen al recibirla, así que se admiten fotos
+      // del celular tal cual salen de la cámara.
+      if (file.size > LIMITE_IMAGEN_MB * 1024 * 1024) {
+        alert(`El archivo es muy pesado (máximo ${LIMITE_IMAGEN_MB} MB)`);
+        if (fileInputRef.current) fileInputRef.current.value = "";
         return;
       }
 
@@ -82,7 +86,7 @@ export default function ImageUpload({ label, onImageChange, initialImage }: Imag
           type="file" 
           ref={fileInputRef} 
           onChange={handleFileChange} 
-          accept="image/*" 
+          accept={ACEPTA_IMAGEN} 
           className="hidden" 
         />
       </div>
