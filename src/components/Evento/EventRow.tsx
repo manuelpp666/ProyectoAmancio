@@ -1,7 +1,9 @@
 import { Edit3, Trash2 } from "lucide-react";
 import { Evento } from "@/src/interfaces/evento";
 
-export const EventRow = ({ evento, onEdit, onDelete }: { evento: Evento, onEdit: () => void, onDelete: () => void }) => {
+// Sin onEdit u onDelete no se pinta ese botón: así la pantalla los quita a
+// quien no tiene ese permiso.
+export const EventRow = ({ evento, onEdit, onDelete }: { evento: Evento, onEdit?: () => void, onDelete?: () => void }) => {
   return (
     <tr className="group hover:bg-gray-50/50">
       <td className="px-8 py-6">
@@ -27,8 +29,8 @@ export const EventRow = ({ evento, onEdit, onDelete }: { evento: Evento, onEdit:
       </td>
       <td className="px-8 py-6 text-right">
         <div className="flex justify-end gap-2">
-          <button onClick={onEdit} className="text-gray-400 hover:text-[#093E7A]"><Edit3 size={16} /></button>
-          <button onClick={onDelete} className="text-gray-400 hover:text-red-600"><Trash2 size={16} /></button>
+          {onEdit && <button onClick={onEdit} className="text-gray-400 hover:text-[#093E7A]"><Edit3 size={16} /></button>}
+          {onDelete && <button onClick={onDelete} className="text-gray-400 hover:text-red-600"><Trash2 size={16} /></button>}
         </div>
       </td>
     </tr>

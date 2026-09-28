@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useUser } from "@/src/context/userContext";
 import { EstadoConducta } from "@/src/interfaces/datos_alumno";
+import { AutorReporte } from "@/src/components/Campus/CampusEstudiante/AutorReporte";
 import {
   ShieldCheck,
   AlertTriangle,
@@ -172,15 +173,16 @@ export default function ConductaAlumnoPage() {
         <div className="space-y-4">
 
           {ultimoReporte ? (
-            <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-5">
-              <div className="flex justify-between items-start">
-                <div className="flex gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-red-500">
+            <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-4 sm:p-5">
+              <div className="flex justify-between items-start gap-3">
+                <div className="flex gap-3 sm:gap-4 min-w-0">
+                  <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-red-500 shrink-0">
                     <AlertCircle size={20} />
                   </div>
-                  <div>
-                    <h4 className="font-bold text-gray-800">{ultimoReporte.motivo}</h4>
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-gray-800 break-words">{ultimoReporte.motivo}</h4>
                     <p className="text-xs text-gray-500">{ultimoReporte.fecha}</p>
+                    <AutorReporte reporte={ultimoReporte} />
                     {ultimoReporte.medida && (
                       <span className={`inline-block mt-2 text-[11px] font-bold rounded-lg px-2.5 py-1 ${ultimoReporte.cambio_ie ? "bg-red-50 text-red-700 border border-red-100" : "bg-slate-100 text-slate-700"}`}>
                         {ultimoReporte.medida}
@@ -188,7 +190,7 @@ export default function ConductaAlumnoPage() {
                     )}
                   </div>
                 </div>
-                <span className="text-red-600 font-black">-{ultimoReporte.puntos_restados} pts</span>
+                <span className="text-red-600 font-black shrink-0 whitespace-nowrap">-{ultimoReporte.puntos_restados} pts</span>
               </div>
             </div>
           ) : (
@@ -208,7 +210,7 @@ export default function ConductaAlumnoPage() {
         <Info className="text-blue-500 flex-shrink-0" size={20} />
         <p className="text-xs text-blue-700 leading-relaxed">
           Los puntos son descontados automáticamente según la gravedad de la falta tipificada en el Reglamento Interno.
-          Si consideras que un reporte es erróneo, por favor acude a la oficina de tutoría o psicología.
+          Si consideras que un reporte es erróneo, acude al auxiliar que lo registró; su nombre aparece en cada incidencia.
         </p>
       </div>
     </div>

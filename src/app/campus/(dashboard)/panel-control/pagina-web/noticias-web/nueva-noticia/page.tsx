@@ -1,4 +1,6 @@
 "use client";
+import { SinPermiso } from "@/src/components/auth/SinPermiso";
+import { usePermisos } from "@/src/hooks/usePermisos";
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -15,6 +17,8 @@ export default function CrearNoticiaPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { id_usuario, loading: userLoading } = useUser();
+  const { acciones, loading: cargandoPermisos } = usePermisos();
+  const puede = acciones("contenido_web", "noticias");
   const handlePublicar = async (noticiaPayload: NoticiaCreate) => {
     // 3. Validar que tengamos el ID del autor
     if (!id_usuario) {
@@ -50,6 +54,14 @@ export default function CrearNoticiaPage() {
     }
   };
   if (userLoading) return <div className="p-10 text-center">Cargando sesión...</div>;
+  if (!cargandoPermisos && !puede.agregar) {
+    return (
+      <RoleGuard modulo="contenido_web" subModulo="noticias">
+        <SinPermiso accion="redactar noticias" volverA="/campus/panel-control/pagina-web/noticias-web" textoVolver="Volver a Noticias" />
+      </RoleGuard>
+    );
+  }
+
   return (
     <RoleGuard modulo="contenido_web" subModulo="noticias">
     

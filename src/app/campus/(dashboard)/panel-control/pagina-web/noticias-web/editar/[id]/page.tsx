@@ -1,4 +1,6 @@
 "use client";
+import { SinPermiso } from "@/src/components/auth/SinPermiso";
+import { usePermisos } from "@/src/hooks/usePermisos";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -15,6 +17,8 @@ export default function EditarNoticiaPage() {
   const [noticia, setNoticia] = useState<Noticia | undefined>(undefined);
   const [loadingFetch, setLoadingFetch] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
+  const { acciones, loading: cargandoPermisos } = usePermisos();
+  const puede = acciones("contenido_web", "noticias");
 
   // 1. Cargar la noticia al iniciar
   useEffect(() => {
@@ -68,6 +72,14 @@ export default function EditarNoticiaPage() {
         <Loader2 className="animate-spin text-[#093E7A] mb-4" size={40} />
         <p className="text-gray-500 font-bold animate-pulse">CARGANDO NOTICIA...</p>
       </div>
+    );
+  }
+
+  if (!cargandoPermisos && !puede.editar) {
+    return (
+      <RoleGuard modulo="contenido_web" subModulo="noticias">
+        <SinPermiso accion="editar noticias" volverA="/campus/panel-control/pagina-web/noticias-web" textoVolver="Volver a Noticias" />
+      </RoleGuard>
     );
   }
 

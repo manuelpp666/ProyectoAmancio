@@ -18,6 +18,7 @@
  *   escribir ese DNI: la solicitud no demuestra nada por sí sola.
  */
 
+import { usePermisos } from "@/src/hooks/usePermisos";
 import { useCallback, useEffect, useState } from "react";
 import {
   LifeBuoy, Loader2, Phone, IdCard, Clock, CheckCircle2, XCircle,
@@ -52,6 +53,10 @@ const FILTROS: { valor: Filtro; texto: string }[] = [
 ];
 
 export function SolicitudesAcceso() {
+  // Qué puede hacer aquí. El servidor lo comprueba igual; esto solo evita
+  // ofrecer botones que luego se rechazarían.
+  const { acciones } = usePermisos();
+  const puede = acciones("seguridad");
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [pendientes, setPendientes] = useState(0);
   const [filtro, setFiltro] = useState<Filtro>("PENDIENTE");
@@ -253,7 +258,11 @@ export function SolicitudesAcceso() {
               )}
 
               <div className="flex gap-2 mt-3.5 flex-wrap">
-                {s.estado === "PENDIENTE" ? (
+                {!puede.editar ? (
+                  <span className="text-xs text-gray-400 italic">
+                    Solo lectura: no tienes permiso para atender solicitudes.
+                  </span>
+                ) : s.estado === "PENDIENTE" ? (
                   <>
                     <button
                       type="button"

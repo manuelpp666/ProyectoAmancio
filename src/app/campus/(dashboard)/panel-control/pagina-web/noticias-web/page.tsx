@@ -1,4 +1,5 @@
 "use client";
+import { usePermisos } from "@/src/hooks/usePermisos";
 import Link from "next/link";
 import { NoticiaResponse } from "@/src/interfaces/noticia";
 import { NoticiaRow } from "@/src/components/Noticia/TablaNoticia";
@@ -7,6 +8,10 @@ import { Search, Newspaper, Video, Globe, Plus } from "lucide-react";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
 
 export default function GestionContenidoPage() {
+  // Qué puede hacer aquí. El servidor lo comprueba igual; esto solo evita
+  // ofrecer botones que luego se rechazarían.
+  const { acciones } = usePermisos();
+  const puede = acciones("contenido_web", "noticias");
 
   const [noticias, setNoticias] = useState<NoticiaResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,12 +95,14 @@ export default function GestionContenidoPage() {
                   className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A] transition-all text-sm"
                 />
               </div>
+              {puede.agregar && (
               <Link href="/campus/panel-control/pagina-web/noticias-web/nueva-noticia" className="shrink-0">
                 <button className="flex items-center gap-2 px-4 sm:px-5 py-2 bg-[#093E7A] text-white rounded-lg hover:bg-[#062d59] transition-all font-bold text-sm shadow-sm active:scale-95 whitespace-nowrap">
                   <Plus size={18} strokeWidth={3} />
                   <span className="hidden sm:inline">Nueva Noticia</span><span className="sm:hidden">Nueva</span>
                 </button>
               </Link>
+              )}
             </div>
           </div>
 

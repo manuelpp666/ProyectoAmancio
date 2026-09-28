@@ -1,4 +1,5 @@
 "use client";
+import { usePermisos } from "@/src/hooks/usePermisos";
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, ChevronRight, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -10,10 +11,14 @@ import { useRouter } from 'next/navigation';
 import { EventRow } from '@/src/components/Evento/EventRow';
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
-import { apiFetch } from "@/src/lib/api";
+import { apiFetch, mensajeDeError } from "@/src/lib/api";
 
 export default function CalendarioPage() {
   const router = useRouter();
+  // Qué puede hacer aquí. El servidor lo comprueba igual; esto solo evita
+  // ofrecer botones que luego se rechazarían.
+  const { acciones } = usePermisos();
+  const puede = acciones("contenido_web", "calendario");
   const {
     anioPlanificacion: anioSeleccionado,
     setAnioPlanificacion: setAnioSeleccionado,
@@ -73,6 +78,9 @@ export default function CalendarioPage() {
       if (response.ok) {
         toast.success("Evento eliminado");
         fetchEventos(anioSeleccionado); // Refetch manual
+      } else {
+        // Antes un rechazo del servidor no avisaba de nada.
+        toast.error(await mensajeDeError(response, "No se pudo eliminar el evento"));
       }
     } catch (error) {
       toast.error("Error al conectar con el servidor");
@@ -119,12 +127,14 @@ export default function CalendarioPage() {
               className="flex-1 sm:flex-none min-w-0 sm:w-48 px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#093E7A]/20 outline-none"
               onChange={(e) => setFiltro(e.target.value)}
             />
+            {puede.agregar && (
             <button
               onClick={() => { setEventoActivo(null); setIsModalOpen(true); }}
               className="flex items-center gap-2 px-4 sm:px-5 py-2 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-colors shrink-0 whitespace-nowrap"
             >
               <Plus size={18} /> <span className="hidden sm:inline">Agregar Evento</span><span className="sm:hidden">Evento</span>
             </button>
+            )}
           </div>
         </div>
 
@@ -156,8 +166,8 @@ export default function CalendarioPage() {
                         <EventRow
                           key={evento.id_evento}
                           evento={evento}
-                          onEdit={() => { setEventoActivo(evento); setIsModalOpen(true); }}
-                          onDelete={() => { setIdToDelete(evento.id_evento); setIsDeleteModalOpen(true); }}
+                          onEdit={puede.editar ? () => { setEventoActivo(evento); setIsModalOpen(true); } : undefined}
+                          onDelete={puede.eliminar ? () => { setIdToDelete(evento.id_evento); setIsDeleteModalOpen(true); } : undefined}
                         />
                       ))
                     ) : (

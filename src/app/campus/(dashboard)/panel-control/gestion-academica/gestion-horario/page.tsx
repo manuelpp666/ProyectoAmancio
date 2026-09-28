@@ -1,4 +1,5 @@
 "use client";
+import { usePermisos } from "@/src/hooks/usePermisos";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useReactToPrint } from "react-to-print";
 import { toast } from "sonner";
@@ -82,6 +83,13 @@ const obtenerEtiquetaGradoOGrupo = (sec?: Seccion, esVerano?: boolean): string =
 };
 
 export default function ConstructorHorariosPage() {
+  // Qué puede hacer aquí. El servidor lo comprueba igual; esto solo evita
+  // ofrecer botones que luego se rechazarían.
+  const { acciones } = usePermisos();
+  const puede = acciones("academico", "horarios");
+  // Configurar abre un modal que guarda la jornada (editar), añade recesos
+  // (agregar) y los quita (eliminar): se ofrece si tiene cualquiera.
+  const puedeConfigurar = puede.editar || puede.agregar || puede.eliminar;
   const {
     anioPlanificacion,
     setAnioPlanificacion,
@@ -269,6 +277,11 @@ export default function ConstructorHorariosPage() {
 
   // --- 4. LÓGICA DE ASIGNACIÓN (Drag & Drop dinámico y validación de bolsa) ---
   const handleDrop = async (idCargaAcademica: string | number, h_inicio: string, h_fin: string, dia: string, duracionBloque: number) => {
+    // Colocar un curso en la rejilla es agregar un bloque al horario.
+    if (!puede.agregar) {
+      toast.error("No tienes permiso para asignar bloques en el horario.");
+      return;
+    }
     
     const materia = materiasDisponibles.find(m => m.id_carga_academica.toString() === idCargaAcademica.toString());
     if (materia) {
@@ -305,7 +318,12 @@ export default function ConstructorHorariosPage() {
 
   const eliminarAsignacion = async (id_horario: number) => {
     try {
-        await apiFetch(`/horarios/${id_horario}`, { method: 'DELETE' });
+        const res = await apiFetch(`/horarios/${id_horario}`, { method: 'DELETE' });
+        // Antes se daba por hecho sin mirar la respuesta.
+        if (!res.ok) {
+          toast.error(await mensajeDeError(res, "No se pudo quitar el bloque"));
+          return;
+        }
         toast.success("Bloque eliminado");
         await cargarDatosSeccion();
     } catch (e) {
@@ -387,12 +405,14 @@ export default function ConstructorHorariosPage() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2 sm:gap-3">
+              {puedeConfigurar && (
               <button
                 onClick={() => setConfigAbierta(true)}
                 title="Duración del bloque, jornada y recesos"
                 className="flex items-center gap-2 px-4 sm:px-5 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold text-sm hover:bg-gray-50 transition-all whitespace-nowrap">
                 <span className="material-symbols-outlined text-sm">tune</span> Configurar
               </button>
+              )}
 
               <button
                 onClick={() => handlePrint()}
@@ -546,12 +566,14 @@ export default function ConstructorHorariosPage() {
                   <div className="py-16 text-center text-gray-400">
                     <span className="material-symbols-outlined text-4xl block mb-2">schedule</span>
                     <p className="text-sm font-medium">No hay rejilla configurada para esta sección.</p>
+                    {puedeConfigurar && (
                     <button
                       onClick={() => setConfigAbierta(true)}
                       className="mt-3 text-xs font-bold text-[#093E7A] underline no-print"
                     >
                       Configurar la jornada
                     </button>
+                    )}
                   </div>
                 ) : (
                   <div className="relative">
@@ -601,6 +623,7 @@ export default function ConstructorHorariosPage() {
                                   <div className={`group h-full w-full ${color.bg} border ${color.border} rounded-md px-1.5 py-1 flex flex-col justify-center relative animate-in fade-in zoom-in duration-300`}>
                                     <p className={`text-[10px] font-black ${color.text} uppercase leading-tight pr-4`}>{asignacion.curso_nombre}</p>
                                     <p className={`text-[9px] ${color.text} opacity-70 truncate`}>{asignacion.docente_nombre}</p>
+                                    {puede.eliminar && (
                                     <button
                                       onClick={() => eliminarAsignacion(asignacion.id_horario)}
                                       title="Quitar del horario"
@@ -608,6 +631,7 @@ export default function ConstructorHorariosPage() {
                                     >
                                       <span className="material-symbols-outlined text-[13px]">close</span>
                                     </button>
+                                    )}
                                   </div>
                                 ) : (
                                   <div className="h-full w-full flex items-center justify-center opacity-0 group-hover:opacity-100">
@@ -626,7 +650,9 @@ export default function ConstructorHorariosPage() {
 
               <p className="text-[11px] text-gray-400 mt-2 no-print">
                 {bloquesClase} bloques de clase al día · {bloques.filter(b => b.tipo === 'receso').length} receso(s).
-                Se cambia en <button onClick={() => setConfigAbierta(true)} className="font-bold text-[#093E7A] underline">Configurar</button>.
+                {puedeConfigurar && (
+                  <>Se cambia en <button onClick={() => setConfigAbierta(true)} className="font-bold text-[#093E7A] underline">Configurar</button>.</>
+                )}
               </p>
             </div>
           </div>

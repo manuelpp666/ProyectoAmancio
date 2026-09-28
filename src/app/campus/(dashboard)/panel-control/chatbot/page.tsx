@@ -1,4 +1,5 @@
 "use client";
+import { usePermisos } from "@/src/hooks/usePermisos";
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner'
 import { ConfirmModal } from '@/src/components/utils/ConfirmModal';
@@ -25,6 +26,10 @@ const UPLOAD_STAGES = [
 ];
 
 export default function ChatbotKnowledgePage() {
+  // Qué puede hacer aquí. El servidor lo comprueba igual; esto solo evita
+  // ofrecer botones que luego se rechazarían.
+  const { acciones } = usePermisos();
+  const puede = acciones("chatbot");
   const [documents, setDocuments] = useState<Chatbot[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -287,9 +292,15 @@ export default function ChatbotKnowledgePage() {
             <div className="lg:col-span-8 space-y-8">
               <div className="bg-white p-5 md:p-8 rounded-[2rem] border border-gray-100 shadow-sm">
                 <input type="file" hidden ref={fileInputRef} onChange={handleFileUpload} accept=".pdf,.docx" />
+                {!puede.agregar && (
+                  <p className="text-xs text-gray-400 italic mb-3">
+                    Solo lectura: no tienes permiso para subir documentos al chatbot.
+                  </p>
+                )}
                 <div
-                  onClick={() => !uploading && fileInputRef.current?.click()}
-                  className={`border-2 border-dashed border-gray-200 rounded-[1.5rem] p-6 md:p-12 flex flex-col items-center justify-center transition-all group ${uploading ? 'cursor-default' : 'cursor-pointer hover:bg-[#701C32]/[0.02]'}`}
+                  onClick={() => !uploading && puede.agregar && fileInputRef.current?.click()}
+                  aria-disabled={!puede.agregar}
+                  className={`border-2 border-dashed border-gray-200 rounded-[1.5rem] p-6 md:p-12 flex flex-col items-center justify-center transition-all group ${uploading || !puede.agregar ? 'cursor-default' : 'cursor-pointer hover:bg-[#701C32]/[0.02]'} ${!puede.agregar ? 'opacity-50' : ''}`}
                 >
                   {uploading ? (
                     <div className="w-full max-w-xs flex flex-col items-center">
@@ -336,7 +347,7 @@ export default function ChatbotKnowledgePage() {
                         <KnowledgeRow
                           key={doc.id}
                           doc={doc}
-                          onDelete={() => confirmDelete(doc.id)}
+                          onDelete={puede.eliminar ? () => confirmDelete(doc.id) : undefined}
                         />
                       ))}
                     </tbody>
@@ -447,7 +458,8 @@ export default function ChatbotKnowledgePage() {
   );
 }
 
-function KnowledgeRow({ doc, onDelete }: { doc: Chatbot, onDelete: () => void }) {
+// Sin onDelete no se pinta la papelera (quien no tiene permiso de eliminar).
+function KnowledgeRow({ doc, onDelete }: { doc: Chatbot, onDelete?: () => void }) {
   return (
     <tr className="group hover:bg-gray-50/50 transition-colors">
       <td className="px-8 py-6">
@@ -465,7 +477,7 @@ function KnowledgeRow({ doc, onDelete }: { doc: Chatbot, onDelete: () => void })
         </span>
       </td>
       <td className="px-8 py-6 text-right">
-        <button onClick={onDelete} className="p-2 text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={16} /></button>
+        {onDelete && <button onClick={onDelete} className="p-2 text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={16} /></button>}
       </td>
     </tr>
   );

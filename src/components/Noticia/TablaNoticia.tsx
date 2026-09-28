@@ -1,3 +1,4 @@
+import { usePermisos } from "@/src/hooks/usePermisos";
 import { Edit3, Trash2, Calendar, FileText, Youtube, Facebook,EyeOff,CheckCircle2 } from 'lucide-react';
 import { NoticiaResponse } from "@/src/interfaces/noticia";
 import { useState } from 'react';
@@ -12,6 +13,10 @@ import { apiFetch } from "@/src/lib/api";
 
 
 export const NoticiaRow = ({ noticia }: NoticiaRowProps) => {
+  // Qué puede hacer aquí. El servidor lo comprueba igual; esto solo evita
+  // ofrecer botones que luego se rechazarían.
+  const { acciones } = usePermisos();
+  const puede = acciones("contenido_web", "noticias");
    const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false); 
 const handleToggleStatus = async () => {
@@ -132,20 +137,20 @@ const handleToggleStatus = async () => {
             </td>
             <td className="px-8 py-5 text-right">
                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Link 
+                    {puede.editar && <Link
         href={`/campus/panel-control/pagina-web/noticias-web/editar/${noticia.id_noticia}`}
         className="p-2 text-gray-400 hover:text-[#093E7A] rounded-xl transition-all"
     >
         <Edit3 size={18} />
-    </Link>
-                    <button 
+    </Link>}
+                    {puede.eliminar && <button
                         onClick={() => setIsModalOpen(true)}
                         disabled={isLoading}
                         className={`p-2 rounded-xl transition-all ${noticia.activo ? 'text-gray-400 hover:text-red-600' : 'text-emerald-500 hover:text-emerald-700'}`}
                         title={noticia.activo ? "Ocultar noticia" : "Mostrar noticia"}
                     >
                         {noticia.activo ? <Trash2 size={18} /> : <CheckCircle2 size={18} />}
-                    </button>
+                    </button>}
                 </div>
                 {/* MODAL DE CONFIRMACIÓN */}
                 <ConfirmModal 

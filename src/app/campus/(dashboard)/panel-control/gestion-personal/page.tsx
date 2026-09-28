@@ -12,7 +12,7 @@ import { RoleGuard } from '@/src/components/auth/RoleGuard';
 import { usePermisos } from "@/src/hooks/usePermisos";
 import { useUser } from "@/src/context/userContext";
 import {
-  CATALOGO_PERMISOS, NodoPermiso, Permisos,
+  CATALOGO_PERMISOS, NodoPermiso, Permisos, NOMBRE_ACCION,
   normalizar, establecer, estadoCasilla, contarCasillas, permisosCompletos, apagar,
 } from "@/src/config/permisos";
 
@@ -55,7 +55,7 @@ const PESTANAS_PERSONAL: { id: TipoPersonal; label: string; icon: any }[] = [
 ];
 
 export default function GestionPersonalPage() {
-  const { tienePermiso, loading: loadingPermisos } = usePermisos();
+  const { tienePermiso, acciones, loading: loadingPermisos } = usePermisos();
   // Para reconocer si el administrador se está editando a sí mismo y refrescar
   // su propio menú al instante, sin esperar a la siguiente navegación.
   const { id_usuario: idUsuarioSesion, refrescarPermisos } = useUser();
@@ -63,6 +63,10 @@ export default function GestionPersonalPage() {
   const [personal, setPersonal] = useState<Personal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [busqueda, setBusqueda] = useState("");
+
+  // Qué puede hacer en la pestaña abierta. El servidor lo comprueba igual;
+  // esto solo evita ofrecer botones que luego se rechazarían.
+  const puede = acciones("gestion_personal", activeTab);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -184,7 +188,9 @@ export default function GestionPersonalPage() {
         // navegación (ver components/Campus/SincronizarPermisos.tsx).
         if (esUnoMismo) refrescarPermisos();
       } else {
-        toast.error("Error al actualizar permisos");
+        // El servidor dice el motivo ("No puedes cambiar tus propios
+        // permisos", "No tienes permiso para editar..."): se enseña tal cual.
+        toast.error(await mensajeDeError(res, "Error al actualizar permisos"));
       }
     } catch (e) {
       toast.error("Error de conexión");
@@ -192,7 +198,13 @@ export default function GestionPersonalPage() {
   };
   const handleEstado = async (id: number, nuevoEstado: boolean) => {
     try {
-      await apiFetch(`/personal/${activeTab}/${id}/estado?activo=${nuevoEstado}`, { method: "PATCH" });
+      const res = await apiFetch(`/personal/${activeTab}/${id}/estado?activo=${nuevoEstado}`, { method: "PATCH" });
+      if (!res.ok) {
+        // Antes no se miraba la respuesta: un rechazo del servidor salía
+        // igualmente como "Usuario dado de baja".
+        toast.error(await mensajeDeError(res, "No se pudo cambiar el estado"));
+        return;
+      }
       toast.success(nuevoEstado ? "Usuario habilitado" : "Usuario dado de baja");
       fetchPersonal(activeTab);
     } catch (e) {
@@ -280,10 +292,12 @@ export default function GestionPersonalPage() {
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#093E7A]/20 focus:border-[#093E7A]"
             />
           </div>
-          <button onClick={openNew} className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-all shrink-0">
-            <UserPlus size={18} />
-            Nuevo {TIPO_CONFIG[activeTab].label}
-          </button>
+          {puede.agregar && (
+            <button onClick={openNew} className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-all shrink-0">
+              <UserPlus size={18} />
+              Nuevo {TIPO_CONFIG[activeTab].label}
+            </button>
+          )}
         </div>
 
         {/* TABLA */}
@@ -332,12 +346,15 @@ export default function GestionPersonalPage() {
                       <button
                         type="button"
                         onClick={() => handleTogglePassword(p, !p.usuario?.debe_cambiar_password)}
+                        disabled={!puede.editar}
                         title={
-                          p.usuario?.debe_cambiar_password
+                          !puede.editar
+                            ? "Solo lectura: no tienes permiso para editar a este personal."
+                            : p.usuario?.debe_cambiar_password
                             ? "Exigencia activa: Se le pedirá cambiar contraseña al iniciar sesión. Clic para desactivar."
                             : "Contraseña ya actualizada o desactivada. Clic para exigir cambio en el próximo inicio de sesión."
                         }
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full transition-all border ${
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full transition-all border disabled:cursor-not-allowed disabled:opacity-60 ${
                           p.usuario?.debe_cambiar_password
                             ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
                             : "bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200 hover:text-gray-800"
@@ -348,24 +365,43 @@ export default function GestionPersonalPage() {
                       </button>
                     </td>
                     <td className="px-6 py-4 flex justify-end gap-2">
-                      <button onClick={() => openEdit(p)} className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors" title="Editar">
-                        <Edit size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleEstado(p.id, !p.usuario.activo)}
-                        className={`p-2 rounded-lg transition-colors ${p.usuario.activo ? 'text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'}`}
-                        title={p.usuario.activo ? "Dar de baja" : "Habilitar"}
-                      >
-                        {p.usuario.activo ? <PowerOff size={18} /> : <Power size={18} />}
-                      </button>
-                      {activeTab === "admin" && (
-                        <button
-                          onClick={() => openPermisos(p)}
-                          className="p-2 text-[#701C32] hover:bg-[#701C32]/10 rounded-lg transition-colors"
-                          title="Gestionar Permisos"
-                        >
-                          <ShieldCheck size={18} />
+                      {puede.editar && (
+                        <button onClick={() => openEdit(p)} className="p-2 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors" title="Editar">
+                          <Edit size={18} />
                         </button>
+                      )}
+                      {puede.eliminar && (
+                        <button
+                          onClick={() => handleEstado(p.id, !p.usuario.activo)}
+                          className={`p-2 rounded-lg transition-colors ${p.usuario.activo ? 'text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'}`}
+                          title={p.usuario.activo ? "Dar de baja" : "Habilitar"}
+                        >
+                          {p.usuario.activo ? <PowerOff size={18} /> : <Power size={18} />}
+                        </button>
+                      )}
+                      {activeTab === "admin" && puede.editar && (
+                        // Nadie cambia sus propios permisos (el servidor
+                        // también lo impide): si no, a quien le dieran "Editar"
+                        // en Administradores le bastaría con marcarse todo.
+                        p.id_usuario === idUsuarioSesion ? (
+                          <span
+                            className="p-2 text-gray-300 cursor-not-allowed"
+                            title="No puedes cambiar tus propios permisos. Pídeselo a otro administrador."
+                          >
+                            <ShieldCheck size={18} />
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => openPermisos(p)}
+                            className="p-2 text-[#701C32] hover:bg-[#701C32]/10 rounded-lg transition-colors"
+                            title="Gestionar Permisos"
+                          >
+                            <ShieldCheck size={18} />
+                          </button>
+                        )
+                      )}
+                      {!puede.editar && !puede.eliminar && (
+                        <span className="py-2 text-xs font-bold text-gray-300" title="Solo lectura">—</span>
                       )}
                     </td>
                   </tr>
@@ -501,8 +537,8 @@ export default function GestionPersonalPage() {
               return (
                 <div className="px-6 py-3 border-b border-gray-100 bg-white flex flex-wrap items-center justify-between gap-3 shrink-0">
                   <p className="text-xs text-gray-500">
-                    Verá únicamente lo marcado ·{" "}
-                    <span className="font-black text-[#701C32]">{activas} de {total}</span> accesos
+                    La casilla de cada pestaña le deja entrar; debajo eliges qué puede agregar, editar o eliminar ·{" "}
+                    <span className="font-black text-[#701C32]">{activas} de {total}</span> casillas
                   </p>
                   <div className="flex items-center gap-1 shrink-0">
                     <button
@@ -599,21 +635,27 @@ function FilaPermiso({ nodo, permisos, onChange }: {
   permisos: Permisos;
   onChange: (ruta: string[], valor: boolean) => void;
 }) {
-  const activo = estadoCasilla(permisos, [nodo.id]) === "todo";
+  const estado = estadoCasilla(permisos, [nodo.id]);
+  const activo = estado !== "nada";
   const Icono = ICONO_APARTADO[nodo.id];
 
   return (
-    <label className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-gray-50/70 transition-colors">
-      {Icono && (
-        <span className={`shrink-0 ${activo ? "text-[#701C32]" : "text-gray-300"}`}>
-          <Icono size={17} />
+    <div className="px-5 py-3 hover:bg-gray-50/70 transition-colors">
+      <label className="flex items-center gap-3 cursor-pointer">
+        {Icono && (
+          <span className={`shrink-0 ${activo ? "text-[#701C32]" : "text-gray-300"}`}>
+            <Icono size={17} />
+          </span>
+        )}
+        <span className={`flex-1 text-sm font-bold ${activo ? "text-gray-800" : "text-gray-400"}`}>
+          {nodo.label}
         </span>
-      )}
-      <span className={`flex-1 text-sm font-bold ${activo ? "text-gray-800" : "text-gray-400"}`}>
-        {nodo.label}
-      </span>
-      <CasillaPermiso estado={activo ? "todo" : "nada"} onChange={(v) => onChange([nodo.id], v)} />
-    </label>
+        <CasillaPermiso estado={estado} onChange={(v) => onChange([nodo.id], v)} />
+      </label>
+      {nodo.acciones?.length ? (
+        <AccionesPermiso nodo={nodo} ruta={[nodo.id]} permisos={permisos} onChange={onChange} conSangria />
+      ) : null}
+    </div>
   );
 }
 
@@ -715,6 +757,50 @@ function PestanaPermiso({ nodo, rutaPadre, permisos, onChange }: {
           })}
         </div>
       )}
+
+      {nodo.acciones?.length ? (
+        <AccionesPermiso nodo={nodo} ruta={ruta} permisos={permisos} onChange={onChange} />
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Casillas de Agregar / Editar / Eliminar de una pestaña.
+ *
+ * Solo salen las acciones que esa pantalla tiene de verdad. Marcar una marca
+ * también el acceso a la pestaña (no se puede agregar donde no se entra), y
+ * quitar el acceso las apaga: de eso se encarga `establecer`.
+ */
+function AccionesPermiso({ nodo, ruta, permisos, onChange, conSangria = false }: {
+  nodo: NodoPermiso;
+  ruta: string[];
+  permisos: Permisos;
+  onChange: (ruta: string[], valor: boolean) => void;
+  conSangria?: boolean;
+}) {
+  return (
+    <div className={`flex flex-wrap items-center gap-x-4 gap-y-1.5 ${
+      conSangria ? "mt-2 pl-8" : "px-3 pb-2.5 pt-2 border-t border-gray-100/80"
+    }`}>
+      {nodo.acciones!.map((accion) => {
+        const rutaAccion = [...ruta, accion];
+        const activo = estadoCasilla(permisos, rutaAccion) === "todo";
+        return (
+          <label key={accion} className="flex items-center gap-1.5 cursor-pointer group">
+            <CasillaPermiso
+              estado={activo ? "todo" : "nada"}
+              onChange={(v) => onChange(rutaAccion, v)}
+              pequena
+            />
+            <span className={`text-[11px] font-medium ${
+              activo ? "text-gray-600 group-hover:text-gray-900" : "text-gray-400"
+            }`}>
+              {NOMBRE_ACCION[accion]}
+            </span>
+          </label>
+        );
+      })}
     </div>
   );
 }

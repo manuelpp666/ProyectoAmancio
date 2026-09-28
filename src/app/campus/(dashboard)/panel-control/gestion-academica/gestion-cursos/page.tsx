@@ -1,4 +1,5 @@
 "use client";
+import { usePermisos } from "@/src/hooks/usePermisos";
 import { useEffect, useState, useCallback } from "react";
 import { NivelConCursos, Area } from "@/src/interfaces/academic";
 import { apiFetch } from "@/src/lib/api";
@@ -21,6 +22,10 @@ function VeranoSeccion({ titulo, icono, cursos, tipoBadge, onEditar, onEliminar 
   titulo: string; icono: string; cursos: any[]; tipoBadge: string;
   onEditar: (c: any) => void; onEliminar: (c: any) => void;
 }) {
+  // Qué puede hacer aquí. El servidor lo comprueba igual; esto solo evita
+  // ofrecer botones que luego se rechazarían.
+  const { acciones } = usePermisos();
+  const puede = acciones("academico", "cursos");
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
@@ -54,12 +59,16 @@ function VeranoSeccion({ titulo, icono, cursos, tipoBadge, onEditar, onEliminar 
                 <td className="px-6 py-4 text-center font-bold text-[#093E7A]">{curso.minutos_semanales} min</td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex justify-end gap-2">
+                    {puede.editar && (
                     <button onClick={() => onEditar(curso)} className="p-2 text-[#093E7A] hover:bg-[#093E7A]/10 rounded-lg transition-colors" title="Editar curso">
                       <span className="material-symbols-outlined text-xl">edit_note</span>
                     </button>
+                    )}
+                    {puede.eliminar && (
                     <button onClick={() => onEliminar(curso)} className="p-2 text-[#701C32] hover:bg-[#701C32]/10 rounded-lg transition-colors" title="Eliminar curso">
                       <span className="material-symbols-outlined text-xl">delete</span>
                     </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -74,6 +83,10 @@ function VeranoSeccion({ titulo, icono, cursos, tipoBadge, onEditar, onEliminar 
 }
 
 export default function GestionCursosPage() {
+  // Qué puede hacer aquí. El servidor lo comprueba igual; esto solo evita
+  // ofrecer botones que luego se rechazarían.
+  const { acciones } = usePermisos();
+  const puede = acciones("academico", "cursos");
   const [tipoAnio, setTipoAnio] = useState<"REGULAR" | "VERANO">("REGULAR");
   const [niveles, setNiveles] = useState<NivelConCursos[]>([]);
   const [cursosVerano, setCursosVerano] = useState<{ grupos: any[]; talleres: any[] }>({ grupos: [], talleres: [] });
@@ -338,12 +351,14 @@ export default function GestionCursosPage() {
                 ))}
               </div>
             </div>
+            {puede.agregar && (
             <button
               onClick={abrirNuevoCurso}
               className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-all whitespace-nowrap"
             >
               <span className="material-symbols-outlined text-sm">add</span> Nuevo Curso
             </button>
+            )}
           </div>
 
           {/* Renderizado Dinámico por Niveles (REGULAR) */}
@@ -413,6 +428,7 @@ export default function GestionCursosPage() {
                             <td className="px-6 py-4 text-right">
                               <div className="flex justify-end gap-2">
                                 {/* BOTÓN EDITAR */}
+                                {puede.editar && (
                                 <button
                                   onClick={() => prepararEdicion(curso)}
                                   className="p-2 text-[#093E7A] hover:bg-[#093E7A]/10 rounded-lg transition-colors"
@@ -420,8 +436,10 @@ export default function GestionCursosPage() {
                                 >
                                   <span className="material-symbols-outlined text-xl">edit_note</span>
                                 </button>
+                                )}
 
                                 {/* BOTÓN ELIMINAR */}
+                                {puede.eliminar && (
                                 <button
                                   onClick={() => handleEliminarCurso(curso.id_curso, curso.nombre, curso.id_grados)}
                                   className="p-2 text-[#701C32] hover:bg-[#701C32]/10 rounded-lg transition-colors"
@@ -429,6 +447,7 @@ export default function GestionCursosPage() {
                                 >
                                   <span className="material-symbols-outlined text-xl">delete</span>
                                 </button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -533,7 +552,9 @@ export default function GestionCursosPage() {
                         <option value="">Seleccione...</option>
                         {areas.map(a => <option key={a.id_area} value={a.id_area}>{a.nombre}</option>)}
                       </select>
+                      {puede.agregar && (
                       <button onClick={() => setShowAreaModal(true)} title="Nueva área" className="px-3 bg-[#093E7A]/10 rounded-lg text-[#093E7A] hover:bg-[#093E7A]/20 transition-colors"><span className="material-symbols-outlined">add</span></button>
+                      )}
                     </div>
                   </div>
                   {/* Curso de verano: tipo (Fijo/Taller) + grupo */}

@@ -14,15 +14,13 @@ import {
   FileText,
   SlidersHorizontal,
   BarChart3,
-  Search,
-  CheckCircle,
-  AlertCircle,
-  Percent,
+  AlertTriangle,
 } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { Nivel, Grado, Seccion } from "@/src/interfaces/academic";
 import { fechaLocalISO } from "@/src/lib/fechas";
+import { ReporteAsistencia } from "@/src/components/Campus/ReporteAsistencia";
 
 type Estado = "P" | "T" | "F" | "J";
 
@@ -32,24 +30,6 @@ const ESTADOS: { valor: Estado; letra: string; nombre: string; icono: typeof Che
   { valor: "F", letra: "F", nombre: "Falta", icono: XCircle, activo: "bg-red-600 text-white", punto: "bg-red-600" },
   { valor: "J", letra: "J", nombre: "Justificado", icono: FileText, activo: "bg-slate-600 text-white", punto: "bg-slate-600" },
 ];
-
-interface AlumnoReporte {
-  id_matricula: number;
-  id_alumno: number;
-  alumno: string;
-  dni: string;
-  nivel: string;
-  grado: string;
-  id_grado: number;
-  seccion: string;
-  id_seccion: number;
-  presentes: number;
-  tardanzas: number;
-  faltas: number;
-  justificaciones: number;
-  total_dias: number;
-  porcentaje_asistencia: number;
-}
 
 export default function AsistenciaAuxiliarPage() {
   const { anioPlanificacion } = useAnioAcademico();
@@ -74,21 +54,21 @@ export default function AsistenciaAuxiliarPage() {
   const [loadingAlumnos, setLoadingAlumnos] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Datos para Reporte Resumen de Asistencia
-  const [selectedBimestre, setSelectedBimestre] = useState("");
-  const [bimestresDisponibles, setBimestresDisponibles] = useState<Array<{ numero: number; nombre: string; fecha_inicio: string; fecha_fin: string }>>([
-    { numero: 1, nombre: "1° Bimestre", fecha_inicio: "", fecha_fin: "" },
-    { numero: 2, nombre: "2° Bimestre", fecha_inicio: "", fecha_fin: "" },
-    { numero: 3, nombre: "3° Bimestre", fecha_inicio: "", fecha_fin: "" },
-    { numero: 4, nombre: "4° Bimestre", fecha_inicio: "", fecha_fin: "" },
-  ]);
-  const [reporteAlumnos, setReporteAlumnos] = useState<AlumnoReporte[]>([]);
-  const [totalReporte, setTotalReporte] = useState(0);
-  const [loadingReporte, setLoadingReporte] = useState(false);
-  const [busquedaReporte, setBusquedaReporte] = useState("");
+  /**
+   * ¿La lista que está en pantalla todavía no se ha guardado?
+   *
+   * Se pone en true en cuanto se carga un aula que ese día aún no tiene
+   * asistencia registrada, AUNQUE no se toque ninguna letra. El caso que se
+   * escapaba era justo el aula sin novedad: se veía a todos en "P", parecía
+   * que ya estaba puesto, y se pasaba a la siguiente aula sin pulsar Guardar,
+   * así que ese día quedaba sin registrar y nadie se enteraba.
+   */
+  const [pendienteGuardar, setPendienteGuardar] = useState(false);
+
+  /** Lo que se hará si decide salir del aula. null = no hay pregunta abierta. */
+  const [accionPendiente, setAccionPendiente] = useState<(() => void) | null>(null);
 
   const peticionActiva = useRef(0);
-  const peticionReporteActiva = useRef(0);
 
   // 1. Cargar Niveles
   useEffect(() => {
@@ -148,6 +128,7 @@ export default function AsistenciaAuxiliarPage() {
       peticionActiva.current++;
       setAlumnos([]);
       setAsistenciaState({});
+      setPendienteGuardar(false);
       setLoadingAlumnos(false);
       return;
     }
@@ -164,6 +145,7 @@ export default function AsistenciaAuxiliarPage() {
 
       if (!resMatriculas.ok) {
         setAlumnos([]);
+        setPendienteGuardar(false);
         toast.error("No se pudieron cargar los estudiantes");
         setLoadingAlumnos(false);
         return;
@@ -193,9 +175,16 @@ export default function AsistenciaAuxiliarPage() {
 
       setAlumnos(alumnosOrdenados);
       setAsistenciaState(nuevoEstado);
+      // Si ese día ya tiene asistencia guardada, lo que se ve es lo que hay en
+      // la base y no hay nada pendiente. Si no, queda pendiente desde el
+      // primer momento, sin esperar a que se marque nada.
+      setPendienteGuardar(
+        alumnosOrdenados.length > 0 && Object.keys(mapaGuardado).length === 0
+      );
     } catch {
       if (idPeticion !== peticionActiva.current) return;
       setAlumnos([]);
+      setPendienteGuardar(false);
       toast.error("Error de conexión al cargar asistencia");
     } finally {
       if (idPeticion === peticionActiva.current) setLoadingAlumnos(false);
@@ -208,62 +197,15 @@ export default function AsistenciaAuxiliarPage() {
     }
   }, [tabActiva, fetchAsistenciaDiaria]);
 
-  // 5. Cargar Reporte Resumen de Asistencia
-  const fetchReporteAsistencia = useCallback(async () => {
-    const idPeticion = ++peticionReporteActiva.current;
-    setLoadingReporte(true);
-
-    try {
-      const params = new URLSearchParams();
-      if (anioPlanificacion) params.set("anio_id", anioPlanificacion);
-      if (selectedBimestre) params.set("bimestre", selectedBimestre);
-      if (selectedNivel) params.set("nivel_id", selectedNivel);
-      if (selectedGrado) params.set("grado_id", selectedGrado);
-      if (selectedSeccion) params.set("seccion_id", selectedSeccion);
-      if (busquedaReporte.trim()) params.set("q", busquedaReporte.trim());
-
-      const res = await apiFetch(`/gestion/asistencia/reporte-resumen?${params.toString()}`);
-      if (idPeticion !== peticionReporteActiva.current) return;
-
-      if (res.ok) {
-        const data = await res.json();
-        setReporteAlumnos(data.alumnos || []);
-        setTotalReporte(data.total || 0);
-        if (data.bimestres && Array.isArray(data.bimestres) && data.bimestres.length > 0) {
-          setBimestresDisponibles(data.bimestres);
-        }
-      } else {
-        setReporteAlumnos([]);
-        setTotalReporte(0);
-        toast.error("No se pudo cargar el reporte de asistencia");
-      }
-    } catch {
-      if (idPeticion !== peticionReporteActiva.current) return;
-      setReporteAlumnos([]);
-      setTotalReporte(0);
-      toast.error("Error de conexión al cargar el reporte");
-    } finally {
-      if (idPeticion === peticionReporteActiva.current) setLoadingReporte(false);
-    }
-  }, [anioPlanificacion, selectedBimestre, selectedNivel, selectedGrado, selectedSeccion, busquedaReporte]);
-
-  useEffect(() => {
-    if (tabActiva === "reporte") {
-      const timer = setTimeout(() => {
-        fetchReporteAsistencia();
-      }, busquedaReporte ? 350 : 0);
-      return () => clearTimeout(timer);
-    }
-  }, [tabActiva, fetchReporteAsistencia, busquedaReporte, selectedBimestre]);
-
   // Manejar el cambio de un botón individual de asistencia
   const setEstado = (idMatricula: number, estado: Estado) => {
     setAsistenciaState((prev) => ({ ...prev, [idMatricula]: estado }));
+    setPendienteGuardar(true);
   };
 
   // Guardar Asistencia al Backend (en lote)
-  const handleGuardarAsistencia = async () => {
-    if (alumnos.length === 0) return;
+  const handleGuardarAsistencia = async (): Promise<boolean> => {
+    if (alumnos.length === 0) return false;
     setIsSaving(true);
 
     try {
@@ -289,12 +231,58 @@ export default function AsistenciaAuxiliarPage() {
       } else {
         toast.success(`Asistencia del ${fechaAsistencia} guardada correctamente`);
       }
+      setPendienteGuardar(false);
+      return true;
     } catch {
       toast.error("Hubo un error al registrar la asistencia");
+      return false;
     } finally {
       setIsSaving(false);
     }
   };
+
+  /**
+   * Salir del aula: cambiar de sección, de fecha o de pestaña.
+   *
+   * No se bloquea la salida, porque a veces uno se mete en el aula equivocada
+   * y quiere irse. Lo que no puede pasar es irse sin enterarse.
+   */
+  const alSalirDeLaLista = (accion: () => void) => {
+    if (!pendienteGuardar) {
+      accion();
+      return;
+    }
+    // Envuelta en otra función: useState ejecuta lo que recibe si es función.
+    setAccionPendiente(() => accion);
+  };
+
+  const continuarSinGuardar = () => {
+    const accion = accionPendiente;
+    setAccionPendiente(null);
+    setPendienteGuardar(false);
+    accion?.();
+  };
+
+  const guardarYContinuar = async () => {
+    const accion = accionPendiente;
+    const guardado = await handleGuardarAsistencia();
+    // Si el guardado falla, la pregunta sigue abierta: nadie sale por error.
+    if (!guardado) return;
+    setAccionPendiente(null);
+    accion?.();
+  };
+
+  // Cerrar la pestaña o recargar con la asistencia sin guardar. Aquí el aviso
+  // lo da el navegador con su propio texto; es lo único que permite.
+  useEffect(() => {
+    if (!pendienteGuardar) return;
+    const avisar = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", avisar);
+    return () => window.removeEventListener("beforeunload", avisar);
+  }, [pendienteGuardar]);
 
   // Conteo en vivo por estado en la toma diaria
   const conteo = useMemo(() => {
@@ -307,6 +295,25 @@ export default function AsistenciaAuxiliarPage() {
 
   const nombreSeccion = secciones.find((s) => String(s.id_seccion) === selectedSeccion)?.nombre;
   const nombreGrado = grados.find((g) => String(g.id_grado) === selectedGrado)?.nombre;
+
+  /**
+   * Botón de guardar.
+   *
+   * Va en una barra pegada al borde inferior de la pantalla, de modo que se ve
+   * siempre mientras se recorre la lista. Antes estaba al final de la tabla:
+   * en un aula de treinta alumnos había que bajar hasta abajo del todo para
+   * encontrarlo, y era fácil salir sin guardar.
+   */
+  const botonGuardar = (
+    <button
+      onClick={handleGuardarAsistencia}
+      disabled={isSaving}
+      className="w-full sm:w-auto bg-[#701C32] text-white px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#5a1628] transition-[background-color,transform] duration-150 ease-out active:scale-[0.98] shadow-lg shadow-[#701C32]/20 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
+    >
+      {isSaving ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <Save size={18} aria-hidden="true" />}
+      {isSaving ? "Guardando..." : "Guardar Registro Diario"}
+    </button>
+  );
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -336,7 +343,7 @@ export default function AsistenciaAuxiliarPage() {
           </button>
           <button
             type="button"
-            onClick={() => setTabActiva("reporte")}
+            onClick={() => alSalirDeLaLista(() => setTabActiva("reporte"))}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all ${
               tabActiva === "reporte"
                 ? "bg-[#093E7A] text-white shadow-md shadow-[#093E7A]/20"
@@ -348,130 +355,108 @@ export default function AsistenciaAuxiliarPage() {
         </div>
       </div>
 
-      {/* FILTROS DE BÚSQUEDA */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
-            <SlidersHorizontal size={13} aria-hidden="true" /> Filtros de Búsqueda
-          </h3>
-
-          {tabActiva === "toma" ? (
-            <div className="flex items-center gap-3">
-              <label htmlFor="fecha-asistencia" className="text-xs font-bold text-gray-700 whitespace-nowrap">
-                Fecha:
-              </label>
-              <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200 focus-within:border-[#093E7A] transition-colors">
-                <Calendar size={16} className="text-gray-500" aria-hidden="true" />
-                <input
-                  id="fecha-asistencia"
-                  type="date"
-                  value={fechaAsistencia}
-                  onChange={(e) => setFechaAsistencia(e.target.value)}
-                  className="bg-transparent text-sm font-bold text-gray-800 outline-none cursor-pointer"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="relative w-full sm:w-72">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar por DNI o Apellidos..."
-                value={busquedaReporte}
-                onChange={(e) => setBusquedaReporte(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-800 outline-none focus:border-[#093E7A] focus:ring-2 focus:ring-[#093E7A]/15 transition-colors"
-              />
-            </div>
-          )}
-        </div>
-
-        <div className={`grid grid-cols-1 ${tabActiva === "reporte" ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"} gap-4`}>
-          {tabActiva === "reporte" && (
-            <div className="space-y-1.5">
-              <label htmlFor="filtro-bimestre" className="text-xs font-bold text-gray-700">
-                Bimestre
-              </label>
-              <select
-                id="filtro-bimestre"
-                value={selectedBimestre}
-                onChange={(e) => setSelectedBimestre(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-gray-800 outline-none focus:border-[#093E7A] focus:ring-2 focus:ring-[#093E7A]/15 transition-colors cursor-pointer"
-              >
-                <option value="">Todos los bimestres</option>
-                {bimestresDisponibles.map((b) => (
-                  <option key={b.numero} value={b.numero}>
-                    {b.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <label htmlFor="filtro-nivel" className="text-xs font-bold text-gray-700">
-              Nivel
-            </label>
-            <select
-              id="filtro-nivel"
-              value={selectedNivel}
-              onChange={(e) => setSelectedNivel(e.target.value)}
-              disabled={loadingFiltros}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-[#093E7A] focus:ring-2 focus:ring-[#093E7A]/15 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <option value="">{tabActiva === "reporte" ? "Todos los niveles" : "Seleccione Nivel"}</option>
-              {niveles.map((n) => (
-                <option key={n.id_nivel} value={n.id_nivel}>
-                  {n.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="filtro-grado" className="text-xs font-bold text-gray-700">
-              Grado
-            </label>
-            <select
-              id="filtro-grado"
-              value={selectedGrado}
-              onChange={(e) => setSelectedGrado(e.target.value)}
-              disabled={!selectedNivel}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-[#093E7A] focus:ring-2 focus:ring-[#093E7A]/15 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <option value="">{tabActiva === "reporte" ? "Todos los grados" : "Seleccione Grado"}</option>
-              {grados.map((g) => (
-                <option key={g.id_grado} value={g.id_grado}>
-                  {g.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="filtro-seccion" className="text-xs font-bold text-gray-700">
-              Sección
-            </label>
-            <select
-              id="filtro-seccion"
-              value={selectedSeccion}
-              onChange={(e) => setSelectedSeccion(e.target.value)}
-              disabled={!selectedGrado}
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-[#093E7A] focus:ring-2 focus:ring-[#093E7A]/15 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <option value="">{tabActiva === "reporte" ? "Todas las secciones" : "Seleccione Sección"}</option>
-              {secciones.map((s) => (
-                <option key={s.id_seccion} value={s.id_seccion}>
-                  {s.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
-
       {/* VISTA 1: TOMA DE ASISTENCIA DIARIA */}
       {tabActiva === "toma" && (
         <>
+          {/* FILTROS DE BÚSQUEDA */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                <SlidersHorizontal size={13} aria-hidden="true" /> Filtros de Búsqueda
+              </h3>
+
+              <div className="flex items-center gap-3">
+                <label htmlFor="fecha-asistencia" className="text-xs font-bold text-gray-700 whitespace-nowrap">
+                  Fecha:
+                </label>
+                <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200 focus-within:border-[#093E7A] transition-colors">
+                  <Calendar size={16} className="text-gray-500" aria-hidden="true" />
+                  <input
+                    id="fecha-asistencia"
+                    type="date"
+                    value={fechaAsistencia}
+                    onChange={(e) => {
+                      const valor = e.target.value;
+                      alSalirDeLaLista(() => setFechaAsistencia(valor));
+                    }}
+                    className="bg-transparent text-sm font-bold text-gray-800 outline-none cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <label htmlFor="filtro-nivel" className="text-xs font-bold text-gray-700">
+                  Nivel
+                </label>
+                <select
+                  id="filtro-nivel"
+                  value={selectedNivel}
+                  onChange={(e) => {
+                    const valor = e.target.value;
+                    alSalirDeLaLista(() => setSelectedNivel(valor));
+                  }}
+                  disabled={loadingFiltros}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-[#093E7A] focus:ring-2 focus:ring-[#093E7A]/15 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Seleccione Nivel</option>
+                  {niveles.map((n) => (
+                    <option key={n.id_nivel} value={n.id_nivel}>
+                      {n.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="filtro-grado" className="text-xs font-bold text-gray-700">
+                  Grado
+                </label>
+                <select
+                  id="filtro-grado"
+                  value={selectedGrado}
+                  onChange={(e) => {
+                    const valor = e.target.value;
+                    alSalirDeLaLista(() => setSelectedGrado(valor));
+                  }}
+                  disabled={!selectedNivel}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-[#093E7A] focus:ring-2 focus:ring-[#093E7A]/15 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Seleccione Grado</option>
+                  {grados.map((g) => (
+                    <option key={g.id_grado} value={g.id_grado}>
+                      {g.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="filtro-seccion" className="text-xs font-bold text-gray-700">
+                  Sección
+                </label>
+                <select
+                  id="filtro-seccion"
+                  value={selectedSeccion}
+                  onChange={(e) => {
+                    const valor = e.target.value;
+                    alSalirDeLaLista(() => setSelectedSeccion(valor));
+                  }}
+                  disabled={!selectedGrado}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 outline-none focus:border-[#093E7A] focus:ring-2 focus:ring-[#093E7A]/15 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Seleccione Sección</option>
+                  {secciones.map((s) => (
+                    <option key={s.id_seccion} value={s.id_seccion}>
+                      {s.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
           {loadingAlumnos && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="p-4 border-b border-gray-100 bg-blue-50/50">
@@ -513,226 +498,201 @@ export default function AsistenciaAuxiliarPage() {
           )}
 
           {!loadingAlumnos && alumnos.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden surface-in">
-              <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-blue-50/50">
-                <div className="flex items-center gap-2 text-[#093E7A] font-black">
-                  <Users size={20} aria-hidden="true" />
-                  <span>
-                    {nombreGrado && nombreSeccion ? `${nombreGrado} "${nombreSeccion}" — ` : ""}
-                    {alumnos.length} estudiantes
-                  </span>
-                </div>
-
-                {/* RESUMEN EN VIVO */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-600">
-                  {ESTADOS.map((e) => (
-                    <span key={e.valor} className="flex items-center gap-1.5">
-                      <span className={`w-2.5 h-2.5 rounded-full ${e.punto}`} aria-hidden="true" />
-                      {e.nombre}
-                      <span className="text-gray-900 tabular-nums">{conteo[e.valor]}</span>
+            <>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden surface-in">
+                {/* CABECERA: datos del aula y resumen en vivo */}
+                <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-blue-50/50">
+                  <div className="flex items-center gap-2 text-[#093E7A] font-black flex-wrap">
+                    <Users size={20} aria-hidden="true" />
+                    <span>
+                      {nombreGrado && nombreSeccion ? `${nombreGrado} "${nombreSeccion}" — ` : ""}
+                      {alumnos.length} estudiantes
                     </span>
-                  ))}
+                    {pendienteGuardar ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200 text-[10px] uppercase tracking-wider">
+                        <AlertTriangle size={12} aria-hidden="true" /> Sin guardar
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] uppercase tracking-wider">
+                        <CheckCircle2 size={12} aria-hidden="true" /> Guardada
+                      </span>
+                    )}
+                  </div>
+
+                  {/* RESUMEN EN VIVO */}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-600">
+                    {ESTADOS.map((e) => (
+                      <span key={e.valor} className="flex items-center gap-1.5">
+                        <span className={`w-2.5 h-2.5 rounded-full ${e.punto}`} aria-hidden="true" />
+                        {e.nombre}
+                        <span className="text-gray-900 tabular-nums">{conteo[e.valor]}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left min-w-[900px]">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-100">
+                        <th scope="col" className="px-6 py-4 text-xs font-black text-gray-600 uppercase">
+                          N°
+                        </th>
+                        <th scope="col" className="px-6 py-4 text-xs font-black text-gray-600 uppercase">
+                          Apellidos y Nombres
+                        </th>
+                        <th scope="col" className="px-6 py-4 text-xs font-black text-gray-600 uppercase">
+                          DNI
+                        </th>
+                        <th scope="col" className="px-6 py-4 text-xs font-black text-gray-600 uppercase text-center">
+                          Registro de Asistencia
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {alumnos.map((m, index) => {
+                        const estadoActual = asistenciaState[m.id_matricula] || "P";
+                        const nombre = `${m.alumno?.apellidos}, ${m.alumno?.nombres}`;
+
+                        return (
+                          <tr key={m.id_matricula} className="hover:bg-gray-50/50 transition-colors duration-150">
+                            <td className="px-6 py-4 text-sm font-bold text-gray-500 tabular-nums">{index + 1}</td>
+                            <td className="px-6 py-4 font-bold text-gray-800">{nombre}</td>
+                            <td className="px-6 py-4 text-sm text-gray-600 font-medium tabular-nums">{m.alumno?.dni}</td>
+                            <td className="px-6 py-4">
+                              <div className="flex justify-center">
+                                <div role="group" aria-label={`Asistencia de ${nombre}`} className="flex bg-gray-100 p-1 rounded-xl w-fit">
+                                  {ESTADOS.map((e) => {
+                                    const activo = estadoActual === e.valor;
+                                    const Icono = e.icono;
+                                    return (
+                                      <button
+                                        key={e.valor}
+                                        type="button"
+                                        onClick={() => setEstado(m.id_matricula, e.valor)}
+                                        aria-pressed={activo}
+                                        title={e.nombre}
+                                        // `relative` no mueve nada, pero hace falta.
+                                        //
+                                        // Dentro va un <span class="sr-only"> con el
+                                        // nombre del estado, para que un lector de
+                                        // pantalla diga "Presente" y no "P". `sr-only`
+                                        // lo pone en position:absolute, y un absolute
+                                        // sin ancestro posicionado se cuelga del
+                                        // documento entero, no del contenedor con
+                                        // scroll de la tabla. Resultado: los spans de
+                                        // las últimas columnas quedaban a 868px en una
+                                        // ventana de 785 y toda la página se podía
+                                        // arrastrar a la derecha hacia un vacío.
+                                        // Con esto el span se ancla al botón.
+                                        className={`relative flex items-center justify-center gap-1 w-[58px] py-1.5 rounded-lg text-xs font-black transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] ${
+                                          activo ? `${e.activo} shadow-sm` : "text-gray-500 hover:bg-white hover:text-gray-700"
+                                        }`}
+                                      >
+                                        <Icono size={14} className={activo ? "opacity-100" : "opacity-0"} aria-hidden="true" />
+                                        <span>{e.letra}</span>
+                                        <span className="sr-only">{e.nombre}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left min-w-[900px]">
-                  <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
-                      <th scope="col" className="px-6 py-4 text-xs font-black text-gray-600 uppercase">
-                        N°
-                      </th>
-                      <th scope="col" className="px-6 py-4 text-xs font-black text-gray-600 uppercase">
-                        Apellidos y Nombres
-                      </th>
-                      <th scope="col" className="px-6 py-4 text-xs font-black text-gray-600 uppercase">
-                        DNI
-                      </th>
-                      <th scope="col" className="px-6 py-4 text-xs font-black text-gray-600 uppercase text-center">
-                        Registro de Asistencia
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {alumnos.map((m, index) => {
-                      const estadoActual = asistenciaState[m.id_matricula] || "P";
-                      const nombre = `${m.alumno?.apellidos}, ${m.alumno?.nombres}`;
-
-                      return (
-                        <tr key={m.id_matricula} className="hover:bg-gray-50/50 transition-colors duration-150">
-                          <td className="px-6 py-4 text-sm font-bold text-gray-500 tabular-nums">{index + 1}</td>
-                          <td className="px-6 py-4 font-bold text-gray-800">{nombre}</td>
-                          <td className="px-6 py-4 text-sm text-gray-600 font-medium tabular-nums">{m.alumno?.dni}</td>
-                          <td className="px-6 py-4">
-                            <div className="flex justify-center">
-                              <div role="group" aria-label={`Asistencia de ${nombre}`} className="flex bg-gray-100 p-1 rounded-xl w-fit">
-                                {ESTADOS.map((e) => {
-                                  const activo = estadoActual === e.valor;
-                                  const Icono = e.icono;
-                                  return (
-                                    <button
-                                      key={e.valor}
-                                      type="button"
-                                      onClick={() => setEstado(m.id_matricula, e.valor)}
-                                      aria-pressed={activo}
-                                      title={e.nombre}
-                                      // `relative` no mueve nada, pero hace falta.
-                                      //
-                                      // Dentro va un <span class="sr-only"> con el
-                                      // nombre del estado, para que un lector de
-                                      // pantalla diga "Presente" y no "P". `sr-only`
-                                      // lo pone en position:absolute, y un absolute
-                                      // sin ancestro posicionado se cuelga del
-                                      // documento entero, no del contenedor con
-                                      // scroll de la tabla. Resultado: los spans de
-                                      // las últimas columnas quedaban a 868px en una
-                                      // ventana de 785 y toda la página se podía
-                                      // arrastrar a la derecha hacia un vacío.
-                                      // Con esto el span se ancla al botón.
-                                      className={`relative flex items-center justify-center gap-1 w-[58px] py-1.5 rounded-lg text-xs font-black transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] ${
-                                        activo ? `${e.activo} shadow-sm` : "text-gray-500 hover:bg-white hover:text-gray-700"
-                                      }`}
-                                    >
-                                      <Icono size={14} className={activo ? "opacity-100" : "opacity-0"} aria-hidden="true" />
-                                      <span>{e.letra}</span>
-                                      <span className="sr-only">{e.nombre}</span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              {/* BARRA FIJA DE GUARDADO
+                  Va fuera de la tarjeta a propósito: la tarjeta tiene
+                  overflow-hidden para redondear la tabla, y dentro de un
+                  contenedor así `sticky` deja de pegarse al borde de la
+                  pantalla. Aquí abajo acompaña al usuario mientras recorre la
+                  lista, por larga que sea. */}
+              <div className="sticky bottom-0 z-10 -mx-4 md:mx-0 px-4 md:px-0 pb-2 pt-3 bg-gradient-to-t from-[#F2F4F7] via-[#F2F4F7] to-transparent">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <p className="text-xs text-gray-600 font-medium">
+                    Se guardarán {alumnos.length} {alumnos.length === 1 ? "registro" : "registros"} con fecha{" "}
+                    <span className="font-bold text-[#093E7A]">{fechaAsistencia}</span>.
+                    {pendienteGuardar && (
+                      <span className="block text-amber-700 font-bold mt-0.5">
+                        Aunque estén todos presentes, el día no queda registrado hasta que pulses Guardar.
+                      </span>
+                    )}
+                  </p>
+                  {botonGuardar}
+                </div>
               </div>
-
-              <div className="p-6 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <p className="text-xs text-gray-600 font-medium">
-                  Se guardarán {alumnos.length} {alumnos.length === 1 ? "registro" : "registros"} con fecha{" "}
-                  <span className="font-bold text-[#093E7A]">{fechaAsistencia}</span>.
-                </p>
-                <button
-                  onClick={handleGuardarAsistencia}
-                  disabled={isSaving}
-                  className="bg-[#701C32] text-white px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#5a1628] transition-[background-color,transform] duration-150 ease-out active:scale-[0.98] shadow-lg shadow-[#701C32]/20 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
-                >
-                  {isSaving ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <Save size={18} aria-hidden="true" />}
-                  {isSaving ? "Guardando..." : "Guardar Registro Diario"}
-                </button>
-              </div>
-            </div>
+            </>
           )}
         </>
       )}
 
-      {/* VISTA 2: REPORTE RESUMEN DE ASISTENCIA */}
-      {tabActiva === "reporte" && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden surface-in">
-          <div className="p-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3 bg-blue-50/50">
-            <div className="flex items-center gap-2 text-[#093E7A] font-black">
-              <BarChart3 size={20} aria-hidden="true" />
-              <span>
-                Reporte General de Asistencia
-                {selectedBimestre ? ` — ${selectedBimestre}° Bimestre` : " — Acumulado Anual"}
-              </span>
-            </div>
-            <span className="text-xs font-bold text-gray-600 tabular-nums">
-              {reporteAlumnos.length} de {totalReporte} estudiantes
-            </span>
-          </div>
+      {/* VISTA 2: REPORTE RESUMEN DE ASISTENCIA
+          La tabla es la misma que ve el administrador en Gestión de
+          Estudiantes; vive en un componente compartido. El auxiliar trabaja
+          sobre el año que tiene elegido, así que no se le repite el selector. */}
+      {tabActiva === "reporte" && <ReporteAsistencia anioId={anioPlanificacion} />}
 
-          {loadingReporte ? (
-            <div className="divide-y divide-gray-50">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="p-5 flex items-center gap-4">
-                  <div className="h-4 w-4 bg-gray-100 rounded animate-pulse" />
-                  <div className="h-4 flex-1 max-w-[200px] bg-gray-100 rounded animate-pulse" />
-                  <div className="h-4 w-16 bg-gray-100 rounded animate-pulse" />
-                  <div className="h-6 w-48 bg-gray-100 rounded-lg animate-pulse ml-auto" />
-                </div>
-              ))}
-            </div>
-          ) : reporteAlumnos.length === 0 ? (
-            <div className="p-12 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-gray-100 text-gray-500 flex items-center justify-center mx-auto mb-3">
-                <FileText size={24} />
+      {/* AVISO AL SALIR DEL AULA CON LA ASISTENCIA SIN GUARDAR */}
+      {accionPendiente && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget && !isSaving) setAccionPendiente(null); }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-sin-guardar"
+            className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 space-y-5"
+          >
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 shrink-0">
+                <AlertTriangle size={22} aria-hidden="true" />
               </div>
-              <h4 className="font-bold text-gray-800">No se encontraron estudiantes</h4>
-              <p className="text-xs text-gray-500 mt-1">Pruebe ajustando los filtros de nivel, grado o sección.</p>
+              <div>
+                <h3 id="titulo-sin-guardar" className="text-lg font-black text-gray-800 leading-tight">
+                  La asistencia no está guardada
+                </h3>
+                <p className="text-sm text-gray-600 mt-1.5 leading-relaxed">
+                  {nombreGrado && nombreSeccion ? `${nombreGrado} "${nombreSeccion}", ` : ""}
+                  {fechaAsistencia}. Marcar la lista no guarda nada por sí solo, ni siquiera cuando
+                  están todos presentes: si sales ahora, este día queda sin registrar.
+                </p>
+              </div>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="px-5 py-3.5 text-xs font-black text-gray-600 uppercase">N°</th>
-                    <th className="px-5 py-3.5 text-xs font-black text-gray-600 uppercase">Estudiante</th>
-                    <th className="px-5 py-3.5 text-xs font-black text-gray-600 uppercase">DNI</th>
-                    <th className="px-5 py-3.5 text-xs font-black text-gray-600 uppercase">Grado / Sección</th>
-                    <th className="px-3 py-3.5 text-xs font-black text-emerald-700 uppercase text-center">Presentes (P)</th>
-                    <th className="px-3 py-3.5 text-xs font-black text-amber-700 uppercase text-center">Tardanzas (T)</th>
-                    <th className="px-3 py-3.5 text-xs font-black text-red-700 uppercase text-center">Faltas (F)</th>
-                    <th className="px-3 py-3.5 text-xs font-black text-slate-700 uppercase text-center">Justificadas (J)</th>
-                    <th className="px-5 py-3.5 text-xs font-black text-[#093E7A] uppercase text-center">% Asistencia</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {reporteAlumnos.map((a, idx) => {
-                    const porc = a.porcentaje_asistencia;
-                    const badgeColor =
-                      porc >= 90
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                        : porc >= 75
-                        ? "bg-amber-50 text-amber-700 border-amber-200"
-                        : "bg-red-50 text-red-700 border-red-200";
 
-                    return (
-                      <tr key={a.id_matricula} className="hover:bg-gray-50/60 transition-colors">
-                        <td className="px-5 py-3.5 text-xs font-bold text-gray-500 tabular-nums">{idx + 1}</td>
-                        <td className="px-5 py-3.5 font-bold text-gray-800 text-sm">{a.alumno}</td>
-                        <td className="px-5 py-3.5 text-xs text-gray-600 font-medium tabular-nums">{a.dni}</td>
-                        <td className="px-5 py-3.5 text-xs text-gray-600">
-                          <span className="font-semibold text-gray-700">{a.grado}</span> "{a.seccion}"
-                          <span className="text-[10px] text-gray-400 block">{a.nivel}</span>
-                        </td>
-                        <td className="px-3 py-3.5 text-center">
-                          <span className="inline-block px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-black text-xs tabular-nums">
-                            {a.presentes}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3.5 text-center">
-                          <span className="inline-block px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 font-black text-xs tabular-nums">
-                            {a.tardanzas}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3.5 text-center">
-                          <span className="inline-block px-2.5 py-1 rounded-lg bg-red-50 text-red-700 font-black text-xs tabular-nums">
-                            {a.faltas}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3.5 text-center">
-                          <span className="inline-block px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-black text-xs tabular-nums">
-                            {a.justificaciones}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3.5 text-center">
-                          <span
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-black tabular-nums ${badgeColor}`}
-                          >
-                            <Percent size={12} />
-                            {a.porcentaje_asistencia}%
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={() => setAccionPendiente(null)}
+                disabled={isSaving}
+                className="flex-1 py-3 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-100 disabled:opacity-50 transition-colors"
+              >
+                Seguir aquí
+              </button>
+              <button
+                type="button"
+                onClick={continuarSinGuardar}
+                disabled={isSaving}
+                className="flex-1 py-3 rounded-xl font-bold text-sm text-red-600 border border-red-200 hover:bg-red-50 disabled:opacity-50 transition-colors"
+              >
+                Salir sin guardar
+              </button>
+              <button
+                type="button"
+                onClick={guardarYContinuar}
+                disabled={isSaving}
+                className="flex-[1.4] py-3 rounded-xl font-bold text-sm text-white bg-[#701C32] hover:bg-[#5a1628] disabled:opacity-60 flex items-center justify-center gap-2 transition-colors"
+              >
+                {isSaving && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
+                {isSaving ? "Guardando..." : "Guardar y salir"}
+              </button>
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>

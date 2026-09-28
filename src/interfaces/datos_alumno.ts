@@ -10,12 +10,29 @@ export interface ResumenNota {
 
 
 export interface HistorialConducta {
+  id_reporte?: number;
   fecha: string;
   motivo: string;
   puntos_restados: number;
   medida: string | null;
   cambio_ie: boolean;
   nota_reglamento: string;
+  /** Nombre de quien registró el reporte. null en los reportes anteriores a
+   *  que el sistema lo guardara. */
+  registrado_por?: string | null;
+  /** Rol de quien lo registró (normalmente AUXILIAR). */
+  rol_registra?: string | null;
+}
+
+/** Texto de "quién registró" para una incidencia del alumno. */
+export function autorDelReporte(r: Pick<HistorialConducta, "registrado_por" | "rol_registra">): {
+  etiqueta: string;
+  nombre: string | null;
+} {
+  const nombre = r.registrado_por?.trim() || null;
+  const rol = (r.rol_registra || "").toUpperCase();
+  const etiqueta = !nombre || rol === "AUXILIAR" || rol === "" ? "Auxiliar" : "Registrado por";
+  return { etiqueta, nombre };
 }
 
 export interface EstadoConducta {

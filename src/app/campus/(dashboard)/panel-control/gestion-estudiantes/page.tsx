@@ -10,6 +10,7 @@ import { ModalEditarEstudiante } from "@/src/components/Campus/PanelControl/Moda
 import { usePermisos } from "@/src/hooks/usePermisos";
 import { NotasFinales } from "@/src/components/Campus/PanelControl/NotasFinales";
 import { CatalogoFaltas } from "@/src/components/Campus/PanelControl/CatalogoFaltas";
+import { ReporteAsistencia } from "@/src/components/Campus/ReporteAsistencia";
 
 // Pestañas del apartado. Los `id` coinciden con el catálogo de permisos.
 const PESTANAS_ESTUDIANTES = [
@@ -18,6 +19,7 @@ const PESTANAS_ESTUDIANTES = [
     { id: "renovaciones", label: "Renovaciones de Matrícula", icon: "autorenew" },
     { id: "verano", label: "Inscripciones de Verano", icon: "wb_sunny" },
     { id: "notas", label: "Notas Finales", icon: "grading" },
+    { id: "asistencia", label: "Reporte de Asistencia", icon: "fact_check" },
     { id: "faltas", label: "Catálogo de Faltas", icon: "gavel" },
 ] as const;
 
@@ -103,7 +105,14 @@ export default function GestionEstudiantesPage() {
     // El tipo sale de PESTANAS_ESTUDIANTES: así, al añadir una pestaña arriba,
     // no hay que acordarse de repetir su id también aquí.
     const [vista, setVista] = useState<(typeof PESTANAS_ESTUDIANTES)[number]["id"]>("estudiantes");
-    const { tienePermiso, loading: loadingPermisos } = usePermisos();
+    const { tienePermiso, acciones, loading: loadingPermisos } = usePermisos();
+
+    // Qué puede hacer en cada pestaña. El servidor lo comprueba igual; esto
+    // solo evita ofrecer botones que luego se rechazarían.
+    const puedeEst = acciones("gestion_estudiantes", "estudiantes");
+    const puedePost = acciones("gestion_estudiantes", "postulantes");
+    const puedeRenov = acciones("gestion_estudiantes", "renovaciones");
+    const puedeVerano = acciones("gestion_estudiantes", "verano");
 
     // Si la pestaña abierta no está permitida, se abre la primera que sí lo esté
     useEffect(() => {
@@ -340,9 +349,9 @@ export default function GestionEstudiantesPage() {
             cargarVerano();
             return;
         }
-        // "notas" se sirve sola: pide sus datos con sus propios filtros, así
-        // que aquí no hay que traer el padrón entero para nada.
-        if (vista === "notas") return;
+        // "notas" y "asistencia" se sirven solas: piden sus datos con sus
+        // propios filtros, así que aquí no hay que traer el padrón entero.
+        if (vista === "notas" || vista === "asistencia") return;
         const delayDebounceFn = setTimeout(() => {
             cargarDatos();
         }, 300); // 300ms de debounce para no saturar la API mientras escribes
@@ -471,7 +480,7 @@ export default function GestionEstudiantesPage() {
                         {/* Barra de búsqueda + registro dedicado.
                             "notas" queda fuera: esa pestaña trae sus propios
                             filtros, y el buscador de arriba no la afecta. */}
-                        {vista !== "renovaciones" && vista !== "verano" && vista !== "notas" && vista !== "faltas" && (
+                        {vista !== "renovaciones" && vista !== "verano" && vista !== "notas" && vista !== "faltas" && vista !== "asistencia" && (
                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6">
                                 <div className="relative w-full sm:max-w-md">
                                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -485,7 +494,7 @@ export default function GestionEstudiantesPage() {
                                         className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-[#093E7A] outline-none transition-all"
                                     />
                                 </div>
-                                {vista === "estudiantes" && (
+                                {vista === "estudiantes" && puedeEst.agregar && (
                                     <Link href="/campus/panel-control/gestion-estudiantes/registrar-estudiante" className="shrink-0">
                                         <button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#093E7A] hover:bg-[#072d5a] text-white px-6 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm">
                                             <span className="material-symbols-outlined text-[20px]">add_circle</span>
@@ -554,7 +563,9 @@ export default function GestionEstudiantesPage() {
                                                                 </span>
                                                             </td>
                                                             <td className="px-6 py-4 text-right">
-                                                                {sol.estado === "PENDIENTE" ? (
+                                                                {sol.estado === "PENDIENTE" && !puedeRenov.editar ? (
+                                                                    <span className="text-xs text-gray-400 italic" title="Solo lectura: no tienes permiso para decidir">Pendiente</span>
+                                                                ) : sol.estado === "PENDIENTE" ? (
                                                                     <div className="flex justify-end gap-2">
                                                                         <button
                                                                             onClick={() => { setRespuestaAdmin(""); setModalDecision({ abierto: true, solicitud: sol, aprobar: true }); }}
@@ -581,6 +592,8 @@ export default function GestionEstudiantesPage() {
                             <div className="-m-4 md:-m-8">
                                 <NotasFinales />
                             </div>
+                        ) : vista === "asistencia" ? (
+                            <ReporteAsistencia mostrarSelectorAnio />
                         ) : vista === "faltas" ? (
                             <CatalogoFaltas />
                         ) : vista === "verano" ? (
@@ -631,7 +644,9 @@ export default function GestionEstudiantesPage() {
                                                             <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${s.estado === 'ADMITIDO' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-[#093E7A]'}`}>{s.estado}</span>
                                                         </td>
                                                         <td className="px-6 py-4 text-right">
-                                                            {s.estado !== "ADMITIDO" ? (
+                                                            {s.estado !== "ADMITIDO" && !puedeVerano.editar ? (
+                                                                <span className="text-xs text-gray-400 italic" title="Solo lectura: no tienes permiso para decidir">Pendiente</span>
+                                                            ) : s.estado !== "ADMITIDO" ? (
                                                                 <button
                                                                     onClick={() => admitirVerano(s.id)}
                                                                     className="px-3 py-1 bg-green-600 text-white rounded text-xs font-bold hover:bg-green-700 transition-colors"
@@ -728,16 +743,18 @@ export default function GestionEstudiantesPage() {
                                                             >
                                                                 <span className="material-symbols-outlined text-[20px]">visibility</span>
                                                             </button>
-                                                            <button
-                                                                onClick={() => setAlumnoEditando(alumno)}
-                                                                title="Editar estudiante y familiares"
-                                                                className="p-2 text-slate-400 hover:text-[#093E7A] hover:bg-[#093E7A]/5 rounded-lg transition-all"
-                                                            >
-                                                                <span className="material-symbols-outlined text-[20px]">edit</span>
-                                                            </button>
+                                                            {puedeEst.editar && (
+                                                                <button
+                                                                    onClick={() => setAlumnoEditando(alumno)}
+                                                                    title="Editar estudiante y familiares"
+                                                                    className="p-2 text-slate-400 hover:text-[#093E7A] hover:bg-[#093E7A]/5 rounded-lg transition-all"
+                                                                >
+                                                                    <span className="material-symbols-outlined text-[20px]">edit</span>
+                                                                </button>
+                                                            )}
                                                             {vista === "estudiantes" && (
                                                                 alumno.estado_ingreso === "RETIRADO" ? (
-                                                                    <button
+                                                                    puedeEst.agregar && <button
                                                                         onClick={() => abrirModalReincorporar(alumno)}
                                                                         title="Reincorporar estudiante a la institución"
                                                                         className="p-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-all"
@@ -745,7 +762,7 @@ export default function GestionEstudiantesPage() {
                                                                         <span className="material-symbols-outlined text-[20px]">how_to_reg</span>
                                                                     </button>
                                                                 ) : (
-                                                                    <button
+                                                                    puedeEst.eliminar && <button
                                                                         onClick={() => setModalRetiro({ abierto: true, alumno })}
                                                                         title="Retirar estudiante"
                                                                         className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
@@ -754,7 +771,7 @@ export default function GestionEstudiantesPage() {
                                                                     </button>
                                                                 )
                                                             )}
-                                                            {alumno.estado_ingreso === "POSTULANTE" && (
+                                                            {alumno.estado_ingreso === "POSTULANTE" && puedePost.editar && (
                                                                 <>
                                                                     <button
                                                                         onClick={() => ejecutarDecision(alumno.id_alumno, true)}
@@ -947,7 +964,7 @@ export default function GestionEstudiantesPage() {
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Estado de Solicitud</p>
                                         <span className="text-lg font-black block mb-4">{modalInfo.datos.alumno.estado_ingreso}</span>
                                     </div>
-                                    {modalInfo.datos.alumno.estado_ingreso === "POSTULANTE" && (
+                                    {modalInfo.datos.alumno.estado_ingreso === "POSTULANTE" && puedePost.editar && (
                                         <div className="space-y-3 mt-4">
                                             <button onClick={() => ejecutarDecision(modalInfo.datos.alumno.id_alumno, true)} className="w-full py-4 bg-emerald-600 text-white rounded-xl font-black text-sm shadow-lg hover:bg-emerald-700 transition-all flex items-center justify-center gap-2">
                                                 <span className="material-symbols-outlined text-lg">check_circle</span> ADMITIR

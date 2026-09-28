@@ -11,6 +11,7 @@
  * La Pre Academia solo aparece en verano, que es cuando existe.
  */
 
+import { usePermisos } from "@/src/hooks/usePermisos";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { apiFetch, mensajeDeError } from "@/src/lib/api";
@@ -68,6 +69,10 @@ const leerAviso = async (res: Response): Promise<{ mensaje: string; ejemplos: st
 };
 
 export function ModalConfiguracionHorario({ isOpen, onClose, onGuardado }: Props) {
+  // Qué puede hacer aquí. El servidor lo comprueba igual; esto solo evita
+  // ofrecer botones que luego se rechazarían.
+  const { acciones } = usePermisos();
+  const puede = acciones("academico", "horarios");
   const [configs, setConfigs] = useState<ConfiguracionHorario[]>([]);
   const [modalidad, setModalidad] = useState<ModalidadHorario>("REGULAR");
   const [ambito, setAmbito] = useState<AmbitoHorario>("PRIMARIA");
@@ -357,7 +362,8 @@ export function ModalConfiguracionHorario({ isOpen, onClose, onGuardado }: Props
                   </div>
                   <button
                     type="submit"
-                    disabled={guardando}
+                    disabled={guardando || !puede.editar}
+                    title={!puede.editar ? "Solo lectura: no tienes permiso para editar" : undefined}
                     className="w-full px-4 py-2.5 bg-[#093E7A] text-white rounded-lg font-bold text-sm hover:bg-[#062d59] transition-all disabled:opacity-50"
                   >
                     Guardar jornada
@@ -386,6 +392,7 @@ export function ModalConfiguracionHorario({ isOpen, onClose, onGuardado }: Props
                             {r.hora_inicio} · {r.duracion} min
                           </p>
                         </div>
+                        {puede.eliminar && (
                         <button
                           onClick={() => quitarReceso(r.id_receso)}
                           title="Quitar receso"
@@ -393,11 +400,12 @@ export function ModalConfiguracionHorario({ isOpen, onClose, onGuardado }: Props
                         >
                           <span className="material-symbols-outlined text-lg">delete</span>
                         </button>
+                        )}
                       </div>
                     ))}
                   </div>
 
-                  <form onSubmit={agregarReceso} className="grid grid-cols-12 gap-2 items-end pt-1">
+                  {puede.agregar && <form onSubmit={agregarReceso} className="grid grid-cols-12 gap-2 items-end pt-1">
                     <div className="col-span-12">
                       <label className="block text-[11px] font-bold text-gray-500 mb-1">Nombre</label>
                       <input
@@ -439,7 +447,7 @@ export function ModalConfiguracionHorario({ isOpen, onClose, onGuardado }: Props
                         + Añadir receso
                       </button>
                     </div>
-                  </form>
+                  </form>}
                 </div>
               </div>
 

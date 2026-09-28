@@ -44,7 +44,14 @@ const PESTANAS_FINANZAS = [
 export default function GestionFinancieraPage() {
   // --- ESTADOS ---
   // Se agregó "tipos-pagos" a los tipos de tabActiva
-  const { tienePermiso, loading: loadingPermisos } = usePermisos();
+  const { tienePermiso, acciones, loading: loadingPermisos } = usePermisos();
+
+  // Qué puede hacer en cada pestaña. El servidor lo comprueba igual; esto
+  // solo evita ofrecer botones que luego se rechazarían.
+  const puedeConfig = acciones("tramites_finanzas", "config");
+  const puedeSolic = acciones("tramites_finanzas", "solicitudes");
+  const puedeTipos = acciones("tramites_finanzas", "tipos_pagos");
+  const puedeCaja = acciones("tramites_finanzas", "recaudacion");
   const [tabActiva, setTabActiva] = useState<"config" | "solicitudes" | "tipos-pagos" | "recaudacion" | "conciliacion">("config");
 
   // Si la pestaña abierta está cerrada para este administrador, se abre la
@@ -494,10 +501,12 @@ export default function GestionFinancieraPage() {
                   className="w-96 px-4 py-2 rounded-lg border outline-none focus:ring-2 focus:ring-[#093E7A]/20"
                   onChange={e => setBusqueda(e.target.value)}
                 />
-                <button onClick={openNew}
-                  className="bg-[#093E7A] text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2">
-                  <span className="material-symbols-outlined">add</span> Nuevo Trámite
-                </button>
+                {puedeConfig.agregar && (
+                  <button onClick={openNew}
+                    className="bg-[#093E7A] text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2">
+                    <span className="material-symbols-outlined">add</span> Nuevo Trámite
+                  </button>
+                )}
               </div>
 
               <div className="bg-white rounded-xl border shadow-sm overflow-x-auto">
@@ -541,9 +550,11 @@ export default function GestionFinancieraPage() {
                           }
                         </td>
                         <td className="p-4 text-right">
-                          <button onClick={() => openEdit(t)} className="text-gray-400 hover:text-blue-600 p-1 rounded transition-colors">
-                            <span className="material-symbols-outlined text-sm">edit</span>
-                          </button>
+                          {puedeConfig.editar && (
+                            <button onClick={() => openEdit(t)} className="text-gray-400 hover:text-blue-600 p-1 rounded transition-colors">
+                              <span className="material-symbols-outlined text-sm">edit</span>
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -600,12 +611,18 @@ export default function GestionFinancieraPage() {
                         )}
                       </td>
                       <td className="p-4 text-center">
-                        <button
-                          onClick={() => abrirModalDictamen(s)}
-                          className="bg-[#093E7A] text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-[#072d5a]"
-                        >
-                          Atender
-                        </button>
+                        {puedeSolic.editar ? (
+                          <button
+                            onClick={() => abrirModalDictamen(s)}
+                            className="bg-[#093E7A] text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-[#072d5a]"
+                          >
+                            Atender
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-400 italic" title="No tienes permiso para atender solicitudes">
+                            Solo lectura
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -622,9 +639,11 @@ export default function GestionFinancieraPage() {
                   <h1 className="text-xl font-bold text-gray-800">Tipos de Pago Globales (Plantillas)</h1>
                   <p className="text-xs text-gray-500">Reglas fijas para generación de deudas por rango de fecha y categoría.</p>
                 </div>
-                <button onClick={openNewTipoPago} className="bg-[#093E7A] text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2">
-                  <span className="material-symbols-outlined">add</span> Nuevo Pago
-                </button>
+                {puedeTipos.agregar && (
+                  <button onClick={openNewTipoPago} className="bg-[#093E7A] text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2">
+                    <span className="material-symbols-outlined">add</span> Nuevo Pago
+                  </button>
+                )}
               </div>
 
               <div className="bg-white rounded-xl border shadow-sm overflow-x-auto">
@@ -676,8 +695,12 @@ export default function GestionFinancieraPage() {
                         </td>
                         <td className="p-4 text-center font-black text-[#093E7A]">S/ {Number(p.costo).toFixed(2)}</td>
                         <td className="p-4 flex justify-end gap-2">
-                          <button onClick={() => openEditTipoPago(p)} className="text-gray-400 hover:text-blue-600"><span className="material-symbols-outlined text-sm">edit</span></button>
-                          <button onClick={() => handleEliminarTipoPago(p.id_tipo_pago)} className="text-gray-400 hover:text-red-600"><span className="material-symbols-outlined text-sm">delete</span></button>
+                          {puedeTipos.editar && (
+                            <button onClick={() => openEditTipoPago(p)} className="text-gray-400 hover:text-blue-600"><span className="material-symbols-outlined text-sm">edit</span></button>
+                          )}
+                          {puedeTipos.eliminar && (
+                            <button onClick={() => handleEliminarTipoPago(p.id_tipo_pago)} className="text-gray-400 hover:text-red-600"><span className="material-symbols-outlined text-sm">delete</span></button>
+                          )}
                         </td>
                       </tr>
                     )})}
@@ -850,7 +873,7 @@ export default function GestionFinancieraPage() {
 
                           <td className="p-4">
                             <div className="flex items-center justify-end gap-1">
-                              {sePuedeCobrar && (
+                              {sePuedeCobrar && puedeCaja.editar && (
                                 <button
                                   onClick={() => prepararConfirmacionManual(p.id_pago)}
                                   title={estaVencido ? "Cobrar cuota vencida" : "Confirmar pago"}
@@ -859,12 +882,16 @@ export default function GestionFinancieraPage() {
                                   <span className="material-symbols-outlined text-sm">{estaVencido ? 'priority_high' : 'check_circle'}</span>
                                 </button>
                               )}
-                              <button onClick={() => openEditPago(p)} title="Editar" className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                                <span className="material-symbols-outlined text-sm">edit</span>
-                              </button>
-                              <button onClick={() => handleDeletePago(p.id_pago)} title="Eliminar" className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                                <span className="material-symbols-outlined text-sm">delete</span>
-                              </button>
+                              {puedeCaja.editar && (
+                                <button onClick={() => openEditPago(p)} title="Editar" className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                  <span className="material-symbols-outlined text-sm">edit</span>
+                                </button>
+                              )}
+                              {puedeCaja.eliminar && (
+                                <button onClick={() => handleDeletePago(p.id_pago)} title="Eliminar" className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                                  <span className="material-symbols-outlined text-sm">delete</span>
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>

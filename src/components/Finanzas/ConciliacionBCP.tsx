@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { apiFetch, mensajeDeError } from "@/src/lib/api";
 import { CambiosManuales } from "@/src/components/Finanzas/CambiosManuales";
+import { usePermisos } from "@/src/hooks/usePermisos";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -154,6 +155,10 @@ const ETIQUETA_RESULTADO: Record<string, string> = {
 const HAY_QUE_MIRARLO = new Set(["SIN_COINCIDENCIA", "MONTO_DISTINTO", "AMBIGUO"]);
 
 export function ConciliacionBCP() {
+  // Cargar archivos del banco es "agregar"; decidir sobre lo cargado
+  // (resolver, incorporar) es "editar". El servidor lo comprueba igual.
+  const { acciones } = usePermisos();
+  const puede = acciones("tramites_finanzas", "conciliacion");
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [lotes, setLotes] = useState<Lote[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -478,7 +483,9 @@ export function ConciliacionBCP() {
           </p>
         )}
 
-        <div className="flex gap-2 mt-3">
+        {!puede.agregar ? (
+          <p className="text-[11px] text-gray-400 italic mt-3">Solo lectura: no tienes permiso para cargar reportes.</p>
+        ) : <div className="flex gap-2 mt-3">
           <button type="button" disabled={trabajando || !archivos.length}
                   onClick={() => enviarReportes(true)}
                   className="px-4 py-2 border border-[#093E7A] text-[#093E7A] rounded-lg font-bold text-sm hover:bg-blue-50 disabled:opacity-50">
@@ -489,7 +496,7 @@ export function ConciliacionBCP() {
                   className="px-4 py-2 bg-[#093E7A] text-white rounded-lg font-bold text-sm hover:bg-[#062d59] disabled:opacity-50">
             Aplicar
           </button>
-        </div>
+        </div>}
         {!previo && archivos.length > 0 && (
           <p className="text-[11px] text-gray-400 mt-2">
             Primero simula: «Aplicar» se habilita cuando hayas visto el resultado.
@@ -573,7 +580,7 @@ export function ConciliacionBCP() {
                     sumarían {SOLES(v.importe)}
                   </p>
                 </div>
-                <div className="flex gap-2">
+                {puede.agregar && <div className="flex gap-2">
                   <button type="button" disabled={trabajando}
                           onClick={() => cargarMora(v.fecha, true)}
                           className="px-3 py-1.5 border border-amber-600 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-100 disabled:opacity-50">
@@ -584,7 +591,7 @@ export function ConciliacionBCP() {
                           className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700 disabled:opacity-50">
                     Aplicar mora
                   </button>
-                </div>
+                </div>}
               </div>
             ))}
           </div>
@@ -678,14 +685,14 @@ export function ConciliacionBCP() {
                     {verDetalleCambios ? "Ocultar detalle" : "Ver lista de cambios"}
                   </button>
                 )}
-                <button
+                {puede.editar && <button
                   type="button"
                   onClick={() => setModalConfirmarIncorporacion(true)}
                   className="px-4 py-2 bg-[#093E7A] hover:bg-[#072d5a] text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
                 >
                   <span className="material-symbols-outlined text-[16px]">sync</span>
                   Incorporar Cambios al CREP
-                </button>
+                </button>}
               </div>
             </div>
 
@@ -959,7 +966,9 @@ export function ConciliacionBCP() {
                  className="block w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4
                             file:rounded-lg file:border-0 file:text-sm file:font-bold
                             file:bg-gray-700 file:text-white hover:file:bg-gray-800" />
-          <div className="flex gap-2">
+          {!puede.agregar ? (
+            <p className="text-[11px] text-gray-400 italic mt-3">Solo lectura: no tienes permiso para hacer la importación inicial.</p>
+          ) : <div className="flex gap-2">
             <button type="button" disabled={trabajando || !inicial}
                     onClick={() => enviarInicial(true)}
                     className="px-4 py-2 border border-gray-400 text-gray-700 rounded-lg font-bold text-sm hover:bg-gray-50 disabled:opacity-50">
@@ -970,7 +979,7 @@ export function ConciliacionBCP() {
                     className="px-4 py-2 bg-gray-800 text-white rounded-lg font-bold text-sm hover:bg-black disabled:opacity-50">
               Aplicar
             </button>
-          </div>
+          </div>}
           {previoInicial && <ResultadoInicial datos={previoInicial} />}
         </div>
       </details>
@@ -1075,21 +1084,21 @@ export function ConciliacionBCP() {
             </div>
 
             <div className="p-4 border-t bg-gray-50 flex flex-wrap justify-between gap-2 rounded-b-2xl shrink-0">
-              <button type="button" disabled={trabajando}
+              {puede.editar ? <button type="button" disabled={trabajando}
                       onClick={() => resolver("descartar")}
                       className="px-4 py-2.5 border border-gray-400 text-gray-700 rounded-lg font-bold text-sm hover:bg-gray-100 disabled:opacity-50">
                 Descartar sin aplicar
-              </button>
+              </button> : <span className="text-xs text-gray-400 italic self-center">Solo lectura: no tienes permiso para resolver pendientes.</span>}
               <div className="flex gap-2">
                 <button type="button" onClick={() => { setRevisando(null); setCandidatos(null); }}
                         className="px-4 py-2.5 text-gray-600 rounded-lg font-bold text-sm hover:bg-gray-200">
                   Cancelar
                 </button>
-                <button type="button" disabled={trabajando || !elegida}
+                {puede.editar && <button type="button" disabled={trabajando || !elegida}
                         onClick={() => resolver("aplicar")}
                         className="px-4 py-2.5 bg-[#093E7A] text-white rounded-lg font-bold text-sm hover:bg-[#062d59] disabled:opacity-50">
                   Marcar como pagada
-                </button>
+                </button>}
               </div>
             </div>
           </div>
@@ -1384,6 +1393,9 @@ function ResultadoProceso({ datos }: { datos: any }) {
 }
 
 function ResultadoInicial({ datos }: { datos: any }) {
+  // "Usar el del archivo" cambia el importe guardado: es editar.
+  const { acciones } = usePermisos();
+  const puede = acciones("tramites_finanzas", "conciliacion");
   // Qué se decidió en cada fila de «importe distinto», por cuota.
   //   "archivo" -> ya se guardó el precio del banco (esto SÍ escribió)
   //   "sistema" -> se deja como está; no toca nada, solo quita el aviso
@@ -1512,11 +1524,11 @@ function ResultadoInicial({ datos }: { datos: any }) {
                               {/* Único botón de toda la importación que escribe
                                   sin simular: se pulsa fila a fila, después de
                                   mirar los dos importes. */}
-                              <button type="button" disabled={!d.id || guardando === clave}
+                              {puede.editar && <button type="button" disabled={!d.id || guardando === clave}
                                       onClick={() => usarElDelArchivo(d)}
                                       className="px-2 py-1 rounded bg-[#093E7A] text-white font-bold hover:bg-[#062d59] disabled:opacity-40">
                                 {guardando === clave ? "Guardando..." : "Usar el del archivo"}
-                              </button>
+                              </button>}
                               <button type="button" disabled={guardando === clave}
                                       onClick={() => setDecidido((p) => ({ ...p, [clave]: "sistema" }))}
                                       className="px-2 py-1 rounded border border-gray-300 text-gray-600 font-bold hover:bg-gray-100 disabled:opacity-40">

@@ -1,4 +1,5 @@
 "use client";
+import { usePermisos } from "@/src/hooks/usePermisos";
 import { useEffect, useState } from "react";
 import { Nivel, Seccion, AnioEscolar, Grado, Bimestre } from "@/src/interfaces/academic";
 import GradoCard from "@/src/components/Academic/GradoCard";
@@ -11,6 +12,10 @@ import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
 import { CampoNumero, leerNumero, aNumero } from "@/src/components/utils/numero";
 
 export default function GestionAcademicaPage() {
+  // Qué puede hacer aquí. El servidor lo comprueba igual; esto solo evita
+  // ofrecer botones que luego se rechazarían.
+  const { acciones } = usePermisos();
+  const puede = acciones("academico", "estructura");
 
   const {
     anioPlanificacion: anioSeleccionado,
@@ -529,12 +534,14 @@ export default function GestionAcademicaPage() {
                   anios={anios}
                   loading={loadingAnios}
                 />
+                {puede.agregar && (
                 <button
                   onClick={() => setIsCrearAnioModalOpen(true)}
                   className="flex items-center gap-1 px-4 py-2 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-all"
                 >
                   <span className="material-symbols-outlined text-sm">add</span> Nuevo Año
                 </button>
+                )}
               </div>
             </div>
 
@@ -564,12 +571,14 @@ export default function GestionAcademicaPage() {
                 <p className="text-sm text-gray-500 max-w-md mt-1">
                   Elige un año en el selector superior para administrar su estructura, o crea uno nuevo para empezar.
                 </p>
+                {puede.agregar && (
                 <button
                   onClick={() => setIsCrearAnioModalOpen(true)}
                   className="mt-5 flex items-center gap-1 px-5 py-2.5 bg-[#093E7A] text-white rounded-lg font-bold text-sm shadow-sm hover:bg-[#072d5a] transition-all"
                 >
                   <span className="material-symbols-outlined text-sm">add</span> Crear Nuevo Año
                 </button>
+                )}
               </div>
             ) : (
             <>
@@ -597,8 +606,9 @@ export default function GestionAcademicaPage() {
                     )}
                   </div>
                   <button 
-                    onClick={() => setIsEditarAnioModalOpen(true)} 
-                    disabled={!anioSeleccionado}
+                    onClick={() => setIsEditarAnioModalOpen(true)}
+                    disabled={!anioSeleccionado || !puede.editar}
+                    title={!puede.editar ? "Solo lectura: no tienes permiso para editar" : undefined}
                     className="w-full py-2.5 bg-white border-2 border-[#093E7A] text-[#093E7A] font-bold rounded-lg text-sm hover:bg-[#093E7A] hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span className="material-symbols-outlined text-sm">edit_calendar</span>
@@ -644,7 +654,8 @@ export default function GestionAcademicaPage() {
                   </div>
                   <button
                     onClick={() => setIsInscripcionModalOpen(true)}
-                    disabled={!anioSeleccionado}
+                    disabled={!anioSeleccionado || !puede.editar}
+                    title={!puede.editar ? "Solo lectura: no tienes permiso para editar" : undefined}
                     className="w-full py-2.5 bg-white border-2 border-[#093E7A] text-[#093E7A] font-bold rounded-lg text-sm hover:bg-[#093E7A] hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span className="material-symbols-outlined text-sm">date_range</span>
@@ -672,7 +683,8 @@ export default function GestionAcademicaPage() {
                       </div>
                       <button
                         onClick={handleGuardarNota}
-                        disabled={guardandoNota}
+                        disabled={guardandoNota || !puede.editar}
+                        title={!puede.editar ? "Solo lectura: no tienes permiso para editar" : undefined}
                         className="py-2 px-4 bg-[#093E7A] text-white rounded-lg font-bold text-xs hover:bg-[#072d5a] disabled:opacity-50"
                       >
                         {guardandoNota ? "..." : "Guardar"}
@@ -736,7 +748,8 @@ export default function GestionAcademicaPage() {
                       <div className="pt-4 flex justify-end">
                         <button
                           onClick={handleGuardarBimestres}
-                          disabled={guardandoBimestres || !anioSeleccionado}
+                          disabled={guardandoBimestres || !anioSeleccionado || !puede.editar}
+                          title={!puede.editar ? "Solo lectura: no tienes permiso para editar" : undefined}
                           className="py-2.5 px-6 bg-[#093E7A] text-white rounded-lg font-bold text-sm hover:bg-[#072d5a] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
                           <span className="material-symbols-outlined text-sm">save</span>
@@ -912,6 +925,7 @@ export default function GestionAcademicaPage() {
                               En este nivel no hay grados divididos: acoge a los estudiantes de 4to y 5to de secundaria. Las vacantes se administran directamente por sección.
                             </p>
                           </div>
+                          {puede.agregar && (
                           <button
                             onClick={() => prepararNuevaSeccion(10)}
                             className="px-4 py-2 bg-[#701C32] hover:bg-[#591628] text-white rounded-lg font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm shrink-0"
@@ -919,6 +933,7 @@ export default function GestionAcademicaPage() {
                             <span className="material-symbols-outlined text-sm">add</span>
                             Agregar Sección Pre Academia
                           </button>
+                          )}
                         </div>
 
                         {secciones.filter(s => s.id_grado === 10).length > 0 ? (
@@ -941,6 +956,7 @@ export default function GestionAcademicaPage() {
                                           <h4 className="text-base font-bold text-gray-800 truncate">Sección {sec.nombre}</h4>
                                         </div>
                                         <div className="flex items-center gap-1 shrink-0">
+                                          {puede.editar && (
                                           <button
                                             onClick={() => prepararEditarSeccion(sec)}
                                             title="Editar Sección"
@@ -948,6 +964,8 @@ export default function GestionAcademicaPage() {
                                           >
                                             <span className="material-symbols-outlined text-[16px]">edit</span>
                                           </button>
+                                          )}
+                                          {puede.eliminar && (
                                           <button
                                             onClick={() => handleEliminarSeccion(sec.id_seccion || 0)}
                                             title="Eliminar Sección"
@@ -955,6 +973,7 @@ export default function GestionAcademicaPage() {
                                           >
                                             <span className="material-symbols-outlined text-[16px]">delete</span>
                                           </button>
+                                          )}
                                         </div>
                                       </div>
 

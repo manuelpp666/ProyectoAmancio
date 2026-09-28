@@ -1,15 +1,20 @@
 "use client";
+import { usePermisos } from "@/src/hooks/usePermisos";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { Nivel, Grado, Seccion } from "@/src/interfaces/academic";
 import { AlumnoMatriculado } from "@/src/interfaces/matricula";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
-import { apiFetch } from "@/src/lib/api";
+import { apiFetch, mensajeDeError } from "@/src/lib/api";
 import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
 import { RoleGuard } from "@/src/components/auth/RoleGuard";
 
 export default function AsignacionEstudiantesPage() {
+  // Qué puede hacer aquí. El servidor lo comprueba igual; esto solo evita
+  // ofrecer botones que luego se rechazarían.
+  const { acciones } = usePermisos();
+  const puede = acciones("academico", "estudiantes");
 
   const {
     anioPlanificacion: selectedAnio,
@@ -266,6 +271,10 @@ export default function AsignacionEstudiantesPage() {
   // --- CONFIRMAR CAMBIOS ---
 
   const handleConfirmarSeccion = async (seccionId: number) => {
+    if (!puede.editar) {
+      toast.error("No tienes permiso para cambiar la asignación de estudiantes.");
+      return;
+    }
     const alumnosAConfirmar = alumnos.filter(a => a.id_seccion === seccionId);
 
     try {
@@ -282,7 +291,15 @@ export default function AsignacionEstudiantesPage() {
         })
       );
 
-      await Promise.all(promesas);
+      const respuestas = await Promise.all(promesas);
+      // Antes no se miraba la respuesta: un rechazo del servidor salía
+      // igualmente como "Asignación confirmada".
+      const fallida = respuestas.find((r) => !r.ok);
+      if (fallida) {
+        toast.error(await mensajeDeError(fallida, "No se pudo guardar la asignación"));
+        cargarDatosOperativos(true);
+        return;
+      }
       setSeccionesEditando(prev => ({ ...prev, [seccionId]: false }));
       toast.success("Asignación confirmada");
       cargarDatosOperativos(true);
@@ -294,6 +311,11 @@ export default function AsignacionEstudiantesPage() {
   };
 
   const handleHabilitarEdicion = (seccionId: number) => {
+    // Sin entrar en edición no se puede mover a nadie: basta con cerrar aquí.
+    if (!puede.editar) {
+      toast.error("No tienes permiso para cambiar la asignación de estudiantes.");
+      return;
+    }
     setSeccionesEditando(prev => ({ ...prev, [seccionId]: true }));
   };
 
@@ -583,7 +605,11 @@ export default function AsignacionEstudiantesPage() {
                             )}
                           </div>
 
-                          {estaEditando ? (
+                          {!puede.editar ? (
+                            <p className="text-center text-[11px] text-gray-400 italic py-2">
+                              Solo lectura: no tienes permiso para cambiar asignaciones.
+                            </p>
+                          ) : estaEditando ? (
                             <button
                               onClick={() => handleConfirmarSeccion(seccion.id_seccion||0)}
                               className="w-full bg-[#093E7A] text-white py-2.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#093E7A]/90 transition-colors"

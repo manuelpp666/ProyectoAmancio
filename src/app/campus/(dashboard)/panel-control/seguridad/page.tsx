@@ -1,5 +1,6 @@
 "use client";
 
+import { usePermisos } from "@/src/hooks/usePermisos";
 import { useEffect, useState, useCallback } from "react";
 import { ShieldCheck, Loader2, Save, KeyRound, AlertCircle, Info, Mail } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
@@ -16,6 +17,10 @@ const estaActivo = (valor: string | null) =>
   ["1", "true", "si", "sí", "on"].includes((valor ?? "").trim().toLowerCase());
 
 export default function SeguridadPage() {
+  // Qué puede hacer aquí. El servidor lo comprueba igual; esto solo evita
+  // ofrecer botones que luego se rechazarían.
+  const { acciones } = usePermisos();
+  const puede = acciones("seguridad");
   // Cada interruptor guarda su valor y el que tenía al cargar, para saber
   // qué hay que mandar al servidor.
   const [valores, setValores] = useState<Record<string, string>>({
@@ -132,7 +137,9 @@ export default function SeguridadPage() {
                     role="switch"
                     aria-checked={activo}
                     onClick={() => alternar(CLAVE_PASSWORD)}
-                    className={`relative shrink-0 w-14 h-8 rounded-full transition-colors ${
+                    disabled={!puede.editar}
+                    title={!puede.editar ? "Solo lectura: no tienes permiso para cambiar esto" : undefined}
+                    className={`relative shrink-0 w-14 h-8 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                       activo ? "bg-[#701C32]" : "bg-gray-300"
                     }`}
                   >
@@ -190,7 +197,9 @@ export default function SeguridadPage() {
                     role="switch"
                     aria-checked={activoCorreo}
                     onClick={() => alternar(CLAVE_CORREO)}
-                    className={`relative shrink-0 w-14 h-8 rounded-full transition-colors ${
+                    disabled={!puede.editar}
+                    title={!puede.editar ? "Solo lectura: no tienes permiso para cambiar esto" : undefined}
+                    className={`relative shrink-0 w-14 h-8 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                       activoCorreo ? "bg-[#701C32]" : "bg-gray-300"
                     }`}
                   >
@@ -231,7 +240,7 @@ export default function SeguridadPage() {
             <div className="flex justify-end">
               <button
                 onClick={guardar}
-                disabled={!hayCambios || guardando}
+                disabled={!hayCambios || guardando || !puede.editar}
                 className="inline-flex items-center gap-2 bg-[#093E7A] hover:bg-[#073365] disabled:bg-slate-300 text-white px-6 py-3 rounded-full font-bold text-xs uppercase tracking-widest transition-all shadow-lg shadow-[#093E7A]/20 disabled:shadow-none"
               >
                 {guardando ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}

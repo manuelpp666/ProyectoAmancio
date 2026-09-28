@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { apiFetch, mensajeDeError } from "@/src/lib/api";
 import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
+import { usePermisos } from "@/src/hooks/usePermisos";
 
 // ---------------------------------------------------------------------------
 // Tipos (calcados de la respuesta de GET /conducta/catalogo)
@@ -92,6 +93,10 @@ const colorPuntos = (puntos: number, cambioIE: boolean) => {
 };
 
 export function CatalogoFaltas() {
+    // Qué puede hacer aquí. El servidor lo comprueba igual; esto solo evita
+    // ofrecer botones que luego se rechazarían.
+    const { acciones } = usePermisos();
+    const puede = acciones("gestion_estudiantes", "faltas");
     const [catalogo, setCatalogo] = useState<Catalogo | null>(null);
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -402,25 +407,29 @@ export function CatalogoFaltas() {
                         </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                        <button
-                            onClick={() => setFormTipo({ id: null, nombre: "" })}
-                            className="flex items-center gap-2 bg-white border-2 border-[#093E7A] text-[#093E7A] hover:bg-[#093E7A]/5 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors"
-                        >
-                            <span className="material-symbols-outlined text-[20px]">create_new_folder</span>
-                            Nuevo tipo
-                        </button>
-                        <button
-                            onClick={() => setFormFalta({
-                                ...FORM_FALTA_VACIO,
-                                id_tipo_falta: catalogo.tipos[0]?.id_tipo_falta || 0,
-                            })}
-                            disabled={catalogo.tipos.length === 0}
-                            title={catalogo.tipos.length === 0 ? "Crea primero un tipo de falta" : undefined}
-                            className="flex items-center gap-2 bg-[#093E7A] hover:bg-[#072d5a] disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-colors shadow-sm"
-                        >
-                            <span className="material-symbols-outlined text-[20px]">add_circle</span>
-                            Nueva falta
-                        </button>
+                        {puede.agregar && (
+                            <>
+                                <button
+                                    onClick={() => setFormTipo({ id: null, nombre: "" })}
+                                    className="flex items-center gap-2 bg-white border-2 border-[#093E7A] text-[#093E7A] hover:bg-[#093E7A]/5 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors"
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">create_new_folder</span>
+                                    Nuevo tipo
+                                </button>
+                                <button
+                                    onClick={() => setFormFalta({
+                                        ...FORM_FALTA_VACIO,
+                                        id_tipo_falta: catalogo.tipos[0]?.id_tipo_falta || 0,
+                                    })}
+                                    disabled={catalogo.tipos.length === 0}
+                                    title={catalogo.tipos.length === 0 ? "Crea primero un tipo de falta" : undefined}
+                                    className="flex items-center gap-2 bg-[#093E7A] hover:bg-[#072d5a] disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-xl text-sm font-bold transition-colors shadow-sm"
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">add_circle</span>
+                                    Nueva falta
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -488,21 +497,21 @@ export function CatalogoFaltas() {
                                     </button>
 
                                     <div className="flex items-center gap-1 shrink-0">
-                                        <button
+                                        {puede.agregar && <button
                                             onClick={() => setFormFalta({ ...FORM_FALTA_VACIO, id_tipo_falta: tipo.id_tipo_falta })}
                                             title="Añadir una falta a este tipo"
                                             className="p-2 text-gray-400 hover:text-[#093E7A] hover:bg-[#093E7A]/5 rounded-lg transition-colors"
                                         >
                                             <span className="material-symbols-outlined text-[20px]">add</span>
-                                        </button>
-                                        <button
+                                        </button>}
+                                        {puede.editar && <button
                                             onClick={() => setFormTipo({ id: tipo.id_tipo_falta, nombre: tipo.nombre })}
                                             title="Renombrar el tipo"
                                             className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                         >
                                             <span className="material-symbols-outlined text-[20px]">edit</span>
-                                        </button>
-                                        <button
+                                        </button>}
+                                        {puede.eliminar && <button
                                             onClick={() => setABorrar({ clase: "tipo", dato: tipo })}
                                             disabled={tipo.total_faltas > 0}
                                             title={tipo.total_faltas > 0
@@ -511,7 +520,7 @@ export function CatalogoFaltas() {
                                             className="p-2 text-gray-400 hover:text-[#701C32] hover:bg-[#701C32]/5 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 disabled:cursor-not-allowed"
                                         >
                                             <span className="material-symbols-outlined text-[20px]">delete</span>
-                                        </button>
+                                        </button>}
                                     </div>
                                 </div>
 
@@ -557,7 +566,7 @@ export function CatalogoFaltas() {
                                                         </div>
 
                                                         <div className="flex items-center gap-1 shrink-0">
-                                                            <button
+                                                            {puede.editar && <button
                                                                 onClick={() => setFormFalta({
                                                                     id_nivel_conducta: falta.id_nivel_conducta,
                                                                     id_tipo_falta: falta.id_tipo_falta,
@@ -572,8 +581,8 @@ export function CatalogoFaltas() {
                                                                 className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                             >
                                                                 <span className="material-symbols-outlined text-[19px]">edit</span>
-                                                            </button>
-                                                            <button
+                                                            </button>}
+                                                            {puede.eliminar && <button
                                                                 onClick={() => setABorrar({ clase: "falta", dato: falta })}
                                                                 disabled={falta.usos > 0}
                                                                 title={falta.usos > 0
@@ -582,7 +591,7 @@ export function CatalogoFaltas() {
                                                                 className="p-2 text-gray-400 hover:text-[#701C32] hover:bg-[#701C32]/5 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 disabled:cursor-not-allowed"
                                                             >
                                                                 <span className="material-symbols-outlined text-[19px]">delete</span>
-                                                            </button>
+                                                            </button>}
                                                         </div>
                                                     </li>
                                                 ))}

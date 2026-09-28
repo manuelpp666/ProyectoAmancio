@@ -1,16 +1,21 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import { ChevronDown, Loader2, History, Calendar, ArrowLeft } from "lucide-react";
+import { ChevronDown, Loader2, History, Calendar, ArrowLeft, AlertCircle } from "lucide-react";
 import { useUser } from "@/src/context/userContext";
 import Link from "next/link";
 import { apiFetch } from "@/src/lib/api";
+import { HistorialConducta } from "@/src/interfaces/datos_alumno";
+import { AutorReporte } from "@/src/components/Campus/CampusEstudiante/AutorReporte";
 
 export default function HistorialConductaPage() {
   const { id_usuario, loading: userLoading } = useUser();
   const [aniosConData, setAniosConData] = useState<number[]>([]); // Cambiado a array de números
   const [anioSeleccionado, setAnioSeleccionado] = useState<string>("");
-  const [reportes, setReportes] = useState<any[]>([]);
+  const [reportes, setReportes] = useState<HistorialConducta[]>([]);
   const [loading, setLoading] = useState(false);
+  // Un fallo del servidor no debe verse como "Historial limpio": el alumno
+  // creería que no tiene reportes cuando solo no se pudieron cargar.
+  const [error, setError] = useState<string | null>(null);
 
   // 1. Cargar solo los años que tienen reportes
   useEffect(() => {
@@ -18,15 +23,18 @@ export default function HistorialConductaPage() {
       if (!id_usuario) return;
       try {
         const res = await apiFetch(`/conducta/usuario/${id_usuario}/anios-reportes`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: number[] = await res.json();
-        setAniosConData(data);
+        const anios = Array.isArray(data) ? data : [];
+        setAniosConData(anios);
 
         // Seleccionar el año más reciente por defecto si existen reportes
-        if (data.length > 0) {
-          setAnioSeleccionado(String(data[0]));
+        if (anios.length > 0) {
+          setAnioSeleccionado(String(anios[0]));
         }
       } catch (e) {
         console.error("Error cargando años con reportes:", e);
+        setError("No se pudo cargar tu historial disciplinario.");
       }
     };
 
@@ -36,12 +44,16 @@ export default function HistorialConductaPage() {
   // 2. Cargar Reportes del año seleccionado
   const fetchReportes = useCallback(async (uid: number, anio: string) => {
     setLoading(true);
+    setError(null);
     try {
       const res = await apiFetch(`/conducta/usuario/${uid}/estado-conducta?anio=${anio}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setReportes(data?.historial || []);
+      setReportes(Array.isArray(data?.historial) ? data.historial : []);
     } catch (e) {
+      console.error("Error cargando reportes de conducta:", e);
       setReportes([]);
+      setError("No se pudieron cargar los reportes de este año.");
     } finally {
       setLoading(false);
     }
@@ -87,22 +99,39 @@ export default function HistorialConductaPage() {
 
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="animate-spin text-[#701C32]" size={40} /></div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center gap-4 text-center py-16 px-4">
+          <AlertCircle className="text-red-500" size={40} />
+          <p className="text-gray-600">{error}</p>
+          <button
+            onClick={() => {
+              // Sin año elegido, lo que falló fue la lista de años: se recarga la
+              // página entera, que es lo que la vuelve a pedir.
+              if (id_usuario && anioSeleccionado) fetchReportes(Number(id_usuario), anioSeleccionado);
+              else window.location.reload();
+            }}
+            className="bg-[#701C32] text-white px-6 py-2 rounded-xl font-bold hover:bg-[#5a1628] transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
       ) : reportes.length > 0 ? (
         <div className="grid gap-4">
           {reportes.map((r, i) => (
-            <div key={i} className="bg-white p-5 rounded-2xl border border-gray-100 flex justify-between items-center shadow-sm">
-              <div className="space-y-1">
+            <div key={r.id_reporte ?? i} className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 flex justify-between items-start sm:items-center gap-3 shadow-sm">
+              <div className="space-y-1 min-w-0">
                 <span className="text-[10px] font-black text-[#701C32] bg-[#701C32]/5 px-2 py-0.5 rounded-md">{r.fecha}</span>
-                <h4 className="font-bold text-gray-800 text-lg">{r.motivo}</h4>
-                <p className="text-sm text-gray-500">{r.nota_reglamento}</p>
+                <h4 className="font-bold text-gray-800 text-base sm:text-lg break-words">{r.motivo}</h4>
+                <p className="text-sm text-gray-500 break-words">{r.nota_reglamento}</p>
+                <AutorReporte reporte={r} />
                 {r.medida && (
                   <span className={`inline-block mt-1 text-[11px] font-bold rounded-lg px-2.5 py-1 ${r.cambio_ie ? "bg-red-50 text-red-700 border border-red-100" : "bg-slate-100 text-slate-700"}`}>
                     {r.medida}
                   </span>
                 )}
               </div>
-              <div className="text-right">
-                <span className="text-2xl font-black text-red-600">-{r.puntos_restados}</span>
+              <div className="text-right shrink-0">
+                <span className="text-xl sm:text-2xl font-black text-red-600">-{r.puntos_restados}</span>
                 <p className="text-[9px] text-gray-400 font-bold uppercase">Puntos</p>
               </div>
             </div>

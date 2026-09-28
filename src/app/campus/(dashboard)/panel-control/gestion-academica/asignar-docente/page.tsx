@@ -1,5 +1,6 @@
 "use client";
 
+import { usePermisos } from "@/src/hooks/usePermisos";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
@@ -12,6 +13,10 @@ import { RoleGuard } from "@/src/components/auth/RoleGuard";
 export default function AsignacionDocentesPage() {
   
   const { anioPlanificacion, setAnioPlanificacion, listaAnios, loadingAnios } = useAnioAcademico();
+  // Qué puede hacer aquí. El servidor lo comprueba igual; esto solo evita
+  // ofrecer botones que luego se rechazarían.
+  const { acciones } = usePermisos();
+  const puede = acciones("academico", "docentes");
   
   // --- ESTADO PARA PESTAÑAS (TABS) ---
   const [activeTab, setActiveTab] = useState<"carga" | "tutores">("carga");
@@ -390,7 +395,7 @@ export default function AsignacionDocentesPage() {
               </div>
               
               {/* BOTONES DINÁMICOS SEGÚN EL TAB */}
-              {activeTab === "carga" ? (
+              {!puede.agregar ? null : activeTab === "carga" ? (
                 <button
                   onClick={() => {
                     setEditingId(null);
@@ -477,6 +482,7 @@ export default function AsignacionDocentesPage() {
                             <div className="flex justify-end gap-2 items-center">
                               {v.docente ? (
                                 <>
+                                  {puede.editar && (
                                   <button
                                     onClick={() => handleEditar(v)}
                                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -484,7 +490,8 @@ export default function AsignacionDocentesPage() {
                                   >
                                     <span className="material-symbols-outlined text-xl">edit</span>
                                   </button>
-                                  {v.id_carga_academica && (
+                                  )}
+                                  {v.id_carga_academica && puede.eliminar && (
                                     <button
                                       onClick={() => setConfirmDelete({ isOpen: true, id: v.id_carga_academica })}
                                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -494,7 +501,7 @@ export default function AsignacionDocentesPage() {
                                     </button>
                                   )}
                                 </>
-                              ) : (
+                              ) : !puede.agregar ? null : (
                                 <button
                                   onClick={() => handleAsignarFila(v)}
                                   className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[#093E7A] text-white hover:bg-[#062d59] rounded-xl transition-all text-xs font-bold shadow-sm"
@@ -532,6 +539,7 @@ export default function AsignacionDocentesPage() {
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex justify-end gap-2 items-center">
+                              {puede.editar && (
                               <button
                                 onClick={() => handleEditarTutor(t)}
                                 className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -539,9 +547,12 @@ export default function AsignacionDocentesPage() {
                               >
                                 <span className="material-symbols-outlined text-xl">edit</span>
                               </button>
+                              )}
+                              {puede.eliminar && (
                               <button onClick={() => setConfirmDeleteTutor({ isOpen: true, id: t.id_tutor_seccion })} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Remover Tutor">
                                 <span className="material-symbols-outlined text-xl">delete</span>
                               </button>
+                              )}
                             </div>
                           </td>
                         </tr>

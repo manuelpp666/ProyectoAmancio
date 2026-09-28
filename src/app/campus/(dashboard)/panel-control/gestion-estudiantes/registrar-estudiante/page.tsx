@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { apiFetch } from '@/src/lib/api';
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
+import { SinPermiso } from '@/src/components/auth/SinPermiso';
+import { usePermisos } from '@/src/hooks/usePermisos';
 import { PARENTESCOS } from '@/src/interfaces/familiar';
 
 
@@ -19,6 +21,8 @@ interface Grado {
 
 export default function RegistroEstudiantePage() {
     const router = useRouter();
+    const { acciones, loading: cargandoPermisos } = usePermisos();
+    const puede = acciones("gestion_estudiantes", "estudiantes");
     const [isLoading, setIsLoading] = useState(false);
     const [grados, setGrados] = useState<Grado[]>([]);
 
@@ -141,6 +145,20 @@ export default function RegistroEstudiantePage() {
     };
 
     const sanitizarDigitos = (valor: string, max: number) => valor.replace(/\D/g, "").slice(0, max);
+
+    // Registrar es "agregar" en Estudiantes. Quien no lo tiene no ve el botón
+    // que trae aquí; esto cubre al que llega escribiendo la dirección.
+    if (!cargandoPermisos && !puede.agregar) {
+        return (
+            <RoleGuard modulo="gestion_estudiantes">
+                <SinPermiso
+                    accion="registrar estudiantes"
+                    volverA="/campus/panel-control/gestion-estudiantes"
+                    textoVolver="Volver a Gestión de Estudiantes"
+                />
+            </RoleGuard>
+        );
+    }
 
     return (
 
