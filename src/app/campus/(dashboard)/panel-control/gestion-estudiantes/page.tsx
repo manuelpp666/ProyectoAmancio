@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { KeyRound, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { AlumnoBase } from "@/src/interfaces/admision";
 import EdadBadge from "@/src/components/utils/CalcularEdad";
-import { apiFetch } from "@/src/lib/api";
+import { apiFetch, mensajeDeError } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
 import { ModalEditarEstudiante } from "@/src/components/Campus/PanelControl/ModalEditarEstudiante";
 import { usePermisos } from "@/src/hooks/usePermisos";
@@ -297,6 +298,44 @@ export default function GestionEstudiantesPage() {
             if (!actual || !data) return actual;
             return data.find((a) => a.id_alumno === actual.id_alumno) ?? actual;
         });
+    };
+
+    // Exigir (o no) el cambio de contraseña en el próximo ingreso. Es el mismo
+    // interruptor que tiene Gestión de Personal y usa el mismo endpoint; para
+    // una cuenta de alumno el servidor pide «Estudiantes → Editar».
+    const [cambiandoPassword, setCambiandoPassword] = useState<number | null>(null);
+
+    const handleTogglePassword = async (alumno: AlumnoBase, forzar: boolean) => {
+        if (!alumno.id_usuario || cambiandoPassword !== null) return;
+        setCambiandoPassword(alumno.id_alumno);
+        try {
+            const res = await apiFetch(
+                `/personal/usuario/${alumno.id_usuario}/forzar-cambio-password?debe_cambiar=${forzar}`,
+                { method: "PATCH" }
+            );
+            if (!res.ok) {
+                toast.error(await mensajeDeError(res, "No se pudo actualizar la configuración de contraseña"));
+                return;
+            }
+            toast.success(
+                forzar
+                    ? `Se exigirá cambio de contraseña a ${alumno.nombres} en su próximo ingreso.`
+                    : `Se desactivó la exigencia de cambio de contraseña para ${alumno.nombres}.`
+            );
+            // Solo se toca la fila cambiada: recargar la lista entera perdería el
+            // punto donde estaba el administrador.
+            setAlumnos((prev) =>
+                prev.map((a) =>
+                    a.id_alumno === alumno.id_alumno && a.usuario
+                        ? { ...a, usuario: { ...a.usuario, debe_cambiar_password: forzar } }
+                        : a
+                )
+            );
+        } catch {
+            toast.error("Error de conexión al actualizar");
+        } finally {
+            setCambiandoPassword(null);
+        }
     };
 
     const cargarRenovaciones = async () => {
@@ -692,7 +731,7 @@ export default function GestionEstudiantesPage() {
 
                             <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden shadow-sm">
                                 <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse min-w-[980px]">
+                                    <table className={`w-full text-left border-collapse ${vista === "estudiantes" ? "min-w-[1120px]" : "min-w-[980px]"}`}>
                                     <thead>
                                         <tr className="bg-[#fcfafa] border-b border-[#e5e7eb]">
                                             <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Nombre Completo</th>
@@ -704,12 +743,15 @@ export default function GestionEstudiantesPage() {
                                                 <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Documentos</th>
                                             )}
                                             <th className="px-6 py-4 text-xs font-black uppercase text-[#617489]">Estado</th>
+                                            {vista === "estudiantes" && (
+                                                <th className="px-6 py-4 text-xs font-black uppercase text-[#617489] text-center whitespace-nowrap">Cambio de Contraseña</th>
+                                            )}
                                             <th className="px-6 py-4 text-xs font-black uppercase text-[#617489] text-right">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#f3f4f6]">
                                         {loading ? (
-                                            <tr><td colSpan={vista === "postulantes" ? 6 : 5} className="text-center py-10 text-gray-400 text-sm italic">Cargando registros...</td></tr>
+                                            <tr><td colSpan={vista === "postulantes" || vista === "estudiantes" ? 6 : 5} className="text-center py-10 text-gray-400 text-sm italic">Cargando registros...</td></tr>
                                         ) : (
                                             alumnos.map((alumno) => (
                                                 <tr key={alumno.id_alumno} className="hover:bg-[#fcfafa] transition-colors">
@@ -734,6 +776,40 @@ export default function GestionEstudiantesPage() {
                                                             {alumno.estado_ingreso}
                                                         </span>
                                                     </td>
+                                                    {vista === "estudiantes" && (
+                                                        <td className="px-6 py-4 text-center">
+                                                            {!alumno.id_usuario || !alumno.usuario ? (
+                                                                // Sin cuenta no hay contraseña que exigir.
+                                                                <span className="text-xs text-gray-400 italic">Sin cuenta</span>
+                                                            ) : (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleTogglePassword(alumno, !alumno.usuario?.debe_cambiar_password)}
+                                                                    disabled={!puedeEst.editar || cambiandoPassword !== null}
+                                                                    aria-busy={cambiandoPassword === alumno.id_alumno}
+                                                                    title={
+                                                                        !puedeEst.editar
+                                                                            ? "Solo lectura: no tienes permiso para editar estudiantes."
+                                                                            : alumno.usuario.debe_cambiar_password
+                                                                            ? "Exigencia activa: se le pedirá cambiar la contraseña al iniciar sesión. Clic para desactivar."
+                                                                            : "Contraseña ya actualizada o desactivada. Clic para exigir cambio en el próximo inicio de sesión."
+                                                                    }
+                                                                    className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-full transition-all border whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-60 ${
+                                                                        alumno.usuario.debe_cambiar_password
+                                                                            ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
+                                                                            : "bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200 hover:text-gray-800"
+                                                                    }`}
+                                                                >
+                                                                    {cambiandoPassword === alumno.id_alumno ? (
+                                                                        <Loader2 size={12} className="animate-spin" />
+                                                                    ) : (
+                                                                        <KeyRound size={12} className={alumno.usuario.debe_cambiar_password ? "text-amber-600" : "text-gray-400"} />
+                                                                    )}
+                                                                    <span>{alumno.usuario.debe_cambiar_password ? "Exigir cambio (Activado)" : "Desactivado"}</span>
+                                                                </button>
+                                                            )}
+                                                        </td>
+                                                    )}
                                                     <td className="px-6 py-4 text-right">
                                                         <div className="flex justify-end gap-2">
                                                             <button

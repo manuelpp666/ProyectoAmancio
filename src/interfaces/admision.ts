@@ -22,6 +22,8 @@ export interface AlumnoBase {
   usuario?: {
     activo: boolean;
     username?: string | null;
+    /** Se le pedirá cambiar la contraseña al entrar (columna de Gestión de Estudiantes). */
+    debe_cambiar_password?: boolean;
   } | null;
 }
 
