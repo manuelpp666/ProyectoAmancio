@@ -12,6 +12,9 @@ import type { ConfigItem } from "@/src/hooks/useConfiguracion";
 
 interface InscripcionAbierta {
   id_anio_escolar: string;
+  /** Año para mostrar (sale de la fecha de inicio de clases). El id puede
+   *  ser «2027-1», que no es un texto para las familias. */
+  anio?: number | null;
   tipo: string;
   fin_inscripcion?: string;
 }
@@ -19,25 +22,29 @@ interface InscripcionAbierta {
 interface AdmisionEstado {
   abierto: boolean;
   tipo?: string;
+  anio?: number | null;
   proxima_inscripcion?: string;
   // El backend puede devolver más de una inscripción vigente a la vez
   // (por ejemplo, el año regular y el de verano solapados).
   inscripciones?: InscripcionAbierta[];
 }
 
-// Etiqueta y descripción de cada tipo, para que se distinga a qué postula uno
-const ETIQUETA_ADMISION: Record<string, { titulo: string; detalle: string }> = {
-  VERANO: { titulo: "Admisión Verano", detalle: "Año académico de verano" },
-  REGULAR: { titulo: "Admisión Regular", detalle: "Año escolar 2026" },
+/** Año a mostrar. Si el backend aún no manda `anio` (versión anterior), se
+ *  saca del id: los cuatro primeros dígitos de «2027-1» son 2027. */
+const anioVisible = (anio?: number | null, id?: string): string | null => {
+  if (anio && Number.isFinite(anio)) return String(anio);
+  return id?.match(/\d{4}/)?.[0] ?? null;
 };
 
-const etiquetaDe = (tipo: string, anio?: string) => {
-  const base = ETIQUETA_ADMISION[(tipo || "").toUpperCase()];
-  if (base) {
-    return {
-      titulo: base.titulo,
-      detalle: tipo.toUpperCase() === "REGULAR" && anio ? `Año escolar ${anio}` : base.detalle,
-    };
+// Etiqueta y descripción de cada tipo, para que se distinga a qué postula uno.
+// El año va siempre debajo: así la familia sabe para qué año se inscribe.
+const etiquetaDe = (tipo: string, anio: string | null) => {
+  const t = (tipo || "").toUpperCase();
+  if (t === "VERANO") {
+    return { titulo: "Admisión Verano", detalle: anio ? `Verano ${anio}` : "Año académico de verano" };
+  }
+  if (t === "REGULAR") {
+    return { titulo: "Admisión Regular", detalle: anio ? `Año escolar ${anio}` : "" };
   }
   return { titulo: `Admisión ${tipo}`, detalle: anio ? `Año ${anio}` : "" };
 };
@@ -129,7 +136,7 @@ export default function HomeClient({
           {admision.abierto && inscripciones.length > 0 ? (
             <div className={`flex flex-col sm:flex-row items-center justify-center gap-4 ${varias ? "sm:gap-5" : ""}`}>
               {inscripciones.map((ins) => {
-                const { titulo, detalle } = etiquetaDe(ins.tipo, ins.id_anio_escolar);
+                const { titulo, detalle } = etiquetaDe(ins.tipo, anioVisible(ins.anio, ins.id_anio_escolar));
                 const esVeranoIns = ins.tipo?.toUpperCase() === "VERANO";
                 return (
                   <Link
@@ -147,10 +154,11 @@ export default function HomeClient({
                       {esVeranoIns ? <Sun size={20} /> : <GraduationCap size={20} />}
                       <span className="flex flex-col items-start leading-tight">
                         <span>{titulo}</span>
-                        {/* Con dos convocatorias abiertas hay que dejar clarísimo
-                            cuál es cuál, así que se muestra el detalle debajo */}
-                        {varias && detalle && (
-                          <span className="text-[11px] font-semibold opacity-70 uppercase tracking-wide">
+                        {/* El año va siempre debajo: deja claro para qué año
+                            se inscribe la familia, y con dos convocatorias
+                            abiertas distingue cuál es cuál. */}
+                        {detalle && (
+                          <span className="text-[11px] sm:text-xs font-semibold opacity-70 uppercase tracking-wide">
                             {detalle}
                           </span>
                         )}
@@ -164,7 +172,11 @@ export default function HomeClient({
           ) : admision.proxima_inscripcion ? (
             <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md border border-white/30 text-white px-6 sm:px-8 py-4 rounded-full font-bold text-sm sm:text-lg shadow-lg mx-auto">
               <CalendarClock size={22} />
-              <span>Próximas inscripciones: {formatearFechaLarga(admision.proxima_inscripcion)}</span>
+              <span>
+                Próximas inscripciones
+                {anioVisible(admision.anio) ? ` ${anioVisible(admision.anio)}` : ""}:{" "}
+                {formatearFechaLarga(admision.proxima_inscripcion)}
+              </span>
             </div>
           ) : null}
         </div>

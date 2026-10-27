@@ -1,12 +1,12 @@
 "use client";
 import { usePermisos } from "@/src/hooks/usePermisos";
 import { useEffect, useState } from "react";
-import { Nivel, Seccion, AnioEscolar, Grado, Bimestre } from "@/src/interfaces/academic";
+import { Nivel, Seccion, AnioEscolar, Grado, Bimestre, BimestresResponse } from "@/src/interfaces/academic";
 import GradoCard from "@/src/components/Academic/GradoCard";
 import { toast } from "sonner";
 import { useAnioAcademico } from "@/src/hooks/useAnioAcademico";
 import { AnioSelector } from "@/src/components/utils/AnioSelector";
-import { apiFetch } from "@/src/lib/api";
+import { apiFetch, mensajeDeError } from "@/src/lib/api";
 import { RoleGuard } from '@/src/components/auth/RoleGuard';
 import { ConfirmModal } from "@/src/components/utils/ConfirmModal";
 import { CampoNumero, leerNumero, aNumero } from "@/src/components/utils/numero";
@@ -370,9 +370,13 @@ export default function GestionAcademicaPage() {
         toast.success("Fechas del año académico actualizadas");
         setIsEditarAnioModalOpen(false);
         refreshAnios();
+        // Las fechas ya se guardaron aunque esto falle; solo hay que avisar.
+        const data = await res.json().catch(() => ({}));
+        if (data?.conducta === null) {
+          toast.warning("No se pudieron reacomodar las notas de conducta a las fechas nuevas. Vuelve a guardar para reintentarlo.");
+        }
       } else {
-        const err = await res.json();
-        toast.error(err.detail || "Error al actualizar fechas");
+        toast.error(await mensajeDeError(res, "Error al actualizar fechas"));
       }
     } catch (error) { toast.error("Error de conexión"); }
   };
@@ -447,9 +451,24 @@ export default function GestionAcademicaPage() {
         setBimestres(data.bimestres);
         setBimestresAproximados(!data.guardado);
         toast.success("Fechas de los bimestres guardadas correctamente");
+        // Los reportes de conducta cuentan en el bimestre de su fecha: al
+        // cambiar las fechas, el backend mueve sus notas al que les toca.
+        const conducta = (data as BimestresResponse).conducta;
+        if (conducta === null) {
+          toast.warning("No se pudieron reacomodar las notas de conducta a las fechas nuevas. Vuelve a guardar para reintentarlo.");
+        } else if (conducta) {
+          const movidas = conducta.creadas + conducta.corregidas + conducta.eliminadas;
+          if (movidas > 0) {
+            toast.info(
+              `Notas de conducta reacomodadas al bimestre que les corresponde (${movidas} ${movidas === 1 ? "cambio" : "cambios"}).` +
+              (conducta.respetadas > 0
+                ? ` ${conducta.respetadas} ${conducta.respetadas === 1 ? "nota puesta a mano no se tocó" : "notas puestas a mano no se tocaron"}.`
+                : "")
+            );
+          }
+        }
       } else {
-        const err = await res.json();
-        toast.error(err.detail || "No se pudieron guardar los bimestres");
+        toast.error(await mensajeDeError(res, "No se pudieron guardar los bimestres"));
       }
     } catch (error) {
       toast.error("Error de conexión");

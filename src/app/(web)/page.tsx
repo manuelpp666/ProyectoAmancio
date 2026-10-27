@@ -6,10 +6,11 @@ import { NoticiaResponse } from "@/src/interfaces/noticia";
 // Se revalida cada 60s: las visitas comparten la respuesta cacheada.
 export const revalidate = 60;
 
-interface InscripcionAbierta { id_anio_escolar: string; tipo: string; fin_inscripcion?: string; }
+interface InscripcionAbierta { id_anio_escolar: string; anio?: number | null; tipo: string; fin_inscripcion?: string; }
 interface AdmisionEstado {
   abierto: boolean;
   tipo?: string;
+  anio?: number | null;
   proxima_inscripcion?: string;
   inscripciones?: InscripcionAbierta[];
 }

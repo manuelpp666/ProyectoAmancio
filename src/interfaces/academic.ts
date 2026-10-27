@@ -59,6 +59,8 @@ export interface BimestresResponse {
   id_anio_escolar: string;
   guardado: boolean;
   bimestres: Bimestre[];
+  /** Solo al guardar: notas de conducta movidas al bimestre que les toca. null si falló. */
+  conducta?: { creadas: number; corregidas: number; eliminadas: number; respetadas: number } | null;
 }
 
 export interface CursoDocente {
