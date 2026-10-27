@@ -78,9 +78,13 @@ export function errorDeDescripcion(valor: string): string | null {
 interface Props {
   /** Se rellena solo si ya escribió su DNI en el campo de usuario del login. */
   dniSugerido?: string;
+  /** Abre el diálogo desde fuera con este DNI (lo usa «¿Olvidaste tu
+   *  contraseña?» cuando la cuenta no tiene correo). `vez` cambia en cada
+   *  pedido para que pedirlo dos veces con el mismo DNI también lo abra. */
+  pedido?: { dni: string; vez: number } | null;
 }
 
-export default function SolicitudAcceso({ dniSugerido }: Props) {
+export default function SolicitudAcceso({ dniSugerido, pedido }: Props) {
   const [abierto, setAbierto] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
@@ -115,6 +119,15 @@ export default function SolicitudAcceso({ dniSugerido }: Props) {
     if (enviando) return;   // a media petición, cerrar deja el aviso a medias
     setAbierto(false);
   };
+
+  useEffect(() => {
+    if (!pedido) return;
+    setAbierto(true);
+    setEnviado(false);
+    setErrorGeneral(null);
+    setTocado({});
+    setDni(soloDigitos(pedido.dni).slice(0, DNI_LARGO));
+  }, [pedido]);
 
   // Escape cierra, y el foco entra en el diálogo: sin esto, el teclado se
   // queda detrás, en el formulario de login que ya no se ve.
@@ -204,7 +217,8 @@ export default function SolicitudAcceso({ dniSugerido }: Props) {
 
       {!abierto ? null : (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto"
+          // Sin backdrop-blur a propósito: ver la nota en RecuperarPassword.tsx.
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 overflow-y-auto"
           onClick={(e) => { if (e.target === e.currentTarget) cerrar(); }}
         >
           <div

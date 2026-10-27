@@ -17,6 +17,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Loader2, History, MapPin, AlertTriangle, CheckCircle2, XCircle, Search, X, ChevronLeft, ChevronRight,
+  KeyRound,
 } from "lucide-react";
 import { apiFetch } from "@/src/lib/api";
 
@@ -327,7 +328,14 @@ export function RegistroAccesos() {
                         )}
                       </td>
                       <td className="py-2.5 pr-3 whitespace-nowrap">
-                        {a.exito ? (
+                        {/* Restablecer la contraseña con el código del correo
+                            se anota como acierto (demostró ser el dueño), pero
+                            no es una entrada y no debe leerse como tal. */}
+                        {a.exito && a.motivo === "PASSWORD_RECUPERADA" ? (
+                          <span className="inline-flex items-center gap-1 text-[#093E7A] font-bold text-xs">
+                            <KeyRound size={13} /> Cambió su contraseña por correo
+                          </span>
+                        ) : a.exito ? (
                           <span className="inline-flex items-center gap-1 text-emerald-600 font-bold text-xs">
                             <CheckCircle2 size={13} /> Entró
                           </span>

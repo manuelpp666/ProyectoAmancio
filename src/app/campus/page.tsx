@@ -5,6 +5,7 @@ import { useUser } from "@/src/context/userContext";
 import Link from "next/link";
 import { User, Lock, GraduationCap, Loader2, AlertCircle } from "lucide-react";
 import SolicitudAcceso from "@/src/components/auth/SolicitudAcceso";
+import RecuperarPassword from "@/src/components/auth/RecuperarPassword";
 
 // Imagen de fondo por defecto del panel visual del login
 const DEFAULT_LOGIN_BG =
@@ -33,6 +34,9 @@ export default function LoginPage() {
   // Se lee de window y no con `useSearchParams`, que obligaría a envolver toda
   // la página en <Suspense> para que `next build` no fallara.
   const [porCaducidad, setPorCaducidad] = useState(false);
+  // «¿Olvidaste tu contraseña?» manda aquí a quien no tiene correo, para
+  // abrir «No puedo entrar» con su DNI ya escrito.
+  const [pedidoSolicitud, setPedidoSolicitud] = useState<{ dni: string; vez: number } | null>(null);
 
   useEffect(() => {
     setPorCaducidad(
@@ -234,12 +238,20 @@ export default function LoginPage() {
               sin decirle cómo, y los avisos acababan llegando por WhatsApp al
               que le pillara. `dniSugerido` aprovecha lo que ya escribió arriba
               para no hacérselo teclear dos veces. */}
-          <SolicitudAcceso dniSugerido={username} />
+          {/* Va fuera del <form> del login a propósito: su diálogo lleva sus
+              propios formularios, y un form dentro de otro no es válido. */}
+          <RecuperarPassword
+            dniSugerido={username}
+            onNoPuedoEntrar={(dni) => setPedidoSolicitud({ dni, vez: Date.now() })}
+            onIrALogin={(usuario) => {
+              if (usuario) setUsername(usuario);
+              setPassword("");
+              setError(null);
+              setTimeout(() => document.getElementById(usuario ? "password" : "username")?.focus(), 50);
+            }}
+          />
 
-          <p className="text-center text-xs text-slate-400 mt-4">
-            ¿Olvidaste tu contraseña? Escríbenos desde ahí o acércate a la
-            administración del colegio.
-          </p>
+          <SolicitudAcceso dniSugerido={username} pedido={pedidoSolicitud} />
         </div>
       </section>
     </div>
